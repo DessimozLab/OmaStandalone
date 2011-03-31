@@ -1,0 +1,50 @@
+IdentifyPosition := proc(fAugustus:string,fContigLengths:string)
+    # Read and store contig lengths into a table
+    cLengths := table();
+    OpenReading(fContigLengths);
+    t1 := ReadRawLine();
+    while t1 <> 'EOF' do
+        t2 := SearchDelim('\t',t1);
+        cLengths[t2[1]] :=parse(t2[2,1..-2]);
+        t1 := ReadRawLine();
+    od; 
+
+    # Read and store gene positions into a table
+    gRanges := table();
+    OpenReading(fAugustus);
+    t1 := ReadRawLine();
+    while t1 <> 'EOF' do
+        if t1[1] <> '#' then
+            t2 := SearchDelim('\t',t1);
+            if t2[3] ='gene' then 
+                # positive strand
+                if t2[7] = '+' then
+                    gRanges[t2[9,1..-2]] := 
+                        [t2[1],parse(t2[4])..parse(t2[5])];
+                else
+                    gRanges[t2[9,1..-2]] := 
+                        [t2[1],parse(t2[5])..parse(t2[4])];
+                fi;
+            fi;
+        fi;
+        t1 := ReadRawLine();
+    od; 
+    
+    return(gRanges,cLengths);
+end:
+
+
+DistBounds := proc(g,gRanges,cLengths)
+    r := gRanges[g,2];
+    l := cLengths[gRanges[g,1]];
+    # positive strand
+    if r[2] > r[1] then
+        dbegin := r[1]-1;
+        dend   := l-r[2];
+    else
+        dbegin := l-r[2];
+        dend   := r[1]-1;
+    fi;
+    return([min(dbegin,dend),dbegin,dend]);
+end:
+

@@ -1,0 +1,248 @@
+# Same gene?
+isSplicing := proc(s1:posint, s3:posint, setname:string)
+    res := false;
+
+    if setname='FAKH2' then
+
+        s1ID := SearchTag('ID', Entry(s1));
+        s3ID := SearchTag('ID', Entry(s3));
+
+        # keep radical until end of ensembl ID
+        t1 := SearchDelim('; ',s1ID)[1];
+        t3 := SearchDelim('; ',s3ID)[1];
+         
+        t1 := SearchDelim('|',t1);
+        t3 := SearchDelim('|',t3);
+
+        # if they come from same entry -> not alternative splicing
+        e1 := SearchDelim('_',t1[1])[-1];
+        e3 := SearchDelim('_',t3[1])[-1];
+        
+        if e1 = e3 then 
+            return(false);
+        elif t1[2] = t3[2] then
+            return(true);
+        else
+            return(false);
+        fi;
+
+    elif setname='MOUSE34' then
+
+        s1ID := SearchTag('ID', Entry(s1));
+        s3ID := SearchTag('ID', Entry(s3));
+
+        # keep radical until end of ensembl ID
+        t1 := SearchDelim('.',s1ID)[1];
+        t3 := SearchDelim('.',s3ID)[1];
+         
+        t1 := SearchDelim('|',t1);
+        t3 := SearchDelim('|',t3);
+ 
+        if t1[2] = t3[2] then
+            return(true);
+        else
+            return(false);
+        fi;
+        
+    elif setname='CmiliiFull' then
+        return(false);
+    else
+        error('Procedure for alternative splicing not implemented '
+             .'for genome '.setname);
+    fi:
+end:
+
+##############################################################################
+# Scaffold verification
+#
+#  - go over all genomes marked as being scaffolds
+#   - look for best matches in all other genomes
+#     - if # of genomes with many:1 matches > threshold = proportion * nb of genomes
+#       (keep track of the number of matches
+#       - now make sure that these matches do not overlap with more than MaxOverlap 
+#       - if that's the case, we have a candidate split gene!!
+
+ScaffoldVerification := proc(params)
+    global DB, DefContigHits, PossContigHits, ContigHits;
+
+    # parse input params
+    MinProbContig := params[1]:
+    MinBestScore := params[2]:
+    DistConfLevel := params[3]:
+    AllowMultipleHits := params[4]:
+    MaxContigOverlap := params[5]:
+    ForwardBestMatch := params[6]:
+    BackwardBestMatch := params[7]:
+
+    # start here
+    thresh1 := MinProbContig*length(SearchAllArray(false,isContig)):
+    thresh2 := (1-MinProbContig)*length(SearchAllArray(false,isContig)):
+    ContigHits := []:
+    for i to N do
+        if isContig[i] then
+            DB := DBs[i];
+            for s1 to ns[i] do
+                # here, we keep track of potential corresponding fragments
+                t := table(0):
+                tpairs := table([],[]):
+                c := 0;
+                for j to N do
+                    if isContig[j] then next fi;
+                    lists2 := decompress(
+                      If(ForwardBestMatch,BestMatch,StablePairs)[i,j,s1]):
+                    if (AllowMultipleHits and length(lists2) >= 1)
+                      or length(lists2) = 1 then
+                        tmpt := table(false);
+                        for s2Iter in lists2 do
+                            r1 := r3 := NULL:
+                            if ForwardBestMatch then
+                                if s2Iter['Score100'] < (MinBestScore*100) then
+                                     next 
+                                fi;
+                                s2 := s2Iter['Entry']:
+                                s1Pair := s2Iter;
+                                r1 := s1Pair['r2'];
+                            else
+                                s2 := s2Iter:
+                                for a in decompress(BestMatch[j,i,s2]) do
+                                    if a['Entry']=s1 then
+                                        r1 := a['r1'];
+                                        s1Pair := a;
+                                        break;
+                                    fi;
+                                od;
+                            fi:
+                            
+
+                            # back match 
+                            for s3Iter in decompress(If(BackwardBestMatch,
+                              BestMatch,StablePairs)[j,i,s2]) do
+                                if BackwardBestMatch then
+                                    if s3Iter['Score100'] < (MinBestScore*100) 
+                                        then next 
+                                    fi;
+                                    s3 := s3Iter['Entry'];
+                                    if s3<=s1 then next fi;
+                                    if s3-s1 < 50 and isSplicing(s1, s3, genomes[i]) then 
+                                        next 
+                                    fi:
+
+                                    s3Pair := s3Iter:
+                                    r3 := s3Pair['r1']:
+                                else
+                                    s3 := s3Iter;
+                                    if s3<=s1 then next fi;
+                                    if s3-s1 < 50 and isSplicing(s1, s3, genomes[i]) then 
+                                        next 
+                                    fi:
+
+                                    for a in decompress(BestMatch[j,i,s2]) do
+                                        if a['Entry']=s3Iter then
+                                            r3 := a['r1']:
+                                            s3Pair := a:
+                                            break:
+                                        fi:
+                                    od:
+                                fi:
+                                
+                                # some restrictions
+
+                                # at this point, we need to see if the two matches
+                                # (s1,s2) and (s3,s2) overlap as much as 
+                                # ensure that r1,r3 does not overlap more than
+                                # MaxContigOverlap
+                                additiveLength := r1[2]-r1[1]+r3[2]-r3[1]+2;
+                                effectiveLength := max(r1[1],r1[2],r3[1],r3[2]) 
+                                    - min(r1[1], r1[2], r3[1], r3[2])+1;
+                                if (additiveLength - effectiveLength) 
+                                  <= MaxContigOverlap then
+                                    # ensure that distances are not too distant :)
+                                    s3Dist := s3Pair['PamDist10000']/10000:
+                                    s1Dist := s1Pair['PamDist10000']/10000:
+                                    s3Var := s3Pair['PamVar100000']/100000:
+                                    s1Var := s1Pair['PamVar100000']/100000:
+                                    deltaDist := abs(s3Dist - s1Dist):
+                                    deltaDev := sqrt(s3Var + s1Var):
+                                    if (deltaDist < deltaDev*DistConfLevel) then
+                                        tmpt[s3] := true; 
+                                        gap := -(additiveLength 
+                                            - effectiveLength);
+                                        if (r1[1] - r3[1]) > 0 then
+                                            corder := [2,1];
+                                        else
+                                            corder := [1,2];
+                                        fi:
+                                        tpairs[s3] := append(tpairs[s3],
+                                            [j, s2, deltaDist/deltaDev, gap, 
+                                                corder]):
+                                    fi;
+                                fi;
+                            od;
+                        od:
+                        for k in Indices(tmpt) do t[k] := t[k]+1: od;
+                    else
+                        c := c+1;
+                    fi;
+                    # in this case, there is no way the condition will ever be 
+                    # satisfied for s1
+                    if c > thresh2 then break fi;
+                od;
+                if c <= thresh2 then
+                    # okay, let's look at our table of potential candidates:
+                    # first, count how many s3 we have
+                    c3 := 0;
+                    for x in Indices(t) do if t[x] >= thresh1 then c3 := c3+1; fi od;
+                    # second, store them
+                    for x in Indices(t) do
+                        if t[x] >= thresh1 then
+                            ContigHits := append(ContigHits, [[i,s1],[i,x],tpairs[x],c3]); 
+                        fi;
+                    od;
+                fi;
+                if mod(s1,5000)=0 then
+                    printf('Completed %d/%d=%.2f%%\n',s1,ns[i],100*s1/ns[i]);
+                fi;
+            od;
+        fi;
+    od;
+    print('Postprocessing...');
+    # put hits with same s1, s3 in one single hit
+    tmpTable := table([],[]);
+    for i in ContigHits do
+        tmpTable[i[1..2]] := append(tmpTable[i[1..2]], i[3..-1]);
+    od:
+
+    tmp := [];
+    for z in Indices(tmpTable) do
+        newhit := [op(z),[],0];
+        el := tmpTable[z]:
+        for j to length(el) do
+            newhit[3] := append(newhit[3], op(el[j,1]));
+            newhit[4] := newhit[4]+el[j,2];
+        od:
+        newhit[4] := newhit[4]/length(el);
+        tmp := append(tmp, newhit);
+    od:
+    ContigHits := tmp;
+
+    # search for hits where a sequence also occurs in other hits and flag them
+    # in ContigHits; create PossContigHits and DefContigHits
+    tmpTable := table([],[]);
+    for i to length(ContigHits) do
+        tmpTable[ContigHits[i,1]] := append(tmpTable[ContigHits[i,1]],i);
+        tmpTable[ContigHits[i,2]] := append(tmpTable[ContigHits[i,2]],i);
+    od;
+
+    
+    DefContigHits := []:
+    PossContigHits := []:
+    for i in ContigHits do
+        if length(tmpTable[i[1]]) > 1 or length(tmpTable[i[2]]) > 1 then
+            PossContigHits := append(PossContigHits, i):
+        else
+            DefContigHits := append(DefContigHits, i):
+        fi:
+    od:
+       
+    return(DefContigHits,PossContigHits);
+end;

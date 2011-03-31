@@ -1,0 +1,190 @@
+#
+#        BestSubset: find the best subset which optimizes a functional
+#                starting from a random subset and doing EarlyAbort
+#                inspection of neighbours.
+#
+#        Usage: BestSubset( CompleteSet:set(anything), functional:procedure )
+#
+#        where CompleteSet is the complete set of objects (anything)
+#              functional is a function that will operate on any subset of
+#              the objects and it returns a numerical value to be minimized.
+#
+#        BestSubset returns a subset which is a local minimum 
+#
+#                                        Gaston H. Gonnet (Sep 16, 2006)
+#
+BestSubset_0 := proc( CompleteSet:set(anything), f:procedure ;
+	'MinSize'=((MinSize=1):{0,posint}),
+	'MaxSize'=((MaxSize=length(CompleteSet)):posint) )
+n := length(CompleteSet);
+if MinSize > MaxSize or MaxSize > n then error('invalid arguments')
+elif n <= 10 then
+     # exact solution, explore all possibilities
+     error('not implemented yet');
+else s := Shuffle( [op(CompleteSet)] )[1..round((MinSize+MaxSize)/2)];
+     s := {op(s)};
+     fs := f(s);
+     csl := [op(CompleteSet)];
+     solid := CreateArray(1..n);
+     i1n := [seq(i,i=1..n)];
+     fev := 1;
+     for iter do
+         improv := false;
+	 aves := sum(solid)/n/iter;
+	 if aves=0 then aves := 1 fi;
+	 for iz in sort( i1n, i -> solid[i]+aves*Rand(Normal) ) do
+	     z := csl[iz];
+             if member(z,s) then
+                  if length(s) <= MinSize then next fi;
+                  s1 := s minus {z};
+		  action := 'removing';
+             else if length(s) >= MaxSize then next fi;
+                  s1 := s union {z};
+		  action := 'adding';
+	     fi;
+             f1 := f(s1);
+	     solid[iz] := |fs-f1|;
+	     fev := fev+1;
+             if f1 < fs then
+                  if printlevel > 3 then
+                      printf( 'BestSubset: %d/%d %s %a(%d), %g, |s|=%d',
+                          iter, fev, action, z, iz, f1, length(s1) );
+		      lprint();
+		      fi;
+                  improv := true;  s := s1;  fs := f1;
+		  if fev > 5*n then break fi;
+             fi
+         od;
+         if not improv then return(s) fi;
+     od;
+fi
+end:
+
+
+# new version with the idea of a circular snowplow
+BestSubset1 := proc( CompleteSet:set(anything), f:procedure ;
+	'MinSize'=((MinSize=1):{0,posint}),
+	'MaxSize'=((MaxSize=length(CompleteSet)):posint) )
+n := length(CompleteSet);
+if MinSize > MaxSize or MaxSize > n then error('invalid arguments')
+elif n <= 10 then
+     # exact solution, explore all possibilities
+     error('not implemented yet');
+else s := Shuffle( [op(CompleteSet)] )[1..round((MinSize+MaxSize)/2)];
+     s := {op(s)};
+     fs := f(s);
+     fev := 1;
+     csl := [op(CompleteSet)];
+     perm := Shuffle( [seq(i,i=1..n)] );
+     perm := [ seq( [i,perm[i]], i=1..n )];
+     inc1 := min(40,n/6);
+     t0 := t1 := t2 := t3 := 0;
+
+     for i to n do
+	     z := csl[perm[i,2]];
+             if member(z,s) then
+                  if length(s) <= MinSize then
+			perm[i,1] := perm[i,1]+2*inc1;  next fi;
+                  s1 := s minus {z};
+		  action := 'removing';
+             else if length(s) >= MaxSize then
+			perm[i,1] := perm[i,1]+2*inc1;  next fi;
+                  s1 := s union {z};
+		  action := 'adding';
+	     fi;
+             f1 := f(s1);
+	     fev := fev+1;
+
+	     # keep a running average (t0,t1) and an n-average (t2,t3)
+	     t0 := t0 + 1;  t1 := t1 + |f1-fs|;
+	     if mod(fev,n)=0 then t2 := t0;  t3 := t1;  t0 := t1 := 0 fi;
+             if f1 < fs then
+                  if printlevel > 3 then
+                      printf( 'BestSubset: %d/%d/%d %s %a, %g, |s|=%d',
+                          i, perm[i,1], fev, action, z, f1, length(s1) );
+		      lprint();
+		  fi;
+                  s := s1;  fs := f1;
+		  perm[i,1] := perm[i,1]+inc1;
+		  perm := sort(perm);
+		  i := 0;
+	     else r := |f1-fs| / (t1+t3) * (t0+t2);
+		  perm[i,1] := perm[i,1] + max( round(r*n), n )
+             fi
+     od;
+     return(s)
+fi
+end:
+
+
+# new version with the idea of a circular snowplow
+# new: using a soft boundary for size, regulated by an adaptive
+# tolerance on the improvement/worsening (Oct 19, 2008)
+BestSubset := proc( CompleteSet:set(anything), f:procedure ;
+	'MinSize'=((MinSize=1):{0,posint}),
+	'MaxSize'=((MaxSize=length(CompleteSet)):posint) )
+n := length(CompleteSet);
+if MinSize > MaxSize or MaxSize > n then error('invalid arguments')
+elif n <= 10 then
+     # exact solution, explore all possibilities
+     error('not implemented yet');
+else s := Shuffle( [op(CompleteSet)] )[1..round((MinSize+MaxSize)/2)];
+     best := s := {op(s)};
+     fs := absmin := f(s);
+     fev := 1;
+     csl := [op(CompleteSet)];
+     perm := Shuffle( [seq(i,i=1..n)] );
+     perm := [ seq( [i,perm[i]], i=1..n )];
+     inc1 := min(40,n/6);
+     inc2 := round(inc1/2);
+     t0 := t1 := t2 := t3 := adaptol := fevmin := 0;
+
+     for i to n do
+	     z := csl[perm[i,2]];
+             if member(z,s) then
+                  s1 := s minus {z};
+		  action := 'removing';
+		  tol := -adaptol;
+             else s1 := s union {z};
+		  action := 'adding';
+		  tol := adaptol
+	     fi;
+             f1 := f(s1);
+	     fev := fev+1;
+	     if f1 < absmin then absmin := f1;  fevmin := fev;  best := s1 fi;
+	     if fev-fevmin > n then break fi;
+
+	     # keep a running average (t0,t1) and an n-average (t2,t3)
+	     t0 := t0 + 1;  t1 := t1 + |f1-fs|;
+	     if mod(fev,n)=0 then t2 := t0;  t3 := t1;  t0 := t1 := 0 fi;
+             if f1 < fs+tol then
+                  if printlevel > 3 then
+                      printf( 'BestSubset: %d/%d/%d %s %a, %g%+g, |s|=%d',
+                          i, perm[i,1], fev, action, z, f1, tol, length(s1) );
+		      lprint();
+		  fi;
+                  s := s1;  fs := f1;
+		  perm[i,1] := perm[i,1]+inc1;
+		  perm := sort(perm);
+		  i := 0;
+		  # short term adaptation to equilibrium
+		  ex := If(action='adding',-1,1);
+		  if ex > MaxSize-inc2 then ex := -ex
+		  elif ex > MinSize+inc2 then ex := 0 fi;
+		  adaptol := adaptol * 1.1 ^ ex;
+	     else r := |f1-fs| / (t1+t3) * (t0+t2);
+		  perm[i,1] := perm[i,1] + max( round(r*n), n )
+             fi;
+
+	     # long term adaptation
+	     if length(s) < MinSize or length(s) > MaxSize then
+		  adaptol := 1.01*adaptol
+	     else adaptol := 0.99*adaptol fi;
+	     
+	     if length(s) = MinSize+inc2 then adaptol := (t1+t3)/(t0+t2)/50
+	     elif length(s) = MaxSize-inc2 then adaptol := -(t1+t3)/(t0+t2)/50
+	     fi
+     od;
+     return(best)
+fi
+end:

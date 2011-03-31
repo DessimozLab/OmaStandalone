@@ -1,0 +1,64 @@
+RefinedMatches := proc(
+    ms:list( [posint,posint,numeric,numeric,posint..posint,posint..posint, positive]) )
+    global BestMatch1, BestMatch2, g1, g2;
+    t1+1;
+    if g1=g2 then t4+length(ms) else t2+length(ms) fi;
+    for z in ms do
+        if member(z[1],Exclude1) or member(z[2],Exclude2) or z[3] < MinScore
+            then next fi;
+        
+        if not isContig[g1] and Lengths[g1,z[1]] < MinSeqLen then
+            t7+1; next fi;
+        if not isContig[g2] and Lengths[g2,z[2]] < MinSeqLen then
+            t7+1; next fi;
+
+        # if we need to enforce a length tolerance (we don't with contigs
+        # this is the minimum length (avoids partial matches):
+        maxl := max(Lengths[g1,z[1]],Lengths[g2,z[2]]);
+
+        sco100 := round(100*z[3]);
+        dist10000 := round(10000*z[4]);
+	    var100000 := 100000*z[7];
+        if var100000 > 1000 then var100000 := round(var100000) fi;
+ 
+        r5 := [op(z[5])];
+        r6 := [op(z[6])];
+        z[5]:= z[5,2]-z[5,1]+1;
+        z[6]:= z[6,2]-z[6,1]+1;
+        sumlengths := z[5]+z[6];
+        
+        if g1=g2 then
+            if z[1] >= z[2] then error(z,'invalid match')
+            elif min(z[5],z[6]) >= LengthTol*maxl or isContig[g1] then BestMatch1[z[1]] :=
+		append( BestMatch1[z[1]], Pair( sco100,z[2],dist10000, var100000,
+						sumlengths, r5, r6 )) fi
+        else
+            if isContig[g1] then
+                if isContig[g2] then
+                    # do nothing
+                else
+                    if z[5] < LengthTol*Lengths[g1,z[1]] then
+                        next;
+                    fi;
+                fi;
+            else
+                if isContig[g2] then
+                    if z[6] < LengthTol*Lengths[g2,z[2]] then
+                        next;
+                    fi;
+                else
+                    if min(z[5],z[6]) < LengthTol*maxl then
+                        next;
+                    fi;
+                fi;
+            fi;
+ 
+            BestMatch1[z[1]] := 
+                append(BestMatch1[z[1]],Pair(sco100,z[2],dist10000,var100000,
+                                               sumlengths, r5, r6 )):
+            BestMatch2[z[2]] := 
+                append(BestMatch2[z[2]],Pair(sco100,z[1],dist10000,var100000,
+                                               sumlengths, r6, r5)):
+        fi
+    od:
+end:

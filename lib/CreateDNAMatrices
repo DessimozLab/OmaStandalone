@@ -1,0 +1,79 @@
+#
+#	Create DNA Dayhoff matrices suitable for comparing
+#	entire coding genes.  Based on genes all-all comparisons
+#	among mammals.
+#
+#					Gaston H. Gonnet (March 12, 2006)
+#
+#	Besides calling CreateDayMatrices with a special count
+#	matrix it does:
+#
+#	Set special values for the deletion penalties
+#
+#	Produces a much finer PAM division for PAM below 150
+#
+#	New experimental (chosen by maximum likelihood) relation
+#	between FixedDel and PAM.
+#
+#	The parameters for this function have been produced by the
+#	program Phase52.drw (parallel runs)
+#
+
+CreateDNAMatrices := proc( cnts:matrix(numeric) ;
+	'FD0' = ((FD0=-28.045838538909323021):numeric),
+	'FD1' = ((FD1=10.347906835124965854):numeric),
+	'ID0' = ((ID0=-.43546673485399587638):numeric) )
+global DMS;
+
+#                      [.00050332799790683216930     -.00035779222938728085945]
+#  CovarianceFD0FD1 := [                                                      ]
+#                      [-.00035779222938728085945    .00025554907817687981940 ]
+#                                                           -7
+#                    VarianceID0 := .25143247825684950187 10
+#
+#                   StdDeviationID0 := .00015856622536241742230
+
+if nargs = 0 then
+     CreateDayMatrices(
+	[[25212428,0,0,0,1072392,0,0,3666466,0,0,0,0,0,0,0,0,977696.5,0,0,0],
+	 [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	 [0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	 [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	 [1072392,0,0,0,20273981,0,0,909400.5,0,0,0,0,0,0,0,0,3672543,0,0,0],
+	 [0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	 [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	 [3666466,0,0,0,909400.5,0,0,21654018,0,0,0,0,0,0,0,0,1062248,0,0,0],
+	 [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+	 [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+	 [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+	 [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+	 [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+	 [0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+	 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+	 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0],
+	 [977696.5,0,0,0,3672543,0,0,1062248,0,0,0,0,0,0,0,0,27868216,0,0,0],
+	 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
+	 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+	 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]]
+ )
+else CreateDayMatrices(cnts) fi;
+
+if FD0 >= 0 or FD0+FD1 >= 0 then
+    error('FD0 and FD1  will cause deletion costs to be positive') fi;
+DMS2 := [];
+p := 1/10000;
+while p < 5 do DMS2 := append(DMS2,DayMatrix(p));  p := p*1.02 od:
+for p from ceil(10*DMS2[-1,PamNumber]) to 1500 do
+    DMS2 := append(DMS2,DayMatrix(p/10))
+od:
+for i to length(DMS) while DMS[i,PamNumber] <= 150 do od;
+DMS2 := [op(DMS2),op(DMS[i..-1])];
+
+for z in DMS2 do
+    z[FixedDel] := min(-1,FD0 + FD1*log10(z[PamNumber]));
+    z[IncDel] := ID0;
+od:
+
+DMS := DMS2;
+NULL;
+end:

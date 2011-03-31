@@ -1,0 +1,511 @@
+# Set(quiet):
+##############################################################################
+#       ___           ___           ___     
+#      /\  \         /\__\         /\  \    
+#     /::\  \       /::|  |       /::\  \   
+#    /:/\:\  \     /:|:|  |      /:/\:\  \  
+#   /:/  \:\  \   /:/|:|__|__   /::\~\:\  \ 
+#  /:/__/ \:\__\ /:/ |::::\__\ /:/\:\ \:\__\
+#  \:\  \ /:/  / \/__/~~/:/  / \/__\:\/:/  /
+#   \:\  /:/  /        /:/  /       \::/  / 
+#    \:\/:/  /        /:/  /        /:/  /  
+#     \::/  /        /:/  /        /:/  /   
+#      \/__/         \/__/         \/__/    
+# 
+#       Stand-alone version
+#          Gaston Gonnet, Adrian Schneider, Alexander Roth, Adrian Altenhoff,
+#          and Christophe Dessimoz
+#          (c) CBRG, ETH Zurich, June 2010
+##############################################################################
+# Usage
+#
+#   This script identifies orthologs among genomes using the OMA procedure.
+#   (http://omabrowser.org).
+#
+#   - Run this script from the same directory.
+#   - Each genome should have its own fasta file (filename ending with .fa)
+#     and be placed in a directory called DB/ 
+#
+##############################################################################
+# Parameters
+
+# if you want to recompute everything from scratch everytime the script
+# is run, set the following parameter to false.
+ReuseCachedResults := true;
+
+# alignments which have a score lower than MinScore will not be considered.  
+MinScore := 181:  
+
+# Length tolerance ratio.  If the length of the effective alignement
+# is less than LengthTol*min(length(s1),length(s2)) then the alignment
+# is not considered.
+LengthTol := 0.61:
+
+
+# During the stable pair formation, if a pair has a distance provable
+# higher than another pair (i.e. StablePairTol standard deviations
+# away) then it is discarded.
+StablePairTol := 1.81;
+ContigStablePairTol := 3.3;
+
+#StablePairTol := 3.3;
+
+# during the verification of stable pairs, if a length violation is
+# accepted if it falls StablePairTol standard deviations away.
+VerifiedPairTol := 1.53;
+
+# Any sequence which is less than MinSeqLen amino acids long in
+# regular genomes is not considered.
+MinSeqLen := 50:
+
+# Any sequence which is less than MinSeqLen amino acids long in
+# contigs is not considered.
+MinSeqLenContig := 20:
+
+# Min proportion of genomes with which contigs form many:1 StablePairs
+# to consider that we might be dealing with fragments of the same gene
+MinProbContig := 0.4;
+
+# Maximum overlap between fragmnents of same gene from different contigs
+MaxContigOverlap := 5;
+
+# Minimum score for BestMatch in scaffold recognition
+MinBestScore := 250;
+
+# Confidence level variable for contigs
+DistConfLevel := 2;
+
+# Allow more than one hits per contig?
+AllowMultipleHits := true;
+
+# Choose s1-s2 ('forward') from BestMatch instead of StablePairs?
+ForwardBestMatch := true;
+
+# Choose s2-s3 ('backward') from BestMatch instead of StablePairs?
+BackwardBestMatch := true;
+
+# Run everything or just up to scaffold detection?
+RunEverything := false;
+
+# Which datasets to use?
+# If this parameter is an empty list ( [] ), the script
+# will simply use DB/*.fa
+
+# Cmilii with full genome set
+Datasets := ['DB/ANOCA.fa', 'DB/BRAFL.fa', 'DB/CmiliiFull.Contig.fa',
+'DB/CHICK.fa', 'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa',
+'DB/MOUSE.fa', 'DB/ORYLA.fa', 'DB/XENTR.fa'];
+
+# FAKH2 with old genome set
+#Datasets := ['DB/TAKRU.fa', 'DB/GASAC.fa', 'DB/FAKH2.Contig.fa', 'DB/DROME.fa', 'DB/CAEEL.fa'];
+
+# FAKH2 with full genome set
+#Datasets := ['DB/ANOCA.fa', 'DB/BRAFL.fa', 'DB/FAKH2.Contig.fa', 'DB/CHICK.fa',
+#'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/MOUSE.fa', 'DB/ORYLA.fa',
+#'DB/XENTR.fa'];
+#
+# MOUSE34 with full genome set except BRAFL
+#Datasets := ['DB/ANOCA.fa', 'DB/MOUSE34.Contig.fa', 'DB/CHICK.fa',
+#'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa',
+#'DB/ORYLA.fa', 'DB/XENTR.fa'];
+
+# MOUSE34 with full genome set
+#Datasets := ['DB/ANOCA.fa', 'DB/MOUSE34.Contig.fa', 'DB/CHICK.fa',
+#'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa', 'DB/ORYLA.fa',
+#'DB/XENTR.fa', 'DB/BRAFL.fa'];
+
+# Variables for writing the contig results
+WriteAtAll := true;
+WriteContigFake := ''; # MOUSE34, FAKEH, FAKH2 
+WriteContigFasta := true;
+WriteContigSet := 'CmiliiSetC8';
+WriteAllMSAs := false;
+
+##############################################################################
+Set(gc=5e7):  
+SetRandSeed():  
+GetStats := true;
+
+# Read libraries
+ReadProgram('lib/darwinit');
+
+# Convert FASTA databases to darwin databases
+print('Starting database conversion and checks...');
+
+if length(Datasets) = 0 then
+    G := TimedCallSystem('find DB -name "*.fa" -print')[2];
+    G := SearchDelim('\n',G);
+else
+    G := Datasets;
+fi:
+GS := table();
+DBs := genomes := isContig := [];
+if not ReuseCachedResults then
+    CallSystem('rm -rf Cache'); 
+fi;
+CallSystem('mkdir -p Cache/DB');
+for g in G do
+    off := SearchAllString('/', g);
+    gname := g[off[-1]+1..-1];   
+    if SearchString('contig',gname) > -1 then
+        isContig := append(isContig,true);
+    else
+        isContig := append(isContig,false);
+    fi;
+    off := SearchString('.',gname);
+    gname := gname[1..off];
+    if SearchArray(gname,genomes) <> 0 then
+        error('More than one genome labelled '.gname);
+        quit;
+    fi;
+    if length(genomes) = 9999 then
+        print('too many genomes');
+    fi;
+    genomes := append(genomes,gname);
+
+    # test if cached:
+    if length(FileStat('Cache/DB/'.gname.'.db')) > 0 then
+        DB := ReadDb('Cache/DB/'.gname.'.db');
+        if type(DB,database) then
+            GS[gname] := GenomeSummary(DB);
+            DBs := append(DBs,DB); 
+            next;
+        fi;
+    fi;
+
+    ##
+    code := 'S'.sprintf('%04d',length(genomes));
+    input := ReadFastaWithNames(g);
+
+    OpenWriting('Cache/DB/'.gname.'.db');
+    printf('<5LETTERNAME>%s</5LETTERNAME>\n',code);
+    print('<OS>Unknown</OS>');
+    print('<KINGDOM>Unknown</KINGDOM>');
+    
+    if length(input[1]) <> length(input[2]) then 
+        OpenWriting(previous);
+        error('Fasta DB length missmatch') 
+    fi;
+    ML := If(isContig[-1],MinSeqLenContig,MinSeqLen);
+    for i to length(input[1]) do
+        s := uppercase(input[1,i]):
+        # minimal check of sequences
+        if length(s) < ML then
+            OpenWriting(previous);
+            printf( 
+            'Warning: Sequence %s (%s) is less than MinSeqLen(Contig)=%d AA '
+            .'long. Ignored. \n',
+                input[2,i], gname, ML
+            );
+            OpenAppending('Cache/DB/'.gname.'.db');
+            next;
+        fi;
+        for j to length(s) do
+            aa := AToInt(s[j]);
+            if aa < 1 or aa > 21 then
+                OpenWriting(previous);
+                error(printf('Unknown character: %s (in %s, %s)', 
+                    s[j], input[2,i], gname));
+                quit;
+            fi;
+        od;
+        printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n',
+            ReplaceString('\t','',input[2,i]) , s);
+    od:
+    OpenWriting(previous);
+    DB := ReadDb('Cache/DB/'.gname.'.db');
+    GS[gname] := GenomeSummary(DB);
+    DBs := append(DBs,DB); 
+od:
+if length(genomes) < 2 then
+    error(printf('%d genome found... make sure you start the script'
+    .'from the right directory',length(genomes)));
+    quit;
+fi;
+
+##############################################################################
+# All-against-all
+#   assign name1, name2, db1, db2
+
+print('\n\n****\n\nStarting the all-against-all phase...\n');
+
+CreateDayMatrices();
+DM := DayMatrix(224):
+NumberFormat := '%.10g':
+
+tot := length(genomes)*(length(genomes)+1)/2:
+c1 := 0:
+for g1 to length(genomes) do 
+    for g2 from g1 to length(genomes) do
+        # Phase 0
+        db1 := DBs[g1];
+        db2 := DBs[g2]; 
+        name1 := genomes[g1];
+        name2 := genomes[g2];
+        n1 := db1[TotEntries]:
+        n2 := db2[TotEntries];
+        if n1 > n2 or n1=n2 and name1 > name2 then
+            t := db1;  db1 := db2;  db2 := t;
+            t := name1;  name1 := name2;  name2 := t;
+            t := n1;  n1 := n2;  n2 := t;
+        fi:
+        Seqs1 := CreateArray(1..n1):
+        Seqs2 := CreateArray(1..n2):
+        DB := db1:
+        for i1 to n1 do Seqs1[i1] := SearchTag('SEQ',Entry(i1)) od:
+        DB := db2:
+        for i2 to n2 do Seqs2[i2] := SearchTag('SEQ',Entry(i2)) od:
+
+        # Phase 1
+        printf('Computing pair %d/%d (%s-%s)\n',
+            c1+1,tot,genomes[g1],genomes[g2]);
+        t0 := UTCTime():
+        res := []:
+        CallSystem('mkdir -p Cache/AllAll/'.name1);
+        # skip if cached:
+        if length(FileStat('Cache/AllAll/'.name1.'/'.name2)) > 0 or
+           length(FileStat('Cache/AllAll/'.name1.'/'.name2.'.gz')) > 0 then
+            c1 := c1+1;
+            printf('Pair %d/%d already computed. Skipped.\n',c1,tot);
+            next;
+        fi;
+        OpenWriting('Cache/AllAll/'.name1.'/'.name2);
+        lprint( 'RefinedMatches(' );
+        OpenWriting(previous);
+        c2 := 0;
+        tot2 := n1*n2;
+        for i1 to n1 do
+            len1 := length(Seqs1[i1]);
+            for i2 from If( name1=name2, i1+1, 1 ) to n2 do
+                c2 := c2+1;
+                if mod(c2,50000)=0 then
+                    printf('      %.2f%% complete\n',100*c2/tot2);
+                    if res <> [] then
+                        OpenAppending('Cache/AllAll/'.name1.'/'.name2);
+                        printf( '[' );
+                        for i to length(res)-1 do printf('%a,\n',res[i]) od:
+                        lprint( res[-1], ']):' );
+                        lprint( 'RefinedMatches(' );
+                        res := [];
+                        OpenAppending(previous);
+                    fi:
+                fi;
+                len2 := length(Seqs2[i2]);
+                dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScore);
+                if dps[1] >= .65*MinScore then
+                    a := Align(Seqs1[i1],Seqs2[i2],DMS);
+                    if a[Score] < MinScore or min(a[Length1],a[Length2]) <
+                                max(30,0.3*min(len1,len2)) then next fi;
+                    i := GetOffset(a[Seq1])-GetOffset(Seqs1[i1]);
+                    ran1 := i+1 .. i+a[Length1];
+                    i := GetOffset(a[Seq2])-GetOffset(Seqs2[i2]);
+                    ran2 := i+1 .. i+a[Length2];
+                    res := append(res,[i1,i2,a[Score],a[PamDistance],
+                                ran1,ran2,a[PamVariance]] );
+                fi;
+            od;
+        od:
+        OpenAppending('Cache/AllAll/'.name1.'/'.name2);
+        if res = [] then lprint( res, '):' )
+        else printf( '[' );
+            for i to length(res)-1 do printf('%a,\n',res[i]) od:
+            lprint( res[-1], ']):' );
+        fi:
+        drt := UTCTime()-t0:
+        dat := time():
+        printf('# %s: %ds/%ds active = %.1f%%  %s\n',hostname(),round(dat),
+            round(drt), 100*dat/drt,If(dat/drt<0.7,'SLOW!',''));
+        OpenAppending(previous);
+
+        # Compress file
+        CallSystem('gzip -9f '.'Cache/AllAll/'.name1.'/'.name2);
+        c1 := c1+1;
+        printf('Finished %d/%d pairs of genomes\n',c1,tot);
+    od; 
+od:
+
+## Parallel version:
+## At this point, check whether all files are ready. If not
+## exit (another process will pick from there on!)
+#f := TimedCallSystem('find Cache/AllAll -type f | grep -v ".gz"')[2]:
+#if length(f) > 0 then
+#    print('** At least 1 process appears to be still computing the all-vs-all.');
+#    print('** The following file(s) is (are) not yet completed:');
+#    print(f);
+#    print('** If no other process is running, delete these files and restart.');
+#    quit;
+#fi:
+
+
+##############################################################################
+# Candidate Pairs
+
+print('\n\n****\n\nStarting putative ortholog identification...\n');
+
+N := length(genomes):
+ns := CreateArray(1..N):
+Lengths := CreateArray(1..N):
+for i to N do
+    if GS[genomes[i]]='unassigned' then
+        lprint(genomes[i],'missing GenomeSummary information');  quit fi;
+    t := GS[genomes[i],EntryLengths];
+    ns[i] := length(t);
+    Lengths[i] := t
+od:
+t1 := Counter('RefinedMatches structures read'):
+t2 := Counter('Matches read'):
+t3 := Counter('files read'):
+t4 := Counter('Matches of genomes against themselves'):
+t5 := Counter('Matches above parameters');
+t6 := Counter('empty all-all'):
+t7 := Counter('Number of matches discarded below MinSeqLen');
+
+# Read the BestMatch from all x all files #
+
+    BestMatch := CreateArray(1..N,1..N):
+    for i to N do for j from i to N do
+        BestMatch[i,j] := CreateArray(1..ns[i],[]);
+        if j>i then BestMatch[j,i] := CreateArray(1..ns[j],[]) fi;
+        if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+            g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+            BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
+            fn := genomes[g1] . '/' . genomes[g2];
+            t3+1;
+            Exclude1 := Exclude2 := {}:
+            ReadProgram(  'Cache/AllAll/' . fn );
+            # no Pairs should be cut for being below the Scoretol, as those
+            # may serve to break a stable pair
+            sij := sum(length(BestMatch[i,j,k]), k=1..length(BestMatch[i,j]));
+            sji := sum(length(BestMatch[j,i,k]), k=1..length(BestMatch[j,i]));
+            t5+max(sij,sji);
+            if sij=0 or sji=0 then
+                t6+1;
+            # relax in case of mitochondion genome or synthetic evolution
+                lprint('Warning: empty all-all for', genomes[g1], genomes[g2] ) fi;
+        for k to length(BestMatch[i,j]) do
+            if BestMatch[i,j,k] <> [] then
+            BestMatch[i,j,k] := compress(BestMatch[i,j,k]) fi od;
+        for k to length(BestMatch[j,i]) do
+            if BestMatch[j,i,k] <> [] then
+            BestMatch[j,i,k] := compress(BestMatch[j,i,k]) fi od;
+            printf( '# %s done, (%d/%d)\n', fn, sij, sji );
+    od od:
+
+
+
+##############################################################################
+# Verification of stable pairs and clique building 
+
+print('\n\n****\n\nStarting Verification of Stable Pairs\n');
+cput_mid := time(); time_mid := UTCTime();
+printlevel := 3:
+NumberFormat := '%.8g':
+params := [MinScore, LengthTol, StablePairTol, VerifiedPairTol]:
+ParamSet := [];
+Ort := OrthologousMatrix( op(params) ):
+
+if WriteAtAll then
+    WriteResults(WriteContigSet, fasta=WriteContigFasta,
+                    fake=WriteContigFake, writeallmsas=WriteAllMSAs);
+fi:
+
+# # Retrieve all IDs
+# # Create File MapSeqNum-ID:
+# CallSystem('rm -rf Output; mkdir -p Output/PairwiseOrthologs');
+# IDtable := CreateArray(1..N);
+# OpenWriting('Output/Map-SeqNum-ID.txt');
+# print('\#Format: genome<tab>sequence number<tab>id');
+# for i to N do
+#     DB := DBs[i];
+#     tmp := CreateArray(1..ns[i]);
+#     for j to DB[TotEntries] do
+#         tmp[j] := SearchTag('ID',Entry(j));
+#         printf('%s\t%d\t%s\n',genomes[i],j,tmp[j]);
+#     od;
+#     IDtable[i] := tmp;
+# od:
+# OpenWriting(previous);
+# 
+# 
+# ##############################################################################
+# # Store results
+# print('\n\n****\n\nStoring results\n');
+# 
+# if lasterror <> 'lasterror' then
+#     print('Abort because of error: '.lasterror);
+#     # quit;
+# fi:
+# 
+# OGtable := CreateArray(1..N):
+# for i to N do OGtable[i] := CreateArray(1..ns[i]); od:
+# for r to length(Ort) do
+#     for k to N do
+#         t := Ort[r,k];
+#         if t <> 0 then 
+#             OGtable[k,t] := r;
+#         fi;
+#     od;
+# od:
+# 
+# # Store the pairwise orthologs
+# for i to N do for j from i+1 to N do
+#     if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+#         g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+#     OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2].'.txt');
+#     printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
+#          .'<tab>Orthology type<tab>OMA group (if any)\n');
+#     printf('\# Every pair is listed only once, and in no particular order.\n');
+#     printf('\# The map between sequence number and ID are given\n');
+#     printf('\# in the file "Map-SeqNum-ID.map\n');
+# 
+#     for k to ns[g1] do
+#         vp := decompress(VPairs[g1,g2,k]);
+#         typ2 := If(length(vp)>1,'many','1');
+#         for l in vp do
+#             # if only 1 in target -> :1, else :many
+#             # l
+#             typ1 := If(length(decompress(VPairs[g2,g1,l]))>1,'many','1');
+#             printf('%d\t%d\t%s\t%s\t%s:%s\t%s\n',
+#                 k,l,
+#                 IDtable[g1,k],
+#                 IDtable[g2,l],
+#                 typ1, typ2,
+#                 If(OGtable[g1,k]=OGtable[g2,l] and OGtable[g1,k] <> 0, 
+#                     string(OGtable[g1,k]),
+#                     '')
+#             );
+#         od;
+#     od:
+#     OpenWriting(previous);
+# od;od:
+# 
+# # Store the groups of orthologs
+# OpenWriting('Output/OrthologousMatrix.txt');
+# print('\# The groups of orthologs are given as matrix with group per row', 
+#      '\# and one genome per tab-separated column. Numbers refer to',
+#      '\# entry number as listed in the file "Map-SeqNum-id.map.',
+#      '\# Alternatively, use the OrthologousGroup.txt representation.');
+# print(ConcatStrings(genomes,'\t'));
+# for r to length(Ort) do
+#     print(ConcatStrings(zip(string(Ort[r])),'\t'));
+# od;
+# OpenWriting(previous);
+# 
+# OpenWriting('Output/OrthologousGroups.txt');
+# print('\# The groups of orthologs are given as one per row, starting',
+#       '\# with a group identifier, followed by all group members, all',
+#       '\# separated by tabs. For a more compact representation, use the',
+#       '\# OrthologousMatrix.txt representation.');
+# for r to length(Ort) do
+#     printf('OMA%05d',r);
+#     for l to N do
+#         if Ort[r,l] <> 0 then
+#             printf('\t%s:%s',genomes[l],IDtable[l,Ort[r,l]]);
+#         fi;
+#     od;
+#     printf('\n');
+# od;
+# OpenWriting(previous);
+# 
+# 
+# print('\n\n***\n\nDone!!\n\n');

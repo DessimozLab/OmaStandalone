@@ -1,0 +1,99 @@
+#
+#	AverageDistVar( AlignSum(..), AlignSum(..), ... )
+#
+#	Compute an average distance and its variance for all the
+#	pairs of sequences given according to the global variable
+#	Averaging.
+#
+#	Averaging can have the following values:
+#	   - Concatenate
+#		This concatenates all the aligned sequences (without
+#		realigning them) and computes the PAM distance and
+#		variance of the whole sequence.  To do this efficiently
+#		we compute the alignment profile of each alignment for nD
+#		PAM values.  This function uses these profiles to compute
+#		the maximum likelihood distance and its variance.
+#	   - Arithmetic
+#		This computes the arithmetic mean of the distances
+#		and the variance of this mean.
+#	   - Weighted
+#		This computes the weighted average distance by
+#		weighting the individual distances with 1/Var.
+#		The variance is computed according to the same idea.
+#	   - LengthWeighted
+#		This computes the weighted average distance by weighting
+#		the individual distances with length of the alignment.
+#		The variance is computed according to the same idea.
+#	   - ScoreWeighted
+#		This computes the weighted average distance by weighting
+#		the individual distances with score of the alignment.
+#		The variance is computed according to the same idea.
+#	   - Another value
+#		This computes the weighted average distance by weighting
+#		the individual distances with the field "Other" in AlignSum. 
+#		The variance is computed according to the same idea.
+#
+#					Gaston H. Gonnet (Sep 14, 2006)
+#
+
+AverageDistVar := proc( )
+if not type([args],list(AlignSum)) then error('invalid arguments')
+elif nargs=0 then [ 100, 1e10 ]
+elif nargs=1 then [args[1,PamDistance],args[1,PamVariance]]
+elif Averaging = 'Concatenate' then
+     # build a matrix of alignment costs
+     ss1 := sum( z[Other], z=[args] );
+     ss2 := ss1 * DMS2;
+     t := 0;
+     for i to nD do t1 := max(ss2[i]);  if t1 > t then t := t1;  k := i fi od;
+     k1 := SearchArray(t,ss2[k]);
+     p := DMS[k1,PamDistance];
+     ss1 := ss1[k];
+     if k1=1 and sum(If(z>0,1,0),z=ss1) = 20 then
+	 return( [DMS[1,PamDistance]/3,10/sum(ss1)] ) fi;
+
+     to 3 do
+         M := exp(logPAM1*p);
+         M1 := logPAM1*M;
+         M2 := logPAM1*M1;
+         logL1 := FD1*ss1[211]/p;  logL2 := -FD1*ss1[211]/p^2;
+         for i to 20 do for j from i to 20 do
+	     logL1 := logL1 + M1[i,j]/M[i,j]*ss1[C[i,j]];
+	     logL2 := logL2 + (M2[i,j]/M[i,j] - (M1[i,j]/M[i,j])^2) *
+		ss1[C[i,j]];
+         od od;
+         p := max( p - logL1/logL2, DMS[1,PamDistance]/3);
+     od;
+     if p < DMS[1,PamDistance]/3 or p > DMS[-1,PamDistance] or
+	 |p-DMS[k1,PamDistance]| > 0.51 or logL2 >= 0 then
+		error(args,'pam failed to converge or out of range') fi;
+     [p,-1/logL2];
+
+elif Averaging = 'Arithmetic' then
+     [ sum(z[PamDistance],z=[args]) / nargs,
+       sum(z[PamVariance],z=[args]) / nargs^2 ]
+
+elif Averaging = 'Weighted' then
+     w := sum(1/z[PamVariance],z=[args]);
+     [ sum(z[PamDistance]/z[PamVariance],z=[args]) / w, 1/w ]
+
+elif Averaging = 'LengthWeighted' then
+     w := [seq( z[Range1,2]-z[Range1,1]+z[Range2,2]-z[Range2,1]+2, z=[args] )];
+     sw := sum(w);
+     [ sum( args[i,PamDistance]*w[i], i=1..nargs ) / sw,
+       sum( args[i,PamVariance]*w[i]^2, i=1..nargs ) / sw^2 ]
+
+elif Averaging = 'ScoreWeighted' then
+     sw := sum(z[Score],z=[args]);
+     [ sum( z[PamDistance]*z[Score], z=[args] ) / sw,
+       sum( z[PamVariance]*z[Score]^2, z=[args] ) / sw^2 ]
+
+else for z in [args] do if not type(z['Other'],positive) then
+	error( 'Averaging mode:', Averaging,
+	    'and the field Other is not positive:', z['Other'] ) fi od;
+     sw := sum(z['Other'],z=[args]);
+     [ sum( z[PamDistance]*z['Other'], z=[args] ) / sw,
+       sum( z[PamVariance]*z['Other']^2, z=[args] ) / sw^2 ]
+
+fi
+end:

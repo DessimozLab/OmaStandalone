@@ -1,0 +1,2 @@
+# Checks if the file given in input exists or not. 3.12.04, cd/gg.
+FileExists:= proc(fname:string) length(FileStat(fname)) > 0 end;

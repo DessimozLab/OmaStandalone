@@ -1,0 +1,80 @@
+# Functions to find orthologes of two species using the orth-project
+
+# Replace BestSynScore in library to allow scoring with normal ctms
+BestSynScore:=proc(dps1,dps2,sms)
+if length(dps1)<>length(dps2) then error('both dyn. prog strings must have the same length.') fi;
+len:=length(dps1)/3;
+sp1:=CreateArray(1..len,0);
+sp2:=CreateArray(1..len,0);
+x:=0;
+for i to length(dps1) by 3 do
+        if dps1[i]='_' then c1:=0 else c1:=CodonToCInt(dps1[i..i+2]) fi;
+        if dps2[i]='_' then c2:=0 else c2:=CodonToCInt(dps2[i..i+2]) fi;
+        if c1<>0 and c2<>0 and CIntToInt(c1)=CIntToInt(c2) then
+                x:=x+1;
+                sp1[x]:=c1;
+                sp2[x]:=c2;
+        fi;
+od;
+sp1:=sp1[1..x];
+sp2:=sp2[1..x];
+maxS:=-99999: maxCM:=0;
+for i to length(sms) do
+        sc:=0;
+        for j to x do
+                sc:=sc+sms[i][Sim,sp1[j],sp2[j]]:
+        od;
+        if sc>maxS then maxS:=sc; maxCM:=i fi:
+od;
+[sms[maxCM][PamNumber],maxS,x];
+end:
+
+CalcF2:=proc(dps1,dps2)
+noch:=0; npos:=0;
+for j to length(dps1) by 3 do
+    c1:=CodonToCInt(dps1[j..j+2]):
+    c2:=CodonToCInt(dps2[j..j+2]):
+    if c1<>0 and c2<>0 then
+             a1:=CIntToA(c1);
+             a2:=CIntToA(c2);
+             if a1=a2 and member(a1,[C,D,E,F,H,K,N,Q,Y]) then
+                    npos:=npos+1;
+                    if  c1=c2 then noch:=noch+1 fi;
+             fi;
+    fi;
+od:
+[noch,npos];
+end:
+
+TREx:=proc(dps1,dps2)
+f2:=CalcF2(dps1,dps2);
+codonbias:=.575;
+if f2<=codonbias then return(-1) fi;
+trex:=-ln((f2-codonbias)/(1-codonbias));
+end:
+
+yn00dir := '/home/darwin/schneadr/papers/dating/code/yn00/':
+
+GetdS:=proc(dps1,dps2)
+d1:=''; d2:='';
+for i to length(dps1)-3 by 3 do
+if dps1[i]<>'_' and dps2[i]<>'_' then
+        d1:=d1.dps1[i..i+2];
+        d2:=d2.dps2[i..i+2];
+fi;
+od;
+OpenWriting(yn00dir.'mam2');
+printf('   2   %d\n\n',length(d1));
+printf('seq1\n%s\n\n',d1);
+printf('seq2\n%s\n',d2);
+OpenWriting(previous);
+t:=TimedCallSystem(yn00dir.'yn00 '.yn00dir.'yn00.ctl');
+t:=ReadRawFile(yn00dir.'yn');
+li:=SplitLines(t);
+if length(li)=0 then return(99) fi;
+w:=li[length(li)];
+a:=traperror(sscanf(w,' %d %d %f %f %f %f %f %f +- %f %f +- %f \n'));
+if a=[] then return(99) fi;
+a[10];
+end:
+

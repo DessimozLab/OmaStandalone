@@ -1,0 +1,66 @@
+HighestScoringClique := proc( edgs:list )
+global CliqueIterFactor;
+
+n := length(edgs);
+lo := 0;	# a full clique can be made using edgs[lo..n]
+hi := n;	# a full clique cannot be made using edgs[hi..n]
+for iter from 0 while hi-lo > 1 do
+    mid := lo+1;
+    edg := {op(mid..n,edgs)}:
+    vs := {seq(op(z),z=edg)}:
+    gr := Graph( vs, edg ):
+    if length(vs) > 100 then
+         CliqueIterFactor := 20/length(vs);
+         printf( 'large clique: %d, CliqueIterFactor=%.4f\n',
+             length(vs), CliqueIterFactor )
+    else CliqueIterFactor := 1 fi;
+    st := time();
+    cligr := traperror( Clique(gr,
+	If(assigned(cli), UpperBound=length(cli), NULL)) );
+    if length(gr[2]) >= 320 then
+	OpenWriting( 'LargeGraphs/'.length(gr[1]) );
+	lprint( 'c CBRG @ ETH-Zurich, Orthologous Matrix Project' );
+	lprint( 'c Graph derived from verified pairs' );
+	printf( 'c Darwin finds a clique of size %d in %.2f secs\n',
+	    length(cligr), time()-st );
+	prints( Graph_dimacs(gr));
+	OpenWriting( previous );
+    fi;
+    if time()-st > 2*3600 then
+	 # more than two hours, record Clique for possible improvements
+	 OpenWriting( sprintf( 'MonsterClique%.2f', (time()-st)/3600 ));
+	 lprint( 'gr :=', gr, ':' );
+	 lprint( 'cligr :=', cligr, ':' );
+	 printf( 'CliqueIterFactor := %.10g:\n', CliqueIterFactor );
+	 lprint( '#', If(assigned(cli), UpperBound=length(cli), NULL));
+	 OpenWriting( 'previous' );
+    fi;
+
+    if cligr='too many edges in complement graph' or
+       cligr='stack overflow, stack too small or infinite recursion' then
+         # clique is too large, the edge set has to be thinned
+         # remove the lower 20% Score edges
+	 lprint( 'Clique gave an error:', cligr );
+	 i := round( 0.2*(hi-lo) );
+	 if i = 0 then error(cligr) fi;
+         printf( 'the %d lowest scoring edges were removed\n', i );
+	 lo := lo + i;
+         next
+    elif cligr=lasterror then error(cligr) fi;
+
+    if not assigned(cli) or length(cligr) >= length(cli) then
+	 for l2 from mid to hi-1 while edgs[l2] minus {op(cligr)} <> {} do od;
+	 if assigned(cli) then
+	      printf( '%s(%d) clique, %d..%d/%d to %d..%d/%d\n',
+		 If( length(cligr) > length(cli), '***LARGER***', 'better' ),
+		 iter,lo,n,length(cli), l2,n,length(cligr) )
+	 fi;
+	 cli := cligr;
+	 hi := min( hi, n - length(cli)*(length(cli)-1)/2 );
+	 lo := l2;
+    else hi := mid fi;
+
+od:
+if not assigned(cli) then error(gr,'should not happen') fi;
+cli
+end:

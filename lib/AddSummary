@@ -1,0 +1,13 @@
+
+# Add GenomeSummary entry to the file Summaries.drw
+AddSummary := proc( g:string ) local i;
+ReadDb( GenomeFileName[g] );
+Set(quiet=true);
+OpenAppending( getenv('DARWIN_GENOMES_PATH').'/Summaries.drw' );
+printf( 'genomes := append(genomes,%s):\n', g );
+printf( 'GenomeSummaries[%s] :=\n', g );
+dprint( copy(GenomeSummary(DB)) );
+lprint( ':' );
+OpenWriting( previous );
+end:
+

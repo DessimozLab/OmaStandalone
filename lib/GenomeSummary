@@ -1,0 +1,108 @@
+#
+#	class to hold a summary of a genome (or database)
+#
+#					Gaston H. Gonnet (Sep 15, 2004)
+GenomeSummary := proc(
+  FileName:{string,	# the name of the external file containing the database
+	database},	# a database structure to extract the information
+  String:string,	# the header part of the  database as a string
+  TotAA:posint,		# the total number of amino acids or bases in the dbase
+  TotChars:posint,	# the total number of characters in the database
+  TotEntries:posint,	# the total number of entries in the database
+  Type:string,		# dna, rna, mixed or peptide
+  EntryLengths:list(posint), # length of each entry
+  Id:string,		# 5-letter code for genome
+  Kingdom:string,	# either Bacteria, Archaea, Eukaryota or Mitochondira
+  Lineage:list(string)	# Lineage as a list (from OS tags)
+			# genus (from the binomial nomenclature)
+			# epithet (from the binomial nomenclature)
+  )
+option NoIndexing;
+
+if nargs=1 and type(FileName,database) then
+     d := FileName;
+     i := SearchString('<E>',d[string]);
+     if i<0 then error('no entries in database') fi;
+     return( procname( d['FileName'], d[string,1..i], d['TotAA'],
+	d['TotChars'], d['TotEntries'], d[type],
+	[ seq( length(Sequence(Entry(i))), i=1..d['TotEntries'] )] ))
+
+elif nargs=7 then
+     t := SearchTag('5LETTERNAME',String);
+     if length(t)=5 or length(t)=6 and t[1]='m' then
+	  return( procname( args, t ))
+     else error('missing 5LETTERNAME in header part') fi
+
+elif nargs=8 then
+     t := SearchTag('KINGDOM',String);
+     if member(t,{'Bacteria','Archaea','Eukaryota','Mitochondria','Unknown'}) 
+        then
+	  return( procname(args,t))
+     else error(t,'missing or incorrect KINGDOM in header part') fi
+
+elif nargs=9 then
+     t := SearchTag('OS',String);
+     r := [];
+     do  i := SearchString(';',t);
+	 if i < 0 then r := append(r,t);  break fi;
+	 r := append(r,t[1..i]);
+	 t := (i+1) + t;
+	 while length(t) > 0 and t[1] = ' ' do t := 1+t od;
+	 od;
+     if r[1] <> Kingdom then
+	  error(Id,r[1],Kingdom,'Kingdom and Lineage[1] do not coincide') fi;
+     return( procname(args,r) )
+
+elif nargs <> 10 then error('invalid number of arguments') fi;
+
+if not ( length(Id)=5 and uppercase(Id)=Id or
+         length(Id)=6 and Id[1]='m' and uppercase(Id[2..6])=Id[2..6] ) then
+     error(Id,'is not a valid 5-letter code for the species')
+elif not member(lowercase(Type),{'dna','rna','mixed','peptide'}) then
+     error(Id,Type,'is not a valid database Type')
+elif not member(Kingdom,{'Bacteria','Archaea','Eukaryota','Mitochondria',
+      'Unknown'}) then
+     error(Id,Kingdom,'is an invalid Kingdom name')
+elif Kingdom <> Lineage[1] then
+     error(Id,Kingdom,Lineage,'Kingdom and Lineage[1] do not coincide')
+elif TotAA <> sum(EntryLengths) then error(Id,TotAA,sum(EntryLengths),
+	'TotAA and sum(EntryLengths) do not coincide')
+     fi;
+noeval(procname(args))
+end:
+
+GenomeSummary_select := proc( gs:GenomeSummary, sel, val )
+option internal;
+if nargs=3 then error('cannot assign to selector',sel)
+elif sel='Entry' then error('GenomeSummary does not have Entries')
+elif sel='Pat' then error('GenomeSummary does not have a Pat index')
+elif sel=string then gs[String]
+elif sel=type then gs[Type]
+elif sel='Genus' then
+     sci := gs['Lineage',-1];
+     i := SearchString(' ',sci);
+     if i<0 then sci else sci[1..i] fi
+elif sel='Epithet' then
+     sci := gs['Lineage',-1];
+     i := SearchString(' ',sci);
+     if i<0 then error('cannot find Epithet in Lineage') fi;
+     sci := i+1+sci;
+     i := SearchString(' ',sci);
+     if i<0 then sci else sci[1..i] fi
+elif not type(sel,string) then error(sel,'invalid selector')
+else SearchTag( sel, gs[String] ) fi
+end:
+
+
+GenomeSummary_print := proc( gs:GenomeSummary )
+option internal;
+for z in  ['FileName', 'string', 'TotAA', 'TotChars', 'TotEntries',
+	'type', 'Id', 'Kingdom', 'Lineage'] do
+    if z='string' then
+	 gsst := gs[string];
+	 printf( '    string: %a...\n', gsst[1..min(65,length(gsst))] )
+    else printf( '%10.10s: %a\n', z, gs[z] ) fi od
+end:
+
+
+CompleteClass( GenomeSummary );

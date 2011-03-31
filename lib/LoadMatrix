@@ -1,0 +1,20 @@
+# Load the latest Orthologous matrix for a given prefix
+#				Adrian, Juli 2006
+
+LoadMatrix := proc(pref)
+global Orthologous, genomes,params,triangle_analysis,stats,Class,
+ExcludePlasmids,tit,BestDimlessTree,BestDimlessTitle,XRef,mname;
+if nargs=0 then prefix := '' else prefix := pref fi:
+if not assigned(wdir) then 
+    wdir := '/home/darwin/v2/source/bio-recipes/Orthologues/'
+fi;
+fn := TimedCallSystem( 'ls -t ' . wdir . 'Matrix/' . prefix . '* | head -1' ):
+if fn[1] <> 0 then lprint('no suitable matrix found',fn);  quit fi;
+if fn[2,-4..-2] = '.gz' then fname := fn[2,1..-5] else fname := fn[2,1..-2] fi:
+printf( '# reading %s\n', fname );
+ReadProgram( fname );
+if length(genomes) <> length(Orthologous[1]) then
+     lprint('non-matching lengths');  quit fi;
+for j from length(fname) to 1 by -1 do if fname[j]='/' then break fi od:
+mname := fname[j+1..-1];
+end:

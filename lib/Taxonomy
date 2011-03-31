@@ -1,0 +1,88 @@
+# Functions on the taxonomy files
+
+tdir := '/home/darwin/DB/genomes/Taxonomy/':
+nodefile := tdir.'nodes.dmp':
+namefile := tdir.'names.dmp':
+
+GetParent := proc(tid:posint)
+t := TimedCallSystem('grep "^'.tid.'\\>" '.nodefile);
+res := sscanf(t[2],'%d%[^| ]|%[^0-9]%d');
+if length(res)<4 then error('parse error',t,res) fi;
+return(res[4]);
+end:
+
+GetAllNames := proc(tid:posint)
+t := TimedCallSystem('grep "^'.tid.'\\>" '.namefile);
+ls := SplitLines(t[2]);
+ns := {};
+for z in ls do
+    res := sscanf(z,'%d%[^| ]|%[\t ]%[^|]');
+    if length(res)<4 then error('parse error',z,res) fi;
+    t := res[4];
+    while t[-1]=' ' or t[-1]='\t' do t := t[1..-2] od;
+    ns := {op(ns),t}
+od:
+return(ns);
+end:
+
+GetName := proc(tid:posint)
+t := TimedCallSystem('grep "^'.tid.'\\>" '.namefile);
+if t[1]<>0 then return(NULL) fi;
+for z in SplitLines(t[2]) do
+    if CaseSearchString('scientific name',z)<0 then next fi;
+    res := sscanf(z,'%d%[^| ]|%[\t ]%[^|]');
+    if length(res)<4 then error('parse error',z,res) fi;
+    t := res[4];
+    while t[-1]=' ' or t[-1]='\t' do t := t[1..-2] od;
+    return(t);
+od:
+return(NULL);
+end:
+
+SearchSpecies := proc(name:string)
+t := TimedCallSystem('grep "'.name.'" '.namefile);
+ls := SplitLines(t[2]);
+ns := {};
+for z in ls do
+    res := sscanf(z,'%d');
+    if length(res)<1 then error('parse error',z,res) fi;
+    t := res[1];
+    ns := {op(ns),t}
+od:
+return(ns);
+end:
+
+SearchExactSpecies := proc(name:string)
+ns := SearchSpecies(name);
+if length(ns)<2 then return(op(ns)) fi;
+for tid in ns do
+    if member(name,GetAllNames(tid)) then return(tid) fi;
+od:
+return(NULL)
+end:
+
+LineageList := proc(name:string)
+tid := SearchExactSpecies(name);
+if tid=NULL then error('unknown species:',name) fi;
+lin := [tid];
+while tid<>1 do
+    tid := GetParent(tid);
+    lin := [tid,op(lin)];
+od:
+l2 := []:
+for z in lin do 
+    n := GetName(z);
+    if member(n,['root','cellular organisms']) or
+	SearchString('group',n)>-1 then next fi;
+    l2 := append(l2,n);
+od;
+return(l2);
+end:
+
+LineageString := proc(name:string)
+l2 := LineageList(name);
+s := '';
+for z in l2 do s:=s.z.'; ' od;
+if length(s)>2 then s := s[1..-3] fi;
+return(s);
+end:

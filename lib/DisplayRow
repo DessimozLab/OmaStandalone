@@ -1,0 +1,22 @@
+
+
+DisplayRow := proc( row, NamesOnly:boolean )
+global DB;
+if type(row,set) then for z in row do procname(z,args[2..nargs]) od;  return()
+elif not type(row,list(integer)) or length(row) <> N then
+     error(args,'invalid arguments') fi;
+printf( '\nOrthologous group: %a\n', row );
+for i to N do
+    if row[i]=0 then next
+    elif row[i] < 0 or row[i] > ns[i] then error(args,'invalid arguments') fi;
+    DB := dbs[i];
+    printf( '\n%s, %d, %s  %s  %s\n', genomes[i], row[i],
+	SearchTag(ID,Entry(row[i])), SearchTag(AC,Entry(row[i])),
+	SearchTag(DE,Entry(row[i])));
+    if nargs=2 and NamesOnly then next fi;
+    for j to N do if i <> j and row[j] <> 0 then
+	printf( '   -->%s %a\n', genomes[j],
+	    { seq( If( k[1]>MinScore,k,NULL), k=BestMatch[i,j,row[i]]) }) fi od
+    od
+end:
+

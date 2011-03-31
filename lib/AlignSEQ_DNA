@@ -1,0 +1,25 @@
+
+# Align DNA and SEQ from a single entry
+
+AlignSEQ_DNA := proc( en:posint, optseq:string )
+global DB, PepDB, NucDB;
+e := Entry(en);
+if nargs=2 then pep := optseq else pep := Sequence(e) fi;
+PepDB := DB;
+if not type(DMS,list(DayMatrix)) then CreateDayMatrices() fi;
+
+CallSystem( 'rm -f tmp731*' );
+OpenWriting( tmp731 );
+printf( '<E><ID>%s</ID><SEQ>%s</SEQ></E>\n',
+    SearchTag(ID,e), SearchTag(DNA,e) );
+OpenWriting( previous );
+NucDB := ReadDb(tmp731);
+
+dna := Sequence(Entry(1));
+print(LocalNucPepAlign(NucPepMatch(dna,pep),DMS[300]));
+
+DB := PepDB;
+printf( '%s...%d...%s,   %s...%d...%s\n', dna[1..12], length(dna),
+	dna[-12..-1], pep[1..4], length(pep), pep[-4..-1] );
+end:
+

@@ -1,0 +1,29 @@
+# Runs a blast search. 
+#    23.02.05, CD, partly based on the work of M. Friberg.
+#  
+
+BlastSearch := proc( DbFile1:string, DbFile2:string, ScoringMatrix:string, 
+    OutputFile:string)
+
+    # some argument checks
+    if not member(ScoringMatrix,{'GONNET145','GONNET207','GONNET224',
+        'DNA_GONNET15', 'BLOSUM45', 'BLOSUM62', 'BLOSUM80'}) then
+        error('Unknown scoring matrix');
+    fi;
+
+    if not FileExists(DbFile1) or not FileExists(DbFile2) then
+        error('Fasta DB file does not exist.');
+    fi;
+
+    # a few definitions
+    BlastParams := '-M ' . ScoringMatrix . ' -G 21 -E 1 -g T -F F -W 2 -b 0 ' 
+        . '-e 0.2 -v 100000';
+    BlastExec := '/home/darwin/bin/blast/blastall';
+
+    # we prepare the system call command
+    s := sprintf('( time %s %s -p blastp -i %s -d %s -o %s ) >& %s',
+        BlastExec, BlastParams, DbFile1, DbFile2, OutputFile, OutputFile 
+        . '.time.txt' );
+
+    CallSystem(s);
+end;

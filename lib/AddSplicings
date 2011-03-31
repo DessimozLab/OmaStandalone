@@ -1,0 +1,104 @@
+# Add alternative splicing information to Splicings.drw
+#                        Adrian S., 29 June 2009
+
+ComputeSplicings := proc(sp:string)
+ReadDb(GenomeFileName[sp]);
+if SearchTag('KINGDOM',DB[string])<>'Eukaryota' then
+    return()
+fi;
+idlist := []:
+for en to DB[TotEntries] do
+    e := Entry(en);
+    if sp='ARATH' then 
+        gi := SearchTag('GeneID',e);
+	if gi='' then next fi;
+	idlist := append(idlist,[gi,en]);
+    elif sp='DROME' then
+        eg := SearchTag('EntrezGene',e);
+	if eg='' then next fi;
+	idlist := append(idlist,[eg,en]);
+    elif sp='CAEEL' then
+        wl := SearchTag('wormbase_locus',e);
+	if wl='' then next fi;
+	idlist := append(idlist,[wl,en]);
+    elif sp='CAERE' then
+        wl := SearchTag('AC',e);
+	if wl='' then next fi;
+	if length(wl)<6 or wl[1..6]<>'WBGene' then next fi;
+	idlist := append(idlist,[wl,en]);
+    # find entries with same ENSEMBL gene ID
+    elif SearchString('ensembl',SearchTag('DBRELEASE',DB[string]))>-1 
+         or sp='XENTR' or sp='APIME' or sp='CHICK' then
+        ids := SearchDelim('; ',SearchTag('ID',e));
+        for id in ids do
+            if length(id)>7 and (id[1..3]='ENS' or id[1..3]='GST')
+                and SearchString('G0',id)>-1 then
+                p := SearchString('.repet',id);
+                if p>-1 then id := id[1..p] fi;
+                idlist := append(idlist,[id,en]);
+            fi;
+        od:
+    fi;
+od:
+idlist := sort(idlist);
+alts := [];
+for i from 2 to length(idlist) do
+    if idlist[i-1,1]=idlist[i,1] then
+        if alts=[] or not member(idlist[i-1,2],alts[-1]) then 
+            alts := append(alts,{});
+        fi;
+        alts[-1] := alts[-1] union {idlist[i-1,2],idlist[i,2]}
+    fi;
+od:
+if alts=[] then lprint('no alternative splicings found'); return() fi;
+for z in alts do if (max(op(z))-min(op(z)))>length(z)-1 then lprint('suspicious:',z) fi od:
+# chose the 'best' splicing variant:
+# the longest with a SwissProt xref, else just the longest
+altmap := [seq(i,i=1..DB[TotEntries])]:
+C1 := Counter('Mult. variants'):
+C2 := Counter('best not in SwissProt'):
+C3 := Counter('best is not longest'):
+for alt in alts do
+    es := [seq(Entry(z),z=alt)];
+    lens := [seq(length(Sequence(z)),z=es)];
+    longest := SearchArray(max(lens),lens);
+    inSP := [seq(If(
+        SearchString('swissprot',z)>-1 or SearchString('swiss-prot',z)>-1,
+        true,false),z=es)];
+    if not member(true,inSP) then main := longest
+    else 
+        tmp := [seq(If(inSP[x],lens[x],-1),x=1..length(lens))];
+        main := SearchArray(max(tmp),tmp);
+    fi;
+    C1+1;
+    if not inSP[main] then C2+1 fi;
+    if main<>longest then C3+1 fi;
+    main := alt[main];
+    for x in alt do altmap[x] := main od:
+od:
+if C1[value]<>length(alts) then error('mismatch',C1,length(alts)) fi;
+if C1[value]=0 then return() fi;
+print(C1,C2,C3);
+return( [alts,altmap] );
+end:
+
+AddSplicings := proc(sp:string)
+alt := ComputeSplicings(sp);
+if alt<>NULL then
+    OpenAppending(getenv('DARWIN_GENOMES_PATH').'/Splicings.drw');
+    printf('Splicings[%s] := %A:\n',sp,alt[1]);
+    printf('SpliceMap[%s] := %A:\n',sp,alt[2]);
+    OpenWriting(previous);
+fi:
+end:
+
+if false then
+ReadProgram(getenv('DARWIN_OMA_REPO_PATH').'/lib/darwinit');
+ReadProgram(getenv('DARWIN_OMA_REPO_PATH').'/lib/AddSplicings');
+GS := GenomeSummaries:
+for z in genomes do
+    if not member(Metazoa,GS[z,Lineage]) then next fi;
+    lprint('***',z,'***');
+    AddSplicings(z);
+od:
+fi:

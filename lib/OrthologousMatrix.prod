@@ -1,0 +1,493 @@
+####################################################################
+# Looks for a third alignment and computes a better stdev estimate #
+####################################################################
+#           y1
+#     r    /s       M1 -> (x1,y1)
+# x1-------         M2 -> (x1,y2)
+#          \t       M3 -> (y1,y2)
+#           \
+#            y2
+
+StdDiff := proc(X,Y,x1,M1,M2,context:{'SP','VP'})
+    y1 := M1[Entry]; 
+    y2 := M2[Entry];
+    if y1 > y2 then t := y1;  y1 := y2;  y2 := t fi;
+    
+    # in case we cannot compute the variance, we are conservative,
+    # meaning that the tolerance is very small in case of SP
+    # formation, and the required difference is as large as independent
+    # distances in case of verification of SP:
+    bm := decompress(BestMatch[Y,Y,y1]);
+    found := false;
+    for M3 in bm do if M3[Entry]=y2 then found := true;  break fi od:
+    if not found then
+        return( If(context='SP',10,sqrt(M1[PamVar10000]+M2[PamVar10000])) )
+    else
+        r := 0.5* (M1[PamDist100] + M2[PamDist100] - M3[PamDist100]);
+        s := M1[PamDist100] - r;
+        t := M2[PamDist100] - r;
+
+        # dubious cases: return a conservative interval
+        if r < 0 then return(sqrt(M2[PamVar10000]+M1[PamVar10000])); fi;
+        if s < 0 then return(sqrt(M3[PamVar10000]+M1[PamVar10000])); fi;
+        if t < 0 then return(sqrt(M3[PamVar10000]+M2[PamVar10000])); fi;
+        
+        if M3[PamVar10000] > M1[PamVar10000] + M2[PamVar10000] then
+            return( If(context='SP',10,sqrt(M1[PamVar10000]+M2[PamVar10000])) )
+        fi;
+
+        # please notice that the approximation is on the real values for
+        # all the distances and variances, and here we are using values
+        # which are multiplied by 100 (distances) and 10000 (variances)
+        # and we are expecting a result which is also multiplied by 100.
+        return( 0.7494419516 *
+            (M1[PamDist100]+M2[PamDist100])^(-1.308966/2) *
+            (M1[PamVar10000]+M2[PamVar10000])^(1.043483/2) *
+            M3[PamDist100]^(0.689524) *
+            M3[PamVar10000]^(-0.333925/2) *
+            (M1[PamVar10000]*M2[PamVar10000])^(0.159016/2) )
+
+
+    fi;
+end:
+
+
+####################################
+# Orthologous matrix using cliques #
+####################################
+OrthologousMatrix := proc( MinScore:positive, LengthTol:positive, 
+    StablePairTol:positive, VerifiedPairTol: positive)
+global CliqueIterFactor, histog, triangle_analysis, StablePairs, VPairs,
+	BestMatch, SPairs;
+
+# Boundary scores for stable pairs
+starttime := time();
+totpairs := rempairs := 0;
+StablePairs := CreateArray(1..N,1..N):
+if length( FileStat( wdir . 'Phase4/' . genomes[N-1] . '/' . genomes[N] .
+	'.sp.gz' )) > 0 then
+     # read existing Phase4/*/*.sp.gz files
+     for X to N do for Y to N do if X <> Y then
+         fn := wdir . 'Phase4/' . genomes[X] . '/' . genomes[Y] . '.sp';
+         ReadProgram( fn );
+	 for x1 to length(SPairs) do
+             if SPairs[x1] = {} then SPairs[x1] := {}
+	     else SPairs[x1] := compress(SPairs[x1]) fi od;
+         StablePairs[X,Y] := SPairs;
+     fi od od
+else # create new Phase4/*/*.sp.gz files
+
+     for X to N do for Y to N do if X <> Y then
+         StablePairs[X,Y] := CreateArray(1..ns[X],{});
+         for x1 to ns[X] do
+             if BestMatch[X,Y,x1] <> [] then
+                 t := sort(decompress(BestMatch[X,Y,x1]),x->-x[PamDist100]);
+                 lt := length(t);
+                 active := CreateArray(1..lt,true);
+                 if X > Y then for i1 to lt do
+                     if member(x1,StablePairs[Y,X,t[i1,Entry]]) then break;
+                     else active[i1] := false fi
+                 od fi;   
+                 for i1 to lt do if active[i1] then
+                     for i2 from lt by -1 to i1 + 1 do if active[i2] then
+                         diff := abs(t[i1,PamDist100] - t[i2,PamDist100]);
+                         if diff > StablePairTol * 
+                             sqrt( t[i1,PamVar10000] + t[i2,PamVar10000] ) or
+                             diff > StablePairTol * StdDiff(X,Y,x1,t[i1],t[i2],'SP') 
+                             then
+                             if t[i1,PamDist100] > t[i2,PamDist100] then
+                                 active[i1] := false;
+                                 break;
+                             else
+                                 active[i2] := false
+                             fi;
+                         fi;
+                     fi od;
+                 fi od;
+                 totpairs := totpairs + lt;
+                 StablePairs[X,Y,x1] := { seq( If(active[i1],t[i1,Entry],NULL),
+                             i1=1..lt ) };
+                 rempairs := rempairs + lt - length(StablePairs[X,Y,x1]);
+             fi;
+         od;
+         printf( '%d stable pairs found for %s/%d vs %s/%d\n',
+             sum(length(z),z=StablePairs[X,Y]), genomes[X], X, genomes[Y], Y );
+     fi od od:
+     if printlevel >= 3 then printf( 
+         'OrthologousMatrix: SP formation done, %d removed from %d BestMatches\n', 
+         rempairs, totpairs);
+     fi;
+     
+     
+     ###########################
+     # Thinning of StablePairs #
+     ###########################
+     thnt := thnr := 0;
+     for X to N do for Y to N do if X <> Y then
+         for x1 to ns[X] do
+             thnt := thnt + length(StablePairs[X,Y,x1]);
+             for y2 in StablePairs[X,Y,x1] do
+                 if not member(x1,StablePairs[Y,X,y2]) then
+                     thnr := thnr+1;
+                     StablePairs[X,Y,x1] := StablePairs[X,Y,x1] minus {y2} fi
+             od;
+         od
+     fi od od;
+     if printlevel >= 3 then printf(
+         'OrthologousMatrix: %d entries thinned out of %d StablePairs\n',
+         thnr, thnt )
+     fi;
+
+     for X to N do
+	for Y to N do if X <> Y then
+
+            fn := wdir . 'Phase4/' . genomes[X] . '/' . genomes[Y] . '.sp';
+            OpenWriting( fn );
+            lprint( 'SPairs :=', StablePairs[X,Y], ':' );
+            OpenWriting( previous );
+
+            for x1 to ns[X] do
+                if StablePairs[X,Y,x1] = {} then StablePairs[X,Y,x1] := {}
+		else StablePairs[X,Y,x1] := compress(StablePairs[X,Y,x1]) fi
+            od
+         fi od;
+	 # do the compression by groups, it is too slow individually
+	 CallSystem( 'gzip -9v ' . wdir . 'Phase4/' . genomes[X] . '/*.sp &' );
+    od;
+fi:
+
+#
+#    ------------------                     ------------------
+#    |                |         a1          |                |
+#    |    ====== x1   | ------------------- |    ====== y2   |
+#    |       \ .      |                     |    . /         |
+#    |X       \   .   |                     |Y.   /          |
+#    ----------\-----.-                    .-----/------------
+#               \       .               .       /
+#                \       a4.         .b3       /
+#               a3\           .   .           /b4
+#                  \           . .           /
+#                ---\-------.-------.-------/------
+#                |   \   .             .   /      |
+#                |   ====== z3         ====== z4  |
+#                |                                |
+#                |Z                               |
+#                ----------------------------------
+#
+#        X, Y and Z are genome numbers
+#        x1, y2, z3 and z4 are entry numbers
+#        a1, a3, a4, b3, b4 are alignments (Pair structure)
+#
+
+#       When we have the conditions:
+#                  d(x1,z3) < d(x1,z4)
+#                  d(y2,z4) < d(y2,z3) which added together imply
+#       d(x1,z3) + d(y2,z4) < d(x1,z4) + d(y2,z3)
+#
+#       the only possible quartet is
+#
+#            x1                               y2
+#              \                             /
+#               \p                         s/
+#                \                         /
+#                 \            r          /
+#                  o---------------------o
+#                 /                       \
+#                /                         \
+#               /q                         t\
+#              /                             \
+#            z3                               z4
+#
+#  eqns := { a1[PamDist]=p+r+s, a3[PamDist]=p+q, a4[PamDist]=p+r+t,
+#       b3[PamDist]=q+r+s, b4[PamDist]=s+t };
+#  sol := solve(eqns,{p,q,r,s,t});
+#
+#  These five lengths, p,q,r,s and t must be non-negative
+#  (given the above conditions, r cannot be negative)
+#
+#
+#                  Gene duplication O
+#                                  / \r
+#                                 /   \
+#                                /     \
+#                         ------/-------\------
+#               Speciation|    /         \    |
+#               events    |   O           O   |
+#                         |  /|\         /|\  |
+#                         --/-|-\-------/-|-\--
+#                          /  |  \     /  |  \
+#                         /   |   x   x   |   \
+#                       p/   q|           |t   \s
+#                       /     |           |     \
+#                      /      |           |      \
+#          -----------/--   --|-----------|--   --\-----------
+# Present  |         /  |   | |           | |   |  \         |
+#  day     |        x1  |   | z3          z4|   |   y2       |
+# species  |   X        |   |       Z       |   |        Y   |
+#          --------------   -----------------   --------------
+#
+#       dist(x1,z4) - dist(x1,z3) > tol           r+t-q > tol
+#       dist(y2,z3) - dist(y2,z4) > tol           q+r-t > tol
+#
+#       r - |t-q| > tol     (single test)
+#
+#       Var( r-|t-q| ) = Var(dist(z3,z4))
+
+
+# SP will not be broken if length of alignment is not sufficient
+SumLengthsTol := 0.9;
+VPairs := CreateArray(1..N,1..N):
+idone := 0;  st := time();
+gpairs := Shuffle( [seq(seq([X,Y],Y=X+1..N),X=1..N)] ):
+for XYpair in gpairs do
+    X := XYpair[1];  Y := XYpair[2];
+    idone := idone+1;
+    if WriteOutVPFiles=true then
+	 if length( FileStat( wdir . 'Phase4/' . genomes[X] . '/' . genomes[Y] .
+		'.vp.gz' )) <> 0 then
+	     printf( 'VPs for %s and %s already done\n', genomes[X], genomes[Y] );
+	     next
+	 fi
+    fi;
+    VPairs[X,Y] := CreateArray(1..ns[X],[]);
+    VPairs[Y,X] := CreateArray(1..ns[Y],[]);
+    for x1 to ns[X] do 
+        for a1 in decompress(BestMatch[X,Y,x1]) do
+            y2 := a1[Entry];
+            if not member(y2,decompress(StablePairs[X,Y,x1])) then next fi;
+            bad := false;
+            for Z to N while not bad do
+              if Z <> X and Z <> Y then
+                for a3 in decompress(BestMatch[X,Z,x1]) while not bad do
+                  z3 := a3[Entry];
+                  if not member(z3,decompress(StablePairs[X,Z,x1])) then next fi;
+                  for b4 in decompress(BestMatch[Y,Z,y2]) do
+                    z4 := b4[Entry];
+                    if z4=z3 or not member(z4,decompress(StablePairs[Y,Z,y2]))
+			then next fi;
+                    
+                    found := false;
+                    for a4 in decompress(BestMatch[X,Z,x1]) do
+                        if a4[Entry]=z4 then found := true;  break fi od;
+                    if not found then next fi;
+                    if a4[SumLengths] * SumLengthsTol > a3[SumLengths] or 
+                       a4[PamDist100] - a3[PamDist100] < VerifiedPairTol * 
+                          StdDiff(X,Z,x1,a3,a4,'VP') then next fi;
+                        
+                    found := false;
+                    for b3 in decompress(BestMatch[Y,Z,y2]) do
+                        if b3[Entry]=z3 then found := true;  break fi od;
+                    if not found then next fi;
+                    if b3[SumLengths] * SumLengthsTol > b4[SumLengths] or
+                       b3[PamDist100] - b4[PamDist100] < VerifiedPairTol *
+                          StdDiff(Y,Z,y2,b3,b4,'VP') then next fi;
+                        
+                    # testing that p,q,s,t are all positive
+                    if a3[PamDist100]-b3[PamDist100]+a1[PamDist100] < 0 or
+                       b3[PamDist100]+a3[PamDist100]-a1[PamDist100] < 0 or
+                       b4[PamDist100]+a1[PamDist100]-a4[PamDist100] < 0 or
+                      -a1[PamDist100]+a4[PamDist100]+b4[PamDist100] < 0 then
+                        next fi;
+                        
+                    scorebal := abs(a4[PamDist100]-b3[PamDist100])/
+                                sqrt(b3[PamVar10000]+a4[PamVar10000]);
+                    if scorebal > 2 then next fi;
+                    
+                    bad := true; 
+                    break;
+                  od;
+                od;
+              fi;
+            od;
+            if not bad then
+                VPairs[X,Y,x1] := append(VPairs[X,Y,x1],y2);
+                VPairs[Y,X,y2] := append(VPairs[Y,X,y2],x1);
+            fi;
+    od od;
+    for x1 to ns[X] do VPairs[X,Y,x1] := {op(VPairs[X,Y,x1])} od;
+    for y2 to ns[Y] do VPairs[Y,X,y2] := {op(VPairs[Y,X,y2])} od;
+    printf(
+        '%s-%s, %d verified, %.2f%% done, %.2f hrs left\n',
+        genomes[X], genomes[Y], sum(length(z),z=VPairs[X,Y]),
+        200*idone/(N*(N-1)), (N*(N-1)/2-idone)*(time()-st)/idone/3600 );
+    if WriteOutVPFiles=true then
+	 CallSystem( 'mkdir -p ' . wdir . 'Phase4/' . genomes[X] );
+         OpenWriting( wdir . 'Phase4/' . genomes[X] . '/' . genomes[Y] . '.vp' );
+         lprint( 'VerifiedPairs :=', VPairs[X,Y], ':' );
+         OpenWriting( previous );
+         CallSystem( 'gzip -9v ' . wdir . 'Phase4/' . genomes[X] . '/' .
+             genomes[Y] . '.vp &' );
+
+	 CallSystem( 'mkdir -p ' . wdir . 'Phase4/' . genomes[Y] );
+         OpenWriting( wdir . 'Phase4/' . genomes[Y] . '/' . genomes[X] . '.vp' );
+         lprint( 'VerifiedPairs :=', VPairs[Y,X], ':' );
+         OpenWriting( previous );
+         CallSystem( 'gzip -9v ' . wdir . 'Phase4/' . genomes[Y] . '/' .
+             genomes[X] . '.vp &' );
+         VPairs[X,Y] := VPairs[Y,X] := 0;
+    else
+         for z in [VPairs[X,Y],VPairs[Y,X]] do for i to length(z) do
+	     z[i] := If( z[i]={}, {}, compress(z[i]) )
+         od od
+    fi
+od:
+if WriteOutVPFiles=true then
+    lprint( 'Verified pairs written to files, process ends' );  quit fi;
+
+
+ EdgeCost := proc( s:set(posint) )
+   if length(s) <> 2 then error(s,'invalid arguments') fi;
+   n1 := cli[s[1]];  n2 := cli[s[2]];
+   for bm in decompress(BestMatch[n1[1],n2[1],n1[2]]) do
+       if bm[Entry]=n2[2] then return( bm[Score100] ) fi od;
+   error(s,n1,n2,'match not found')
+ end:
+
+# find the cliques of Verified Pairs which become the Orthologous groups
+Orthologous := []:
+Used := CreateArray(1..N):
+for i to N do Used[i] := CreateArray(1..ns[i],false) od:
+
+do
+  VerifiedPairs := [];
+  ls := 0;
+  for X to N do for Y from X+1 to N do
+    for x1 to ns[X] do if not Used[X,x1] then
+        for a1 in decompress(BestMatch[X,Y,x1]) do if a1[Score100] > ls then
+            y2 := a1[Entry];
+            if not Used[Y,y2] and member(y2,decompress(VPairs[X,Y,x1])) then
+                VerifiedPairs := append( VerifiedPairs, [a1[Score100],X,x1,Y,y2] );
+                if length(VerifiedPairs) > 15000 then
+                    VerifiedPairs := sort(VerifiedPairs)[-10000..-1];
+                    ls := VerifiedPairs[1,1];
+                    lprint('shrinking VerifiedPairs',X,Y,ls);
+                fi
+            fi
+         fi od
+     fi od
+  od od:
+  if length(VerifiedPairs)=0 then break fi;
+  printf( 'Iteration with %d Verified pairs, %d in Orthologous\n',
+        length(VerifiedPairs), length(Orthologous) );
+
+  VerifiedPairs := sort(VerifiedPairs):
+  for iz from length(VerifiedPairs) by -1 to 1 do
+
+    z := VerifiedPairs[iz];
+    g1 := z[2];  i1 := z[3];  g2 := z[4];  i2 := z[5];
+    if Used[g1,i1] or Used[g2,i2] then next fi;
+    if not member(i2,decompress(VPairs[g1,g2,i1])) or
+       not member(i1,decompress(VPairs[g2,g1,i2])) then
+        error(z,decompress(VPairs[g1,g2,i1]),decompress(VPairs[g2,g1,i2]),
+		'should not happen') fi;
+
+    # the nodes of the graph are pairs of [genome,entry]
+    cli := [ [g1,i1], [g2,i2] ];
+    for g3 to N do if g3 <> g1 and g3 <> g2 then
+        cli := append( cli, seq( If(Used[g3,w],NULL,[g3,w]),
+                w = decompress(VPairs[g1,g3,i1]) intersect
+		    decompress(VPairs[g2,g3,i2]) ) )
+    fi od;
+
+    # Make graph to find cliques
+    edg := []:
+    for j1 to length(cli) do for j2 from j1+1 to length(cli) do
+        g1 := cli[j1,1];  i1 := cli[j1,2];
+        g2 := cli[j2,1];  i2 := cli[j2,2];
+        if g1=g2 then next fi;
+        if member(i2,decompress(VPairs[g1,g2,i1])) then edg := append(edg,{j1,j2}) fi
+    od od;
+
+    if length(edg) <> length(cli)*(length(cli)-1)/2 then
+        printf( '|n|=%d, |e|=%d, max wei=%.2f\n', length(cli), length(edg),
+            z[1]/100 );
+        CliqueIterFactor := 2;
+        cli1 := MaxEdgeWeightClique(
+            Graph( Edges( seq( Edge(EdgeCost(z),z[1],z[2]), z=edg ))) );
+        cli := [seq( cli[i], i=cli1)]
+    fi;
+
+    if length(cli) < 2 then next fi;
+
+    row := CreateArray(1..N);
+    for z in cli do
+        row[z[1]] := z[2];
+        Used[z[1],z[2]] := true;
+    od;
+    Orthologous := append(Orthologous,row):
+  od
+od:
+
+## finally, do triangle analysis.
+##
+## species X:    species Y:
+##        
+##  x1 ------------- y1
+##     \
+##       ----------- y2
+##
+## whenever a protein x1 forms a verified pair with at least
+## two proteins y1,y2 inside a species Y, we verify that
+## the distance y1-y2 be significantly smaller than y1-x1 and
+## y2-x1. If that's not the case, max(y1-x1,y2-x2) is likely
+## to be a paralogous relation.
+##                                        CD, Oct. 2005
+
+# prerequisite: the distance information in X,X
+if DoTriangleTest = true then
+    cTot := Counter('Total VPs'):
+    cDub := Counter('# VPs failing triangle test'):
+    for X to N do
+        for x1 to ns[X] do
+            for Y to N do
+                if X = Y then next fi;
+		VPXYx1 := decompress(VPairs[X,Y,x1]);
+                cTot + length(VPXYx1);
+                # we look for dubious cases:
+                if length(VPXYx1) > 1 then
+                    # we sort the pairs in increasing pam distance order
+                    vps := {};
+                    for i in VPXYx1 do
+                        for a1 in decompress(BestMatch[X,Y,x1]) while a1[Entry] <> i do od;
+                        vps := append(vps,[a1[PamDist100], a1[PamVar10000], i]);
+                    od;
+                    for i from 2 to length(vps) do
+                        y1 := vps[1,3];
+                        y2 := vps[i,3];
+                        
+                        # because of how BestMatch is stored, we may need 
+                        # to swap both entries
+                        if y1 > y2 then tmp := y1; y1 := y2; y2 := tmp; fi;
+                        found := false;
+                        for j in decompress(BestMatch[Y,Y,y1]) do if j[Entry] = y2 then 
+                            found := true; break;
+                        fi; od;
+                        if not found then cDub+1;
+                        # ideally, we should use the var of dist y2-x1, but 
+                        # since it is not always available, we use 2x the 
+                        # variance of y1-y2 as an approximation, which is safe 
+                        # because we are looking at cases where y1-y2 is larger
+                        # than y2-x1.
+                        elif vps[i,2] <> -1 and j[PamDist100] - vps[i,1] > 
+                          1.96 * sqrt(j[PamVar10000]+vps[i,2]) then
+                            cDub+1;
+                        elif vps[i,2] = -1 and j[PamDist100] - vps[i,1] > 
+                          1.96 * sqrt(2*j[PamVar10000]) then
+                            cDub+1;
+                        fi;
+                    od;
+                fi;
+            od;
+        od;
+    od:
+    triangle_analysis := [cTot,cDub]:
+    print(cTot,cDub):
+fi;
+
+histog := CreateArray(1..N);
+for z in Orthologous do
+    t := sum( If( w=0, 0, 1 ), w=z );  histog[t] := histog[t]+1 od;
+printf( '%d orthologous groups, histog=%a\n', length(Orthologous), histog );
+
+Orthologous
+end:

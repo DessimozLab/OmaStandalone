@@ -1,0 +1,585 @@
+#        Make a species tree based on the distance of sequences
+#        generated from orthologous groups.
+Set(quiet):
+#
+#	 Refine the group of orthologous groups according to
+#	 a Filtering criteria.
+#
+#	 Do bootstrapping (1000 trials of sampling without replacement)
+#	 with parameter Bootstrapping.
+#
+#	 Compute the average distance according to the Averaging
+#	 criteria.
+#
+#	 This program surmises most previous ways of building trees
+#
+#                                        Gaston H. Gonnet (Sep 14, 2006)
+#                         based on       Gaston H. Gonnet (Jun 16, 2005)
+#
+Set(gc=2e7):  SetRandSeed();
+
+wdir := getenv('DARWIN_OMADATA_PATH'):
+wdir4 := wdir . '/Phase4/';
+ReadPhase4Files := true:
+allalldir := getenv('DARWIN_ALLALL_PATH'):
+
+ReadProgram( getenv('DARWIN_OMA_REPO_PATH') . '/lib/darwinit' );
+ReadProgram( getenv('DARWIN_OMA_REPO_PATH') . '/lib/Parameters' );
+GS := GenomeSummaries:
+NumberFormat := '%.10g':
+
+# run (for the most recent tree) as: darwindev <TreeMaker.drw
+# or as:  prefix := xxxx;  ReadProgram('TreeMaker.drw');
+
+
+#################################
+# Set unassigned run parameters #
+#################################
+if not type(Bootstrapping,positive) then Bootstrapping := 2/3 fi:
+if not assigned(prefix) then prefix := '' fi:
+if not assigned(Filtering) then Filtering := BestDimless fi:
+if not assigned(Averaging) then Averaging := AveVarWeighted fi:
+if not assigned(TopOGpercentage) then TopOGpercentage := 1 fi:
+
+printf( '# TreeMaker %s, %s, Boots=%g on %s, pid %5d, %s\n',
+    Filtering, Averaging, Bootstrapping, hostname(), getpid(), date() );
+
+# select most recent file from the Matrix directory
+fn := TimedCallSystem( 'ls -t ' . wdir . 'Matrix/' . prefix . '* | head -1' ):
+if fn[1] <> 0 then lprint('cannot find file',fn);  quit fi;
+if fn[2,-4..-2] = '.gz' then fname := fn[2,1..-5] else fname := fn[2,1..-2] fi:
+printf( '# reading %s\n', fname );
+ReadProgram( fname );
+if length(genomes) <> length(Orthologous[1]) then
+     lprint('non-matching lengths');  quit fi;
+
+M := Orthologous:
+N := length(M[1]):
+lM := length(M):
+ns := [seq(GS[i,TotEntries],i=genomes)]:
+histog2 := CreateArray(1..N):
+for i to lM do j := sum( If(z=0,0,1), z=M[i] );  histog2[j] := histog2[j]+1 od:
+if histog <> histog2 then
+    lprint(histog,histog2,histog2-histog,'inconsistent data');  quit fi;
+titorig := tit:
+MinLen := 1.e-8:
+printlevel := 0:
+
+
+###########################################################################
+# If there are LGT candidates, eliminate them from the Orthologous matrix #
+###########################################################################
+lgtn := wdir . '/LGT/LGTobjects' . prefix:
+if FileExists( lgtn ) or FileExists( lgtn . '.gz' ) then
+    ReadProgram( lgtn );
+    o := LGTobjects[1];
+    if o[Reference,1] <> fname then
+	 printf( 'source file for orthologous groups and lgts differ:\n' );
+	 lprint( o[Reference,1], fname );
+	 lprint( 'orthologous groups not used' );
+    else
+         for o in LGTobjects do
+	     k := o[Reference,2];
+	     assert( M[k] = o[Reference,3] );
+	     for i to N do M[k,i] := 0 od;
+         od;
+	 printf( '# %d groups eliminated for being LGT candidates\n',
+	     length(LGTobjects) );
+    fi;
+fi:
+
+
+
+###################################################
+# Select at least the top 1% most complete groups #
+###################################################
+for ToCompl to N
+    while sum(histog[-ToCompl..-1]) < TopOGpercentage * sum(histog)/100 do od:
+printf( '# keeping the top %d largest orthologs groups with %a\n', ToCompl,
+    histog[-ToCompl..-1] );
+for i to lM do
+    if sum(If(z=0,0,1), z=M[i]) <= N-ToCompl then
+	for j to N do M[i,j] := 0 od fi
+od:
+
+
+#############################################################
+# Test if the alignments (Als) were already saved in a file #
+#############################################################
+i := SearchString( '/Matrix/', fname ):
+if i < 0 then lprint('should not happen',i,fname);  quit fi;
+Alsname := fname[1..i] . '/Als/' . fname[i+9..-1]:
+
+
+if length(FileStat(Alsname.'.gz')) = 0 and length(FileStat(Alsname)) = 0 then
+
+    Als := CreateArray(1..lM):
+    for i to lM do if {op(M[i])} <> {0} then
+	Als[i] := CreateArray(1..N,1..N) fi od:
+
+    if ReadPhase4Files = true then
+
+	 #####################################
+	 # Read Pairs saved in Phase4/*/*.gz #
+	 #####################################
+	 for i to N do for j from i+1 to N do
+	     BestMatches := 0;
+	     ReadProgram( wdir4 . genomes[i] . '/' . genomes[j] .
+		 '.gz' );
+	     if not type(BestMatches,list(list(Pair))) then
+		 lprint(genomes[i],genomes[j],'could not read Phase4/ files');
+		 quit
+	     fi;
+	     for k to lM do if M[k,i] > 0 and M[k,j] > 0 then
+		 for z in BestMatches[M[k,i]] do if z[Entry]=M[k,j] then
+		     Als[k,i,j] := Als[k,j,i] := AlignSum( M[k,i], M[k,j],
+			z[Score100]/100, z[PamDist10000]/10000, 1..z[SumLengths],
+			2..1, z[PamVar100000]/100000, i, j, 0 )
+		 fi od;
+		 if Als[k,i,j] = 0 then
+		     lprint(genomes[i],genomes[j],'did not find Pair');
+		     quit;
+		 fi
+	     fi od;
+	     lprint( i, genomes[i], j, genomes[j], 'done' );
+	 od od;
+    else
+         ####################################################################
+         # Cross reference to find the Orthologs row where an entry appears #
+         ####################################################################
+         Row := CreateArray(1..N,[]):
+         for i to N do
+             Row[i] := CreateArray(1..ns[i]);
+             for j to lM do if M[j,i] <> 0 then Row[i,M[j,i]] := j fi od
+         od:
+
+         ##############################################
+         # Read alignments for the orthologous groups #
+         ##############################################
+         RefinedMatches := proc(
+	     ms:list( [posint,posint,numeric,numeric,posint..posint,
+	     posint..posint,positive]) )
+         global Als;
+             t1+1;
+             t2+length(ms);
+             for z in ms do
+                 r := Row[g1,z[1]];
+                 if r > 0 and r = Row[g2,z[2]] then
+                     Als[r,g1,g2] := Als[r,g2,g1] := AlignSum(op(z),g1,g2,0) fi
+             od
+         end:
+
+         t1 := Counter('RefinedMatches structures read'):
+         t2 := Counter('Matches read'):
+         t3 := Counter('files read'):
+         ###########################################
+         # Read the BestMatch from all x all files #
+         ###########################################
+         for i to N do for j from i+1 to N do
+             if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+                  g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+             fn := genomes[g1] . '/' . genomes[g2];
+             t3+1;
+             ReadProgram( allalldir . '/' . fn );
+             lprint(fn,'done');
+         od od:
+         print(t1,t2,t3);
+    fi;
+    OpenWriting( Alsname );
+    printf('Als := CreateArray(1..%d):\n',lM);
+    for i to lM do
+	if Als[i]=0 then next fi;
+	printf('Als[%d] := CreateArray(1..%d,1..%d):\n',i,N,N);
+	for g1 to N do for g2 from g1+1 to N do
+	    if Als[i,g1,g2]=0 then next fi;
+	    printf('Als[%d,%d,%d]:=Als[%d,%d,%d]:=%A:\n',
+		i,g1,g2,i,g2,g1,Als[i,g1,g2]);
+	od od:
+    od:
+    OpenWriting( previous );
+    CallSystem( 'gzip -9v ' . Alsname . ' &' );
+
+else ReadProgram( Alsname ) fi:
+
+
+
+####################################################
+# Coloring of nodes, select no more than 10 colors #
+####################################################
+ColorList := ['green4','blue','red','gold','magenta','cyan',
+   'purple', 'red2', 'green2', 'blue2']:
+for i to min( seq( length(GS[z,Lineage]), z=genomes )) do
+   lins := { seq( GS[z,Lineage,i], z=genomes )};
+   if length(lins) > length(ColorList) then break fi;
+od:
+LineageIndex := i-1:
+lins := { seq( GS[z,Lineage,LineageIndex], z=genomes )}:
+ColorCode := table(black):
+
+Above := table(''):
+if LineageIndex > 1 then
+    for z in genomes do
+        Above[GS[z,Lineage,LineageIndex]] := GS[z,Lineage,LineageIndex-1] od
+fi:
+
+XRef := []:
+lins := sort(lins,x->Above[x]):
+for i to length(lins) do
+    ColorCode[lins[i]] := ColorList[i];
+    XRef := append( XRef, LTEXT( 90, 3*i,
+        sprintf( '%s - %s', Above[lins[i]], lins[i]),
+        color=string_RGB(ColorList[i]) ))
+od:
+
+labels := [ seq( Color( ColorCode[GS[genomes[z],Lineage,LineageIndex]],
+	genomes[z]), z=1..N )]:
+
+
+
+####################################################
+# Initial orthologous groups that will participate #
+####################################################
+groups := []:
+for i to lM do
+    for i1 to N do if M[i,i1] > 0 then
+	for i2 from i1+1 to N do
+	    if M[i,i2] > 0 and not type(Als[i,i1,i2],AlignSum) then
+		error(i,i1,i2,M[i],'missing alignment') fi
+	od
+    fi od;
+    if {op(M[i])} <> {0} then groups := append(groups,i) fi
+od:
+printf( '%d orthologous groups before Filtering=%s, %s, %s\n',
+	length(groups), Filtering, Averaging, Class );
+
+
+
+
+#######################################################
+# If the Averaging=Concatenate, preprocess alignments #
+#######################################################
+if Averaging = 'Concatenate' then
+     dbs := [ seq( ReadDb(GenomeFileName[z]), z=genomes )];
+     CreateDayMatrices();
+     C := CreateArray(1..20,1..20);
+     n := 0;
+     for i to 20 do for j from i to 20 do n := C[i,j] := C[j,i] := n+1 od od;
+     DMS2 := CreateArray(1..212,1..length(DMS));
+     for k to length(DMS) do
+	 DMS2[211,k] := DMS[k,FixedDel];
+	 DMS2[212,k] := DMS[k,IncDel];
+	 for i to 20 do for j from i to 20 do DMS2[C[i,j],k] := DMS[k,Sim,i,j] od od
+     od;
+     n := min(300,length(DMS));
+     FD1 := ln(10)/10*(DMS[1,FixedDel]-DMS[n,FixedDel]) /
+	(ln(DMS[1,PamDistance])-ln(DMS[n,PamDistance]));
+     nD := 4;	# nD is the number of alignments computed per pair
+
+     # Find DMs to be used for every pair of genomes
+     PairDMS := CreateArray(1..N,1..N,1..nD);
+     for i to N do for j from i+1 to N do
+	 dmin := DBL_MAX;  dmax := -DBL_MAX;
+	 for w in groups do if type(Als[w,i,j],AlignSum) then
+	     dmin := min(dmin,Als[w,i,j,PamDistance]);
+	     dmax := max(dmax,Als[w,i,j,PamDistance]);
+	 fi od;
+	 imin := imax := 1;
+	 for k from 2 to length(DMS) do
+	     if |DMS[k,PamDistance]-dmin| < |DMS[imin,PamDistance]-dmin| then
+		imin := k fi;
+	     if |DMS[k,PamDistance]-dmax| < |DMS[imax,PamDistance]-dmax| then
+		imax := k fi;
+	 od;
+	 for k to nD do PairDMS[i,j,k] := PairDMS[j,i,k] :=
+	     DMS[ round( (2*k-1)/(2*nD)*(imax-imin) + imin )] od
+     od od;
+
+     # Compute the Scores of all the alignments involved
+     for w in groups do
+	 for i to N do for j from i+1 to N do
+	     als := Als[w,i,j];
+	     if als=0 then next fi;
+	     t := CreateArray(1..nD,1..212);
+	     for k to nD do
+		 DB := dbs[als[Gen1]];  s1 := Sequence(Entry(als[Entry1]));
+		 DB := dbs[als[Gen2]];  s2 := Sequence(Entry(als[Entry2]));
+		 al := Align(s1,s2,PairDMS[i,j,k]);
+		 dps := DynProgStrings( al );
+		 s1 := dps[2];  s2 := dps[3];
+		 for m to length(s1) do
+		     if s1[m]='X' or s2[m]='X' then next
+		     elif s1[m]='_' then
+			  n := If( m=1 or s1[m-1] <> '_', 211, 212 )
+		     elif s2[m]='_' then
+			  n := If( m=1 or s2[m-1] <> '_', 211, 212 )
+		     else n := C[AToInt(s1[m]),AToInt(s2[m])] fi;
+		     t[k,n] := t[k,n]+1;
+		 od;
+	     od;
+	     Als[w,i,j] := AlignSum( op(als), t )
+	 od od;
+	 printf( 'alignments for group %d completed\n', w );
+     od;
+elif member(Averaging,{Arithmetic,Weighted,LengthWeighted,ScoreWeighted}) then
+
+############################################
+# Process other special forms of Averaging #
+############################################
+elif member(Averaging,{AveVarWeighted,AveLengthWeighted,AveScoreWeighted}) then
+     for ig in groups do
+	 Alsi := Als[ig];
+	 w1 := w0 := 0;
+	 for i1 to N do for i2 from i1+1 to N do if type(Alsi[i1,i2],AlignSum) then
+	     if Averaging=AveVarWeighted then
+	          w1 := w1 + Alsi[i1,i2,PamVariance];
+	     elif Averaging=AveLengthWeighted then
+		  r1 := Alsi[i1,i2,Range1];
+		  r2 := Alsi[i1,i2,Range2];
+	          w1 := w1 + r1[2]-r1[1]+r2[2]-r2[1]+2
+	     elif Averaging=AveScoreWeighted then
+	          w1 := w1 + Alsi[i1,i2,Score];
+	     else lprint('invalid Averaging mode:',Averaging);  done fi;
+	     w0 := w0+1
+	 fi od od;
+	 w1 := If( Averaging=AveVarWeighted, w0/w1, w1/w0 );
+	 for i1 to N do for i2 to N do if type(Alsi[i1,i2],AlignSum) then
+	     Alsi[i1,i2,Other] := w1
+	 fi od od;
+     od
+else lprint('invalid Averaging mode:',Averaging);  done
+fi:
+
+
+
+###################################################
+# Select best Distance tree for Dist/Var matrices #
+###################################################
+TreeFromGroups := proc( gr:list(posint) )
+    Dist := CreateArray(1..N,1..N);
+    Var := CreateArray(1..N,1..N);
+    for i to N do for j from i+1 to N do
+	r := AverageDistVar( seq( If(Als[z,i,j]=0,NULL,Als[z,i,j]), z=gr ));
+	Dist[i,j] := Dist[j,i] := r[1];
+	Var[i,j] := Var[j,i] := r[2];
+    od od;
+    t := LeastSquaresTree( Dist, Var, labels, Trials=30 );
+    [ MST_Qual, DimensionlessFit, t, Dist, Var ]
+end:
+
+
+#############################################
+# Do the actual orthologous group selection #
+#############################################
+if length(groups) < 2 then
+     lprint('too few groups to build tree');  done
+
+elif Filtering='MostComplete' then
+     nz := i -> sum( If(z=0,1,0), z=M[i] );
+     groups := sort( groups, nz );
+     best := [TreeFromGroups(groups),groups];
+     for i from length(groups) by -1 to 2 do
+	 if nz(groups[i]) <> nz(groups[i-1]) then
+	      t := TreeFromGroups(groups[1..i-1]);
+	      if t[2] < best[1,2] then best := [t,groups[1..i-1]] fi
+	 fi
+     od;
+     groups := best[2];
+
+elif Filtering='BestSubset' then
+     printlevel := 4;
+     t := BestSubset( {op(groups)}, x -> TreeFromGroups([op(x)])[2],
+	MinSize=round(length(groups)/2) );
+     printlevel := 0;
+     groups := [op(t)];
+
+elif Filtering='BestDimless' then
+     # remove the bottom 20% of those groups which when removed
+     # improve the MST_Qual by the most (MST_Qual for a consistent
+     # set of data should be identical to the Dimensionless index)
+     RemoveOne := proc( i:posint )
+	TreeFromGroups( [op( {op(groups)} minus {i} )] )[2] end:
+     groups := sort( groups, RemoveOne );
+     groups := groups[ round(length(groups)/5)..-1 ];
+
+elif Filtering='HighestScore' then
+     # take the 80% of the groups which have the highest total score
+     # (not normalizing for the fact that some groups will have more
+     #  alignments/scores than others)
+     totscore := proc( a:matrix )
+	t := 0;
+	for i to length(a) do for j from i+1 to length(a) do
+	    if type(a[i,j],AlignSum) then t := t + a[i,j,Score] fi od od;
+	t end:
+     groups := sort( groups, x -> totscore(Als[x]) );
+     groups := groups[ round(length(groups)/5)..-1 ];
+
+elif Filtering='CommonTopology' then
+     idt := [];
+     for i in groups do if sum( If(z>0,1,0), z=M[i] ) = N then
+	 t := TreeFromGroups( [i] );
+	 found := false;
+	 for w in idt do if IdenticalTrees(w[2],t[3]) then
+	     w[1] := append(w[1],i);
+	     found := true;
+	     break
+	 fi od;
+	 if not found then idt := append(idt,[[i],t[3]]) fi;
+     fi od;
+     idt := sort( idt, x -> -length(x[1]) );
+     groups := idt[1,1];
+
+else lprint(Filtering,'is an invalid mode');  done fi:
+if length(groups) < 2 then lprint('too few groups to build tree');  done fi;
+printf( '%d orthologous groups after Filtering=%s, %s, %s\n',
+	length(groups), Filtering, Averaging, Class );
+
+
+CompleteBestTree := TreeFromGroups(groups):
+besttree := CompleteBestTree[3]:
+# for drawing tree, make min branch length 1/100 of longest distance
+minbr := min(max(CompleteBestTree[4],0.05),2):
+tit := sprintf( '%s, %d top groups, %d used here, %s, %s, Fit=%.4g',
+    titorig, ToCompl, length(groups), Averaging,
+    Filtering, CompleteBestTree[2] );
+
+
+
+####################
+# Do bootstrapping #
+####################
+if Bootstrapping < 1 then
+    BootTrials := 1000;
+    if ln(BootTrials)+length(groups)*ln(1-Bootstrapping) > ln(1/1000) then
+	lprint( 'not enough groups for Bootstrapping');  quit fi;
+    BootsTrees := []:
+    st1 := Stat('Dimensionless fit index'):
+
+    #################################################
+    # For a bootstrapping run, do BootTrials trials #
+    #################################################
+    to BootTrials do
+	newgr := [ seq( If( Rand()<Bootstrapping, z, NULL ), z=groups )];
+	t := TreeFromGroups( newgr );
+	BootsTrees := append(BootsTrees,t[3]);
+	st1 + t[2];
+    od;
+
+    tit := sprintf( '%s, %d top groups, %d used here, %s, %s,',
+	titorig, ToCompl, length(groups),
+	Averaging, Filtering ) . sprintf(
+	' DimlessQual: best: %.5g, ave: %s, var: %.4g, Z=%.4g',
+	CompleteBestTree[2], st1[MeanVar], st1[Variance],
+	(CompleteBestTree[2]-st1[Mean]) / sqrt(st1[Variance]) );
+
+    if ConfidenceOnNodes=true then
+        besttree := BootstrapTree( CompleteBestTree[3], BootsTrees );
+        DrawTree( besttree, Unrooted, Legend, LengthFormat='',
+	    InternalNodes=ShowBootstrap, OrderLeaves=LeftHeavy,
+	    MinBranchLength=minbr, Title=tit, XRef );
+    else
+        besttree := BootstrapTree( CompleteBestTree[3], BootsTrees, 'Branches' );
+        DrawTree( besttree, Unrooted, Legend, LengthFormat='',
+	    BranchDrawing=ShowBootstrap, OrderLeaves=LeftHeavy,
+	    MinBranchLength=minbr, Title=tit, XRef );
+    fi;
+
+    prints(tit);
+fi;
+
+
+#####################################################
+# Analysis of equal genus being on the same subtree #
+#####################################################
+InSubtreeAlone := proc( tree:Tree, gen:set(string) )
+    ls := {};
+    for z in Leaves(tree) do ls := append(ls,z[1,2]) od;
+    if ls = gen then true
+    elif gen minus ls <> {} then false
+    else InSubtreeAlone(tree[1],gen) or InSubtreeAlone(tree[3],gen) fi
+end:
+
+SubtreeWith := proc( tree:Tree, gen:set(string) )
+    ls := {};
+    for z in Leaves(tree) do ls := append(ls,z[1,2]) od;
+    if ls = gen then tree
+    elif gen minus ls <> {} or type(tree,Leaf) then false
+    else t1 := procname(tree[1],gen);
+	 if type(t1,Tree) then return(t1) fi;
+	 t2 := procname(tree[3],gen);
+	 if type(t2,Tree) then t2 else tree fi
+    fi
+end:
+
+# number of Lineage classifications that match
+mlen := proc( a, b )
+la := GS[a,Lineage];
+lb := GS[b,Lineage];
+for i to min(length(la),length(lb)) while la[i]=lb[i] do od;
+i-1
+end:
+
+bylineage := sort( genomes, x -> GS[x,Lineage] ):
+miscs := []:
+for depth from 3 to max( seq( mlen(bylineage[i-1], bylineage[i]), i=2..N) ) do
+
+    i1 := 0:
+    for i2 to N do if i2=N or mlen( bylineage[i2], bylineage[i2+1]) < depth then 
+        if i2 = i1+1 then i1 := i2;  next fi;
+        gen := { seq( bylineage[i],i=i1+1..i2) };
+        if not InSubtreeAlone( besttree, gen ) then
+	    subt := SubtreeWith( besttree, gen );
+	    ls := {};
+	    for z in Leaves(subt) do ls := append(ls,z[1,2]) od;
+	    misc := Misclassification( Class, fname,
+		GS[gen[1],Lineage,1..depth], gen, ls minus gen, subt );
+	    print(misc);
+	    miscs := append(miscs,misc);
+        fi;
+        i1 := i2;
+    fi od:
+
+od:
+
+
+if Bootstrapping < 1 and
+    (not type(BootsQuality,numeric) or BootsQuality > st1[Mean]) then
+    ###################################################################
+    # If the bootstrapping index is better, append to Matrix/... file #
+    ###################################################################
+    ThisMayFail := CallSystem( 'gunzip -v ' . fname . '.gz' );
+    OpenAppending( fname );
+    lprint( 'BestDimlessTree :=', besttree, ':' );
+    printf( 'BestDimlessTitle := %A:\n', tit );
+    printf( 'XRef := %A:\n', XRef );
+    printf( 'Misclassifications := %A:\n', miscs );
+    printf( 'TopGroupsUsed := %a:\n', histog[-ToCompl..-1] );
+    t := sum( [seq(sign(w),w=M[i])], i=groups );
+    printf( 'ProtUsedPerGenome := %a:\n', t );
+    printf( '# ProtUsedPerGenome: avg=%g, min=%d, max=%d, std=%g\n',
+	avg(t), min(t), max(t), std(t) );
+    printf( 'BestTreeDists := %a:\n',CompleteBestTree[4]);
+    printf( 'BestTreeVars := %a:\n',CompleteBestTree[5]);
+    printf( 'OrthologousGroupsUsed := %a:\n', groups );
+    printf( 'BootsQuality := %A:\n', st1[Mean] );
+    OpenWriting( previous );
+    CallSystem( 'gzip -9v ' . fname );
+
+    DrawTree( besttree, Unrooted, Legend, LengthFormat='', 
+        BranchDrawing=ShowBootstrap, MinBranchLength=minbr, 
+        OrderLeaves=LeftHeavy, Title=tit, XRef );
+    ViewPlot();  sleep(5);
+    CallSystem( 'mv temp.ps ' . Class . '.ps' );
+
+    nwktree := copy(besttree):
+    for z in Leaves(nwktree) do z[1] := GS[z[1,2],SCINAME] od:
+    OpenWriting( getenv('DARWIN_BIORECIPES_PATH') . '/PhyloTrees/Tree/' .
+        N . Class . 'Genomic.nwk' );
+    prints( Tree_Newick(nwktree) );
+    OpenWriting( previous );
+fi:
+
+done;
+
+###############################################################################
+###############################################################################
+

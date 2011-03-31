@@ -1,0 +1,22 @@
+# Convert {DNA,Protein} sequences from the current database (DB) into fasta format
+#   23.2.2005, C. Dessimoz (based on the code of M. Friberg)
+
+PrintEntryInFasta := proc( e:Entry, seqtag:string )
+    option internal;
+    printf('>%s_%d\n', SearchTag('5LETTERNAME', DB[string]), GetEntryNumber(e));
+    s := SearchTag(seqtag, e);
+    for i to length(s) by 80 do
+        printf('%s\n', s[i..min(length(s), i+79)]) 
+    od;
+end;
+
+DbToFasta := proc( fastafile:string, seqtag:string )
+    prev := Set(quiet=true);
+    OpenWriting(fastafile);
+    for e in Entries() do
+        PrintEntryInFasta(e, seqtag); 
+    od;
+    OpenWriting(previous);
+    Set(quiet=prev);
+end;
+

@@ -1,0 +1,19 @@
+OrthologsLib := TimedCallSystem('pwd')[2,1..-2].'/lib/':
+
+OrthologousMatrix := noeval(ReadLibrary( OrthologsLib.'OrthologousMatrix',
+	OrthologousMatrix)):
+GenomeSummary := noeval(ReadLibrary( OrthologsLib.'GenomeSummary',
+	GenomeSummary)):
+
+RefinedMatches := noeval(ReadLibrary( OrthologsLib.'RefinedMatches.drw',
+        RefinedMatches)):
+ReadProgram( OrthologsLib.'Pair');
+
+WriteResults := noeval(ReadLibrary( OrthologsLib.'WriteResults.drw', WriteResults));
+ScaffoldVerification := noeval(ReadLibrary( OrthologsLib.'ScaffoldVerification.drw', ScaffoldVerification));
+ObjScaffold := noeval(ReadLibrary( OrthologsLib.'ScaffoldVerification.drw', ObjScaffold));
+
+IdentifyPosition := noeval(ReadLibrary (OrthologsLib.'IdentifyPosition.drw',
+IdentifyPosition));
+DistBounds := noeval(ReadLibrary(OrthologsLib.'IdentifyPosition.drw',
+DistBounds));

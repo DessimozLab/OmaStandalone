@@ -1,0 +1,8 @@
+
+Pair := proc( Score100:integer, Entry:posint, PamDist10000:posint,
+        PamVar100000:positive, SumLengths:posint, r1:array(posint), r2:array(posint) ) option NoIndexing;
+if nargs = 7 then noeval(procname(args))
+else error(args,'invalid arguments') fi
+end:
+CompleteClass(Pair):
+

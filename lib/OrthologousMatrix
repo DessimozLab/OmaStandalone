@@ -1,0 +1,437 @@
+####################################################################
+# Looks for a third alignment and computes a better stdev estimate #
+####################################################################
+#           y1
+#     r    /s       M1 -> (x1,y1)
+# x1-------         M2 -> (x1,y2)
+#          \t       M3 -> (y1,y2)
+#           \
+#            y2
+
+# return 10000*StdDiff to allow direct comparison with PamDist10000
+StdDiff10000 := proc(X,Y,x1,M1,M2,context:{'SP','VP'})
+    y1 := M1[Entry]; 
+    D1 := M1[PamDist10000]/10000; V1 := M1[PamVar100000]/100000;
+    y2 := M2[Entry]; 
+    D2 := M2[PamDist10000]/10000; V2 := M2[PamVar100000]/100000;   
+    if y1 > y2 then t := y1;  y1 := y2;  y2 := t fi;
+
+    # in case we cannot compute the variance, we are conservative,
+    # meaning that the tolerance is very small in case of SP
+    # formation, and the required difference is as large as independent
+    # distances in case of verification of SP:
+    bm := decompress(BestMatch[Y,Y,y1]);
+    found := false;
+    for M3 in bm do if M3[Entry]=y2 then found := true;  break fi od:
+    if not found then
+        return( If(context='SP',1000,10000*sqrt(V1+V2)) )
+    else
+	D3 := M3[PamDist10000]/10000; V3 := M3[PamVar100000]/100000;   
+        r := 0.5*(D1+D2-D3);
+        s := D1 - r;
+        t := D2 - r;
+        # dubious cases: return a conservative interval
+        if r < 0 then return(10000*sqrt(V1+V2)); fi;
+        if s < 0 then return(10000*sqrt(V1+V3)); fi;
+        if t < 0 then return(10000*sqrt(V2+V3)); fi;
+        
+        if V3>V1+V2 then
+            return( If(context='SP',1000,10000*sqrt(V1+V2)) )
+        fi;
+
+
+	# 10000 * triplet covariance estimation from Dessimoz et. al 2006
+        return( 10000 *
+            (D1+D2)^(-1.308966/2) *
+            (V1+V2)^(1.043483/2) *
+            D3^(0.689524) *
+            V3^(-0.333925/2) *
+            (V1*V2)^(0.159016/2) )
+    fi;
+end:
+
+
+####################################
+# Orthologous matrix using cliques #
+####################################
+OrthologousMatrix := proc( MinScore:positive, LengthTol:positive, 
+    StablePairTol:positive, VerifiedPairTol: positive)
+global CliqueIterFactor, histog, triangle_analysis, StablePairs, VPairs, 
+       BreakingStatsG,witnesses, PossContigHits, DefContigHits, ContigHits,
+       DB, ParamSet;
+
+# Boundary scores for stable pairs
+starttime := time();
+
+    totpairs := rempairs := 0;
+    StablePairs := CreateArray(1..N,1..N):
+    for X to N do for Y to N do if X <> Y then
+        if assigned(ContigStablePairTol) and (isContig[X] or isContig[Y]) then
+            Tol := ContigStablePairTol;
+        else
+            Tol := StablePairTol;
+        fi;
+        StablePairs[X,Y] := CreateArray(1..ns[X],{});
+        for x1 to ns[X] do
+            if BestMatch[X,Y,x1] <> [] then
+                t := sort(decompress(BestMatch[X,Y,x1]),x->-x[PamDist10000]);
+                lt := length(t);
+                active := CreateArray(1..lt,true);
+                if X > Y then for i1 to lt do
+                    if member(x1,decompress(StablePairs[Y,X,t[i1,Entry]]))
+            then break;
+                    else active[i1] := false fi 
+                od fi;   
+            for i1 to lt do if active[i1] then
+                    for i2 from lt by -1 to i1 + 1 do if active[i2] then
+                # diff is 10000* difference of D1 and D2
+                        diff := abs(t[i1,PamDist10000] - t[i2,PamDist10000]);
+                        if diff > Tol * 
+                            sqrt(1000*(t[i1,PamVar100000] + t[i2,PamVar100000])) or
+                            diff > Tol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP') 
+                            then
+                            if t[i1,PamDist10000] > t[i2,PamDist10000] then
+                                active[i1] := false;
+                                break;
+                            else
+                                active[i2] := false
+                            fi;
+                        fi:
+                    fi od;
+                fi od;
+                totpairs := totpairs + lt;
+                StablePairs[X,Y,x1] := { seq( If(active[i1],t[i1,Entry],NULL),
+                            i1=1..lt ) };
+                rempairs := rempairs + lt - length(StablePairs[X,Y,x1]);
+            StablePairs[X,Y,x1] := compress(StablePairs[X,Y,x1]);
+            fi;
+        od;
+        printf( '%d stable pairs found for %s vs %s\n',
+            sum(length(decompress(z)),z=StablePairs[X,Y]),
+        genomes[X], genomes[Y] );
+    fi od od:
+    if printlevel >= 3 then printf( 
+        'OrthologousMatrix: SP formation done, %d removed from %d BestMatches\n', 
+        rempairs, totpairs);
+    fi;
+
+###########################
+# Thinning of StablePairs #
+###########################
+thnt := thnr := 0;
+for X to N do for Y to N do if X <> Y then
+    for x1 to ns[X] do
+        thnt := thnt + length(decompress(StablePairs[X,Y,x1]));
+        for y2 in decompress(StablePairs[X,Y,x1]) do
+            if not member(x1,decompress(StablePairs[Y,X,y2])) then
+                thnr := thnr+1;
+                StablePairs[X,Y,x1] :=
+		    compress(decompress(StablePairs[X,Y,x1]) minus {y2}) fi
+        od
+    od
+fi od od;
+if printlevel >= 3 then printf(
+    'OrthologousMatrix: %d entries thinned out of %d StablePairs\n',
+    thnr, thnt )
+fi;
+
+##############################################################################
+# Scaffold verification
+#
+#  - go over all genomes marked as being scaffolds
+#   - look for best matches in all other genomes
+#     - if # of genomes with many:1 matches > threshold = proportion * nb of genomes
+#       (keep track of the number of matches
+#       - now make sure that these matches do not overlap with more than MaxOverlap 
+#       - if that's the case, we have a candidate split gene!!
+
+ScaffoldVerification([MinProbContig, MinBestScore, DistConfLevel,
+                        AllowMultipleHits, MaxContigOverlap, ForwardBestMatch, 
+                        BackwardBestMatch]):
+
+if RunEverything then
+
+#
+#    ------------------                     ------------------
+#    |                |         a1          |                |
+#    |    ====== x1   | ------------------- |    ====== y2   |
+#    |       \ .      |                     |    . /         |
+#    |X       \   .   |                     |Y.   /          |
+#    ----------\-----.-                    .-----/------------
+#               \       .               .       /
+#                \       a4.         .b3       /
+#               a3\           .   .           /b4
+#                  \           . .           /
+#                ---\-------.-------.-------/------
+#                |   \   .             .   /      |
+#                |   ====== z3         ====== z4  |
+#                |                                |
+#                |Z                               |
+#                ----------------------------------
+#
+#        X, Y and Z are genome numbers
+#        x1, y2, z3 and z4 are entry numbers
+#        a1, a3, a4, b3, b4 are alignments (Pair structure)
+#
+
+#       When we have the conditions:
+#                  d(x1,z3) < d(x1,z4)
+#                  d(y2,z4) < d(y2,z3) which added together imply
+#       d(x1,z3) + d(y2,z4) < d(x1,z4) + d(y2,z3)
+#
+#       the only possible quartet is
+#
+#            x1                               y2
+#              \                             /
+#               \p                         s/
+#                \                         /
+#                 \            r          /
+#                  o---------------------o
+#                 /                       \
+#                /                         \
+#               /q                         t\
+#              /                             \
+#            z3                               z4
+#
+#  eqns := { a1[PamDist]=p+r+s, a3[PamDist]=p+q, a4[PamDist]=p+r+t,
+#       b3[PamDist]=q+r+s, b4[PamDist]=s+t };
+#  sol := solve(eqns,{p,q,r,s,t});
+#
+#  These five lengths, p,q,r,s and t must be non-negative
+#  (given the above conditions, r cannot be negative)
+#
+#
+#                  Gene duplication O
+#                                  / \r
+#                                 /   \
+#                                /     \
+#                         ------/-------\------
+#               Speciation|    /         \    |
+#               events    |   O           O   |
+#                         |  /|\         /|\  |
+#                         --/-|-\-------/-|-\--
+#                          /  |  \     /  |  \
+#                         /   |   x   x   |   \
+#                       p/   q|           |t   \s
+#                       /     |           |     \
+#                      /      |           |      \
+#          -----------/--   --|-----------|--   --\-----------
+# Present  |         /  |   | |           | |   |  \         |
+#  day     |        x1  |   | z3          z4|   |   y2       |
+# species  |   X        |   |       Z       |   |        Y   |
+#          --------------   -----------------   --------------
+#
+#       dist(x1,z4) - dist(x1,z3) > tol           r+t-q > tol
+#       dist(y2,z3) - dist(y2,z4) > tol           q+r-t > tol
+#
+#       r - |t-q| > tol     (single test)
+#
+#       Var( r-|t-q| ) = Var(dist(z3,z4))
+
+
+# witness must exit in at least 10% of 5 different genomes
+WitnessCrit:=min(ceil((N-2)*0.1),5);
+# SP will not be broken if length of alignment is not sufficient
+SumLengthsTol := 0.9;
+NumAllBreak:=CreateArray(1..N^2);
+NumAllGenom:=CreateArray(1..N);
+VPairs := CreateArray(1..N,1..N):
+idone := 0;  st := time();
+for X to N do for Y from X+1 to N do
+    idone := idone+1;
+    VPairs[X,Y] := CreateArray(1..ns[X],[]);
+    VPairs[Y,X] := CreateArray(1..ns[Y],[]);
+    for x1 to ns[X] do 
+        for a1 in decompress(BestMatch[X,Y,x1]) do
+            y2 := a1[Entry];
+            if not member(y2,decompress(StablePairs[X,Y,x1])) then next fi;
+            bad := false;
+            witnesses := Table(center, border, gutter=4, 
+              Row('Stable',genomes[X],a1[Score100]/100,SpanPrevious,genomes[Y]), 
+              Row('Pair',x1,a1[PamDist10000]/10000,SpanPrevious,y2), Rule);
+            totalbreakings:=genomesbreaking:=0;
+            for Z to N while not bad 
+              or (UseSeveralWitnesses=true and GetStats=true) do
+              if Z <> X and Z <> Y then
+                for a3 in decompress(BestMatch[X,Z,x1]) while not bad 
+                  or (UseSeveralWitnesses=true and GetStats=true) do
+                  z3 := a3[Entry];
+                  if not member(z3,decompress(StablePairs[X,Z,x1])) then next fi;
+                  for b4 in decompress(BestMatch[Y,Z,y2]) do
+                    z4 := b4[Entry];
+                    if z4=z3 or not member(z4,decompress(StablePairs[Y,Z,y2]))
+			then next fi;
+                    
+                    found := false;
+                    for a4 in decompress(BestMatch[X,Z,x1]) do
+                        if a4[Entry]=z4 then found := true;  break fi od;
+                    if not found then next fi;
+                    if a4[SumLengths] * SumLengthsTol > a3[SumLengths] or 
+                       a4[PamDist10000] - a3[PamDist10000] < VerifiedPairTol * 
+                          StdDiff10000(X,Z,x1,a3,a4,'VP') then next fi;
+                        
+                    found := false;
+                    for b3 in decompress(BestMatch[Y,Z,y2]) do
+                        if b3[Entry]=z3 then found := true;  break fi od;
+                    if not found then next fi;
+                    if b3[SumLengths] * SumLengthsTol > b4[SumLengths] or
+                       b3[PamDist10000] - b4[PamDist10000] < VerifiedPairTol *
+                          StdDiff10000(Y,Z,y2,b3,b4,'VP') then next fi;
+                        
+                    # testing that p,q,s,t are all positive
+                    if a3[PamDist10000]-b3[PamDist10000]+a1[PamDist10000] < 0 or
+                       b3[PamDist10000]+a3[PamDist10000]-a1[PamDist10000] < 0 or
+                       b4[PamDist10000]+a1[PamDist10000]-a4[PamDist10000] < 0 or
+                      -a1[PamDist10000]+a4[PamDist10000]+b4[PamDist10000] < 0 then
+                        next fi;
+                        
+                    scorebal := abs(a4[PamDist10000]-b3[PamDist10000])/
+                                sqrt(1000*(b3[PamVar100000]+a4[PamVar100000]));
+                    if scorebal > 2 then next fi;
+                    
+                    if GetStats=true then
+                      witnesses:=append(witnesses,
+                      Row('broken',a3[Score100]/100,   a4[Score100]/100,
+                                   b3[Score100]/100,   b4[Score100]/100),
+                      Row('by',    a3[PamDist10000]/10000, a4[PamDist10000]/10000, 
+                                   b3[PamDist10000]/10000, b4[PamDist10000]/10000),
+                      Row(genomes[Z],z3,SpanPrevious,z4,SpanPrevious), Rule);
+                    fi;
+                    if UseSeveralWitnesses=true then
+                      totalbreakings := totalbreakings+1;
+                      if genomesbreaking=0 or Z>prevZ then
+                        prevZ := Z;
+                        genomesbreaking := genomesbreaking+1;
+                      fi;
+                      if genomesbreaking>WitnessCrit then bad:=true fi;
+                    else
+                      bad := true; 
+                      break;
+                    fi;
+                  od;
+                od;
+              fi;
+            od;
+            if not bad then
+                VPairs[X,Y,x1] := append(VPairs[X,Y,x1],y2);
+                VPairs[Y,X,y2] := append(VPairs[Y,X,y2],x1);
+            fi;
+            if GetStats=true and UseSeveralWitnesses=true and totalbreakings>0 then
+                witnesses := append(witnesses,
+                  Row(string(totalbreakings).' witnesses in '.string(genomesbreaking).
+                      ' different genomes.',seq(SpanPrevious,w=1..4)));
+                if genomesbreaking>WitnessCrit then print(witnesses) fi;
+                NumAllBreak[totalbreakings] := NumAllBreak[totalbreakings]+1;
+                NumAllGenom[genomesbreaking] := NumAllGenom[genomesbreaking]+1;
+            fi;
+    od od;
+    for x1 to ns[X] do VPairs[X,Y,x1] := compress({op(VPairs[X,Y,x1])}) od;
+    for y2 to ns[Y] do VPairs[Y,X,y2] := compress({op(VPairs[Y,X,y2])}) od;
+    printf( '%s-%s, %d verified of %d stable pairs, %.3f%% done, %.2f hrs left\n',
+        genomes[X], genomes[Y], sum(length(decompress(z)),z=VPairs[X,Y]),
+        sum(length(decompress(z)),z=StablePairs[X,Y]),
+        200*idone/(N*(N-1)), (N*(N-1)/2-idone)*(time()-st)/idone/3600 );
+od od:
+
+BreakingStatsG:=[NumAllBreak,NumAllGenom];
+
+ EdgeCost := proc( s:set(posint) )
+   if length(s) <> 2 then error(s,'invalid arguments') fi;
+   n1 := cli[s[1]];  n2 := cli[s[2]];
+   for bm in decompress(BestMatch[n1[1],n2[1],n1[2]]) do
+       if bm[Entry]=n2[2] then return( bm[Score100] ) fi od;
+   error(s,n1,n2,'match not found')
+ end:
+
+# find the cliques of Verified Pairs which become the Orthologous groups
+Orthologous := []:
+Used := CreateArray(1..N):
+for i to N do Used[i] := CreateArray(1..ns[i],false) od:
+
+do
+  VerifiedPairs := [];
+  ls := 0;
+  for X to N do for Y from X+1 to N do
+    for x1 to ns[X] do if not Used[X,x1] then
+        for a1 in decompress(BestMatch[X,Y,x1]) do if a1[Score100] > ls then
+            y2 := a1[Entry];
+            if not Used[Y,y2] and member(y2,decompress(VPairs[X,Y,x1])) then
+                VerifiedPairs := append( VerifiedPairs, [a1[Score100],X,x1,Y,y2] );
+                if length(VerifiedPairs) > 15000 then
+                    VerifiedPairs := sort(VerifiedPairs)[-10000..-1];
+                    ls := VerifiedPairs[1,1];
+                    lprint('shrinking VerifiedPairs',X,Y,ls);
+                    fi
+                fi
+            fi od
+        fi od
+    od od:
+  if length(VerifiedPairs)=0 then break fi;
+  printf( 'Iteration with %d Verified pairs, %d in Orthologous\n',
+        length(VerifiedPairs), length(Orthologous) );
+
+  VerifiedPairs := sort(VerifiedPairs):
+  for iz from length(VerifiedPairs) by -1 to 1 do
+
+    z := VerifiedPairs[iz];
+    g1 := z[2];  i1 := z[3];  g2 := z[4];  i2 := z[5];
+    if Used[g1,i1] or Used[g2,i2] then next fi;
+    if not member(i2,decompress(VPairs[g1,g2,i1])) or
+       not member(i1,decompress(VPairs[g2,g1,i2])) then
+        error(z,decompress(VPairs[g1,g2,i1]),decompress(VPairs[g2,g1,i2]),
+	    'should not happen') fi;
+
+    # the nodes of the graph are pairs of [genome,entry]
+    cli := [ [g1,i1], [g2,i2] ];
+    for g3 to N do if g3 <> g1 and g3 <> g2 then
+        cli := append( cli, seq( If(Used[g3,w],NULL,[g3,w]),
+                w = decompress(VPairs[g1,g3,i1]) intersect
+		    decompress(VPairs[g2,g3,i2]) ) )
+        fi od;
+
+    # Make graph to find cliques
+    edg := []:
+    for j1 to length(cli) do for j2 from j1+1 to length(cli) do
+        g1 := cli[j1,1];  i1 := cli[j1,2];
+        g2 := cli[j2,1];  i2 := cli[j2,2];
+        if g1=g2 then next fi;
+        if member(i2,decompress(VPairs[g1,g2,i1])) then
+	    edg := append(edg,{j1,j2}) fi
+    od od;
+
+    if length(edg) <> length(cli)*(length(cli)-1)/2 then
+        # printf( '|n|=%d, |e|=%d, max wei=%.2f\n', length(cli), length(edg),
+        #    z[1]/100 );
+        CliqueIterFactor := 2;
+        cli1 := MaxEdgeWeightClique(
+            Graph( Edges( seq( Edge(EdgeCost(z),z[1],z[2]), z=edg ))) );
+        cli := [seq( cli[i], i=cli1)]
+    fi;
+
+    if length(cli) < 2 then next fi;
+
+    row := CreateArray(1..N);
+    for z in cli do
+        row[z[1]] := z[2];
+        Used[z[1],z[2]] := true;
+        od;
+    Orthologous := append(Orthologous,row):
+    od
+  od:
+
+# Triangle analysis has been removed be the Adrians while
+# updating Pairs data structure. 
+# If still needed, it has to be recovered from p4 and
+# adjusted to the new factors in the Pair structure.
+
+histog := CreateArray(1..N);
+for z in Orthologous do
+    t := sum( If( w=0, 0, 1 ), w=z );  histog[t] := histog[t]+1 od;
+printf( '%d orthologous groups, histog=%a\n', length(Orthologous), histog );
+
+
+# end if RunEverything
+fi:
+
+Orthologous
+end:

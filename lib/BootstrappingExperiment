@@ -1,0 +1,59 @@
+#
+#	Store Bootstrapping information and print graph
+#	with several bootstrapping experiments together
+#
+#				Gaston H. Gonnet (May 12th, 2005)
+#
+nickname := table( x -> x ):
+nickname[HUMAN] := 'human':
+nickname[CANFA] := 'dog':
+nickname[MOUSE] := 'mouse':
+nickname[DROME] := 'fly':
+nickname[CAEEL] := 'worm':
+nickname[ARATH] := 'cress':
+nickname[CHICK] := 'chicken':
+
+BootstrappingExperiment := proc(
+	TypeOfTree : {'PAMDistance', 'CodonPAM', 'SynonymousPAM', 'Synteny',
+		'SignedSynteny', 'ParsimonyMSA', 'ParsimonyMSANoGaps' },
+	Source : { 'OrthologousGroups', 'CompleteQuartets', 'CompleteQuintets',
+		'AllEukaryotes' },
+	SamplingProb : positive,
+	Letter : string,
+	AllData : [numeric,numeric],
+	RandomSamples : list([numeric,numeric])
+)
+if nargs=6 then noeval(procname(args))
+else error('invalid arguments') fi
+end:
+CompleteClass( BootstrappingExperiment );
+
+ColorList := ['red','green4','blue','gold','magenta','cyan',
+   'purple', 'red2', 'green2', 'blue2'];
+BootstrappingGraph := proc( bes:list(BootstrappingExperiment) )
+if length(bes) > length(ColorList) then error('not enough colours') fi;
+comm := [ LINE(-3,-3,100,100),
+	LTEXT(70,75, nickname[genomes[3]] . '-' . nickname[genomes[1]] .
+		' clade',angle=45),
+	LTEXT(75,70, nickname[genomes[2]] . '-' . nickname[genomes[1]] .
+		' clade',angle=45) ];
+for ib to length(bes) do
+    be := bes[ib];
+    col := 'color' = GetColorMap( ColorList[ib] );
+    f := 100 / max(be[AllData],be[RandomSamples]);
+    printf( '%s %s, %d M, %d D out of %d\n', be[TypeOfTree], be[Source],
+	sum( If(x[1]<x[2],1,0), x=be[RandomSamples] ),
+	sum( If(x[1]>=x[2],1,0), x=be[RandomSamples] ),
+	length(be[RandomSamples]) );
+    comm := append( comm, CTEXT( be[AllData,1]*f, be[AllData,2]*f, be[Letter] ),
+	LTEXT( 75, 53-3*ib, be[Letter] . ' - ' . be[TypeOfTree] . ', ' .
+	    be[Source], col ) );
+    oth := Shuffle( be[RandomSamples] );
+    if length(oth) > 75 then oth := oth[1..75] fi;
+    for z in oth do
+	comm := append( comm, CTEXT( z[1]*f, z[2]*f, be[Letter], col ))
+    od;
+od;
+DrawPlot( comm, axis, proportional );
+ViewPlot();
+end:
