@@ -58,6 +58,8 @@ VerifiedPairTol := 1.53;
 # regular genomes is not considered.
 MinSeqLen := 50:
 
+# ESPRIT parameters
+#
 # Any sequence which is less than MinSeqLen amino acids long in
 # contigs is not considered.
 MinSeqLenContig := 20:
@@ -91,36 +93,28 @@ RunEverything := false;
 # If this parameter is an empty list ( [] ), the script
 # will simply use DB/*.fa
 
-# Cmilii with full genome set
+# Cmilii with 9 more genome set
 Datasets := ['DB/ANOCA.fa', 'DB/BRAFL.fa', 'DB/CmiliiFull.Contig.fa',
 'DB/CHICK.fa', 'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa',
 'DB/MOUSE.fa', 'DB/ORYLA.fa', 'DB/XENTR.fa'];
 
-# FAKH2 with old genome set
-#Datasets := ['DB/TAKRU.fa', 'DB/GASAC.fa', 'DB/FAKH2.Contig.fa', 'DB/DROME.fa', 'DB/CAEEL.fa'];
-
-# FAKH2 with full genome set
-#Datasets := ['DB/ANOCA.fa', 'DB/BRAFL.fa', 'DB/FAKH2.Contig.fa', 'DB/CHICK.fa',
-#'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/MOUSE.fa', 'DB/ORYLA.fa',
-#'DB/XENTR.fa'];
+# Variables for writing the ESPRIT results
 #
-# MOUSE34 with full genome set except BRAFL
-#Datasets := ['DB/ANOCA.fa', 'DB/MOUSE34.Contig.fa', 'DB/CHICK.fa',
-#'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa',
-#'DB/ORYLA.fa', 'DB/XENTR.fa'];
-
-# MOUSE34 with full genome set
-#Datasets := ['DB/ANOCA.fa', 'DB/MOUSE34.Contig.fa', 'DB/CHICK.fa',
-#'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa', 'DB/ORYLA.fa',
-#'DB/XENTR.fa', 'DB/BRAFL.fa'];
-
-# Variables for writing the contig results
-WriteAtAll := true;
+# Do we write at all?
+WriteAtAll := false;
+# Is the contig genome of type MOUSE34, FAKEH or FAKH2?
+# State here, otherwise leave blank.
 WriteContigFake := ''; # MOUSE34, FAKEH, FAKH2 
+# Shall we write out fasta files?
 WriteContigFasta := true;
-WriteContigSet := 'CmiliiSetC8';
+# Name of the set (i.e. also name of folder to write to)
+WriteContigSet := 'CmiliiSet1';
+# Do we need _all_ MSAs or just the first few?
 WriteAllMSAs := false;
 
+
+##############################################################################
+# OMA STARTS HERE
 ##############################################################################
 Set(gc=5e7):  
 SetRandSeed():  
@@ -327,14 +321,14 @@ od:
 ## Parallel version:
 ## At this point, check whether all files are ready. If not
 ## exit (another process will pick from there on!)
-#f := TimedCallSystem('find Cache/AllAll -type f | grep -v ".gz"')[2]:
-#if length(f) > 0 then
-#    print('** At least 1 process appears to be still computing the all-vs-all.');
-#    print('** The following file(s) is (are) not yet completed:');
-#    print(f);
-#    print('** If no other process is running, delete these files and restart.');
-#    quit;
-#fi:
+f := TimedCallSystem('find Cache/AllAll -type f | grep -v ".gz"')[2]:
+if length(f) > 0 then
+    print('** At least 1 process appears to be still computing the all-vs-all.');
+    print('** The following file(s) is (are) not yet completed:');
+    print(f);
+    print('** If no other process is running, delete these files and restart.');
+    quit;
+fi:
 
 
 ##############################################################################
@@ -404,6 +398,7 @@ params := [MinScore, LengthTol, StablePairTol, VerifiedPairTol]:
 ParamSet := [];
 Ort := OrthologousMatrix( op(params) ):
 
+# Write results of ESPRIT
 if WriteAtAll then
     WriteResults(WriteContigSet, fasta=WriteContigFasta,
                     fake=WriteContigFake, writeallmsas=WriteAllMSAs);
@@ -411,101 +406,101 @@ fi:
 
 # # Retrieve all IDs
 # # Create File MapSeqNum-ID:
-# CallSystem('rm -rf Output; mkdir -p Output/PairwiseOrthologs');
-# IDtable := CreateArray(1..N);
-# OpenWriting('Output/Map-SeqNum-ID.txt');
-# print('\#Format: genome<tab>sequence number<tab>id');
-# for i to N do
-#     DB := DBs[i];
-#     tmp := CreateArray(1..ns[i]);
-#     for j to DB[TotEntries] do
-#         tmp[j] := SearchTag('ID',Entry(j));
-#         printf('%s\t%d\t%s\n',genomes[i],j,tmp[j]);
-#     od;
-#     IDtable[i] := tmp;
-# od:
-# OpenWriting(previous);
-# 
-# 
-# ##############################################################################
-# # Store results
-# print('\n\n****\n\nStoring results\n');
-# 
-# if lasterror <> 'lasterror' then
-#     print('Abort because of error: '.lasterror);
-#     # quit;
-# fi:
-# 
-# OGtable := CreateArray(1..N):
-# for i to N do OGtable[i] := CreateArray(1..ns[i]); od:
-# for r to length(Ort) do
-#     for k to N do
-#         t := Ort[r,k];
-#         if t <> 0 then 
-#             OGtable[k,t] := r;
-#         fi;
-#     od;
-# od:
-# 
-# # Store the pairwise orthologs
-# for i to N do for j from i+1 to N do
-#     if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
-#         g1 := i;  g2 := j else g2 := i;  g1 := j fi;
-#     OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2].'.txt');
-#     printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
-#          .'<tab>Orthology type<tab>OMA group (if any)\n');
-#     printf('\# Every pair is listed only once, and in no particular order.\n');
-#     printf('\# The map between sequence number and ID are given\n');
-#     printf('\# in the file "Map-SeqNum-ID.map\n');
-# 
-#     for k to ns[g1] do
-#         vp := decompress(VPairs[g1,g2,k]);
-#         typ2 := If(length(vp)>1,'many','1');
-#         for l in vp do
-#             # if only 1 in target -> :1, else :many
-#             # l
-#             typ1 := If(length(decompress(VPairs[g2,g1,l]))>1,'many','1');
-#             printf('%d\t%d\t%s\t%s\t%s:%s\t%s\n',
-#                 k,l,
-#                 IDtable[g1,k],
-#                 IDtable[g2,l],
-#                 typ1, typ2,
-#                 If(OGtable[g1,k]=OGtable[g2,l] and OGtable[g1,k] <> 0, 
-#                     string(OGtable[g1,k]),
-#                     '')
-#             );
-#         od;
-#     od:
-#     OpenWriting(previous);
-# od;od:
-# 
-# # Store the groups of orthologs
-# OpenWriting('Output/OrthologousMatrix.txt');
-# print('\# The groups of orthologs are given as matrix with group per row', 
-#      '\# and one genome per tab-separated column. Numbers refer to',
-#      '\# entry number as listed in the file "Map-SeqNum-id.map.',
-#      '\# Alternatively, use the OrthologousGroup.txt representation.');
-# print(ConcatStrings(genomes,'\t'));
-# for r to length(Ort) do
-#     print(ConcatStrings(zip(string(Ort[r])),'\t'));
-# od;
-# OpenWriting(previous);
-# 
-# OpenWriting('Output/OrthologousGroups.txt');
-# print('\# The groups of orthologs are given as one per row, starting',
-#       '\# with a group identifier, followed by all group members, all',
-#       '\# separated by tabs. For a more compact representation, use the',
-#       '\# OrthologousMatrix.txt representation.');
-# for r to length(Ort) do
-#     printf('OMA%05d',r);
-#     for l to N do
-#         if Ort[r,l] <> 0 then
-#             printf('\t%s:%s',genomes[l],IDtable[l,Ort[r,l]]);
-#         fi;
-#     od;
-#     printf('\n');
-# od;
-# OpenWriting(previous);
-# 
-# 
-# print('\n\n***\n\nDone!!\n\n');
+CallSystem('rm -rf Output; mkdir -p Output/PairwiseOrthologs');
+IDtable := CreateArray(1..N);
+OpenWriting('Output/Map-SeqNum-ID.txt');
+print('\#Format: genome<tab>sequence number<tab>id');
+for i to N do
+    DB := DBs[i];
+    tmp := CreateArray(1..ns[i]);
+    for j to DB[TotEntries] do
+        tmp[j] := SearchTag('ID',Entry(j));
+        printf('%s\t%d\t%s\n',genomes[i],j,tmp[j]);
+    od;
+    IDtable[i] := tmp;
+od:
+OpenWriting(previous);
+
+
+##############################################################################
+# Store results
+print('\n\n****\n\nStoring results\n');
+
+if lasterror <> 'lasterror' then
+    print('Abort because of error: '.lasterror);
+    # quit;
+fi:
+
+OGtable := CreateArray(1..N):
+for i to N do OGtable[i] := CreateArray(1..ns[i]); od:
+for r to length(Ort) do
+    for k to N do
+        t := Ort[r,k];
+        if t <> 0 then 
+            OGtable[k,t] := r;
+        fi;
+    od;
+od:
+
+# Store the pairwise orthologs
+for i to N do for j from i+1 to N do
+    if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+        g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+    OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2].'.txt');
+    printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
+         .'<tab>Orthology type<tab>OMA group (if any)\n');
+    printf('\# Every pair is listed only once, and in no particular order.\n');
+    printf('\# The map between sequence number and ID are given\n');
+    printf('\# in the file "Map-SeqNum-ID.map\n');
+
+    for k to ns[g1] do
+        vp := decompress(VPairs[g1,g2,k]);
+        typ2 := If(length(vp)>1,'many','1');
+        for l in vp do
+            # if only 1 in target -> :1, else :many
+            # l
+            typ1 := If(length(decompress(VPairs[g2,g1,l]))>1,'many','1');
+            printf('%d\t%d\t%s\t%s\t%s:%s\t%s\n',
+                k,l,
+                IDtable[g1,k],
+                IDtable[g2,l],
+                typ1, typ2,
+                If(OGtable[g1,k]=OGtable[g2,l] and OGtable[g1,k] <> 0, 
+                    string(OGtable[g1,k]),
+                    '')
+            );
+        od;
+    od:
+    OpenWriting(previous);
+od;od:
+
+# Store the groups of orthologs
+OpenWriting('Output/OrthologousMatrix.txt');
+print('\# The groups of orthologs are given as matrix with group per row', 
+     '\# and one genome per tab-separated column. Numbers refer to',
+     '\# entry number as listed in the file "Map-SeqNum-id.map.',
+     '\# Alternatively, use the OrthologousGroup.txt representation.');
+print(ConcatStrings(genomes,'\t'));
+for r to length(Ort) do
+    print(ConcatStrings(zip(string(Ort[r])),'\t'));
+od;
+OpenWriting(previous);
+
+OpenWriting('Output/OrthologousGroups.txt');
+print('\# The groups of orthologs are given as one per row, starting',
+      '\# with a group identifier, followed by all group members, all',
+      '\# separated by tabs. For a more compact representation, use the',
+      '\# OrthologousMatrix.txt representation.');
+for r to length(Ort) do
+    printf('OMA%05d',r);
+    for l to N do
+        if Ort[r,l] <> 0 then
+            printf('\t%s:%s',genomes[l],IDtable[l,Ort[r,l]]);
+        fi;
+    od;
+    printf('\n');
+od;
+OpenWriting(previous);
+
+
+print('\n\n***\n\nDone!!\n\n');
