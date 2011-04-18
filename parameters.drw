@@ -1,0 +1,85 @@
+# OMA Parameters
+
+# if you want to recompute everything from scratch everytime the script
+# is run, set the following parameter to false.
+ReuseCachedResults := true;
+
+# alignments which have a score lower than MinScore will not be considered.  
+MinScore := 181:  
+
+# Length tolerance ratio.  If the length of the effective alignement
+# is less than LengthTol*min(length(s1),length(s2)) then the alignment
+# is not considered.
+LengthTol := 0.61:
+
+
+# During the stable pair formation, if a pair has a distance provable
+# higher than another pair (i.e. StablePairTol standard deviations
+# away) then it is discarded.
+StablePairTol := 1.81;
+ContigStablePairTol := 3.3;
+
+#StablePairTol := 3.3;
+
+# during the verification of stable pairs, if a length violation is
+# accepted if it falls StablePairTol standard deviations away.
+VerifiedPairTol := 1.53;
+
+# Any sequence which is less than MinSeqLen amino acids long in
+# regular genomes is not considered.
+MinSeqLen := 50:
+
+# ESPRIT parameters
+#
+# Any sequence which is less than MinSeqLen amino acids long in
+# contigs is not considered.
+MinSeqLenContig := 20:
+
+# Min proportion of genomes with which contigs form many:1 StablePairs
+# to consider that we might be dealing with fragments of the same gene
+MinProbContig := 0.4;
+
+# Maximum overlap between fragmnents of same gene from different contigs
+MaxContigOverlap := 5;
+
+# Minimum score for BestMatch in scaffold recognition
+MinBestScore := 250;
+
+# Confidence level variable for contigs
+DistConfLevel := 2;
+
+# Allow more than one hits per contig?
+AllowMultipleHits := true;
+
+# Choose s1-s2 ('forward') from BestMatch instead of StablePairs?
+ForwardBestMatch := true;
+
+# Choose s2-s3 ('backward') from BestMatch instead of StablePairs?
+BackwardBestMatch := true;
+
+# Run everything or just up to scaffold detection?
+RunEverything := false;
+
+# Which datasets to use?
+# If this parameter is an empty list ( [] ), the script
+# will simply use DB/*.fa
+
+# Cmilii with 9 more genome set
+Datasets := ['DB/ANOCA.fa', 'DB/BRAFL.fa', 'DB/CmiliiFull.Contig.fa',
+'DB/CHICK.fa', 'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa',
+'DB/MOUSE.fa', 'DB/ORYLA.fa', 'DB/XENTR.fa'];
+
+# Variables for writing the ESPRIT results
+#
+# Do we write at all?
+WriteAtAll := false;
+# Is the contig genome of type MOUSE34, FAKEH or FAKH2?
+# State here, otherwise leave blank.
+WriteContigFake := ''; # MOUSE34, FAKEH, FAKH2 
+# Shall we write out fasta files?
+WriteContigFasta := true;
+# Name of the set (i.e. also name of folder to write to)
+WriteContigSet := 'CmiliiSet1';
+# Do we need _all_ MSAs or just the first few?
+WriteAllMSAs := false;
+

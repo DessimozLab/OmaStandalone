@@ -1,0 +1,40 @@
+#!/bin/bash
+
+showUsage () {
+    echo "Usage: makeinstaller path_to_installer"
+    exit 1
+}
+
+if [ $# -le 0 ]
+then
+    showUsage
+fi
+
+instpath=$1
+
+mkdir -p $1/bin
+mkdir -p $1/DB
+
+# clone darwin repo, stripe .git folder and copy lib to $instpath
+git clone --depth 1 git@cbrg-git.ethz.ch:darwin
+rm -rf darwin/lib/.git
+mv darwin/lib $1/darwinlib
+rm -rf darwin
+
+# copy darwin binaries to $shortname/bin/${shortname}darwin
+cp /home/darwin/v2/source/BUILD-linux32/darwin $1/bin/omadarwin.linux32
+cp /home/darwin/v2/source/BUILD-linux64/darwin $1/bin/omadarwin.linux64
+cp /home/darwin/v2/source/BUILD-macintel/darwin $1/bin/omadarwin.mac32
+cp /home/darwin/v2/source/BUILD-macintel64/darwin $1/bin/omadarwin.mac64
+
+# copy oma library to $1/lib
+cp -r lib $1/
+
+# copy OMA files to $1
+cp OMA.drw $1/
+cp parameters.drw $1/
+cp omaesprit $1/
+cp bin/omadarwin $1/bin/
+
+# create tarball
+tar cvzf `dirname $1`/`basename $1`.tgz $1
