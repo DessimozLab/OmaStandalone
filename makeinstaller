@@ -1,6 +1,7 @@
 #!/bin/bash
 
 showUsage () {
+    echo "This script creates an installer package for omaesprit at 'path_to_installer'."
     echo "Usage: makeinstaller path_to_installer"
     exit 1
 }
