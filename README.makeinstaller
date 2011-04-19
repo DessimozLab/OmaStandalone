@@ -6,3 +6,18 @@ This script generates a folder (and a tarball of it) that includes:
 - the OMA library and OMA.drw
 - the example parameters.drw
 - an installer script to install omaesprit on some client machine
+
+
+
+
+As an alternative, one can place a omaesprit.tgz tarball on some webserver,
+change the script 'webinstall.sh' accordingly (check for filename and URL in
+script) and then install in the following way (as user):
+
+- change in terminal to folder where omaesprit should be installed (e.g. cd
+/usr/local)
+- use the following line (change URL accordingly):
+
+curl http://localhost/webinstall.sh | bash
+
+to install the whole package in pwd.

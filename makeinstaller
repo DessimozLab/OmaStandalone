@@ -35,4 +35,4 @@ cp OMA.drw parameters.drw install.sh README.omaesprit $1/
 cp bin/omaesprit bin/omadarwin $1/bin/
 
 # create tarball
-tar cvzf `dirname $1`/`basename $1`.tgz $1
+cd `dirname $1`; tar -cvzf `basename $1`.tgz `basename $1`
