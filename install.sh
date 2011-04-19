@@ -4,8 +4,9 @@ machine=$(uname -m)
 os=$(uname -s)
 
 DARWIN_BINARY="omadarwin.linux32"
-
 install_prefix="/usr/local"
+current_dir=`dirname $0`
+
 if [ $# -eq 1 ]
 then
     if [ $1 = "--help" -o $1 = "-h" -o $1 = "-help" ]
@@ -36,11 +37,11 @@ else
 fi
 
 echo "installing darwin binary..."
-cp bin/omadarwin bin/$DARWIN_BINARY bin/omaesprit $install_prefix/omaesprit/bin/
+cp $current_dir/bin/omadarwin $current_dir/bin/$DARWIN_BINARY $current_dir/bin/omaesprit $install_prefix/omaesprit/bin/
 echo "installing oma..."
-cp OMA.drw $install_prefix/omaesprit/
+cp $current_dir/OMA.drw $current_dir/README.omaesprit $current_dir/parameters.drw $install_prefix/omaesprit/
 echo "installing libraries..."
-cp -rf lib $install_prefix/omaesprit/
-cp -rf darwinlib $install_prefix/omaesprit/
+cp -rf $current_dir/lib $install_prefix/omaesprit/
+cp -rf $current_dir/darwinlib $install_prefix/omaesprit/
 echo "installation complete."
 echo "Make sure $install_prefix/omaesprit/bin is in your PATH."

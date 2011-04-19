@@ -1,0 +1,25 @@
+#!/bin/bash
+
+URL='http://localhost/omaesprit.tgz'
+
+echo "downloading omaesprit..."
+curl -s -o omaesprit.tgz $URL
+tar xvzf omaesprit.tgz
+rm omaesprit.tgz
+
+echo "Where do you want to install omaesprit?"
+echo "For default (/usr/local), just press 'enter'."
+
+read userinput
+
+if [ "$userinput" = "" ]
+then
+    install_prefix='/usr/local'
+else
+    install_prefix=`dirname $userinput`/`basename $userinput`
+fi
+
+echo "Install in $install_prefix..."
+omaesprit/install.sh $install_prefix
+echo "An example file 'parameters.drw' has been placed in $install_prefix."
+rm -rf omaesprit
