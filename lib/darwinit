@@ -1,4 +1,8 @@
-OrthologsLib := TimedCallSystem('pwd')[2,1..-2].'/lib/':
+if assigned(libdir) then
+    OrthologsLib := libdir . '/lib/':
+else
+    OrthologsLib := TimedCallSystem('pwd')[2,1..-2].'/lib/':
+fi:
 
 OrthologousMatrix := noeval(ReadLibrary( OrthologsLib.'OrthologousMatrix',
 	OrthologousMatrix)):

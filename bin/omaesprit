@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DARWIN_PATH=$(dirname $0)
+OMA_PATH=$(dirname $0)
 
 pfile="parameters.drw"
 wdir="./"
@@ -29,5 +29,5 @@ then
     exit 1
 fi
 
-echo "ReadProgram('$pfile'): ReadProgram('OMA.drw'): done:" | $DARWIN_PATH/bin/omadarwin 
+echo "libdir := '$OMA_PATH/../': ReadProgram('$pfile'): ReadProgram('$OMA_PATH/../OMA.drw'): done:" | $OMA_PATH/omadarwin 
 

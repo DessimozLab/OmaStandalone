@@ -31,10 +31,8 @@ cp /home/darwin/v2/source/BUILD-macintel64/darwin $1/bin/omadarwin.mac64
 cp -r lib $1/
 
 # copy OMA files to $1
-cp OMA.drw $1/
-cp parameters.drw $1/
-cp omaesprit $1/
-cp bin/omadarwin $1/bin/
+cp OMA.drw parameters.drw install.sh README.omaesprit $1/
+cp bin/omaesprit bin/omadarwin $1/bin/
 
 # create tarball
 tar cvzf `dirname $1`/`basename $1`.tgz $1

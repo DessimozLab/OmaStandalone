@@ -34,7 +34,11 @@ SetRandSeed():
 GetStats := true;
 
 # Read libraries
-ReadProgram('lib/darwinit');
+if assigned(libdir) then
+    ReadProgram( libdir . 'lib/darwinit'):
+else
+    ReadProgram('lib/darwinit'):
+fi:
 
 # Convert FASTA databases to darwin databases
 print('Starting database conversion and checks...');

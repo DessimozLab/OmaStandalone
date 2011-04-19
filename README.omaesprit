@@ -1,0 +1,34 @@
+OMA - ESPRIT
+------------
+
+Installation
+------------
+To install this software on your system, run the included installer script:
+
+./install.sh [install_prefix]
+
+If you do not choose an install prefix, omaesprit will be installed in
+/usr/local/omaesprit . 
+
+After installation, make sure the bin folder of omaesprit is in your PATH
+variable (e.g., edit ~/.profile accordingly).
+
+Usage
+-----
+You need to set up a folder for your work first. Copy the file 'parameters.drw'
+in this folder and change it to your needs. Create a directory 'DB' that holds
+the genome data in fasta format and copy your data into this directory.
+Then, simply call
+omaesprit
+to run OMA and/or ESPRIT.
+
+OMA/ESPRIT is built on top of Darwin, a bioinformatics software package built
+by CBRG at ETHZ. After the installation of OMA/ESPRIT, you can also just use
+Darwin by starting
+omadarwin
+in the terminal.
+
+For more information about OMA and ESPRIT, please have a look at [TODO].
+
+For more information about Darwin itself, have a look at
+http://www.cbrg.ethz.ch/darwin/index .

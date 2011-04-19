@@ -1,0 +1,8 @@
+Usage: ./makeinstaller PATH_TO_INSTALLER
+
+This script generates a folder (and a tarball of it) that includes:
+- a current version of the darwin library from the git repo
+- current versions of darwin binaries for linux32, linux64, mac32 and mac64
+- the OMA library and OMA.drw
+- the example parameters.drw
+- an installer script to install omaesprit on some client machine
