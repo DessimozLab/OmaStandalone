@@ -64,7 +64,7 @@ RunEverything := false;
 # If this parameter is an empty list ( [] ), the script
 # will simply use DB/*.fa
 
-# Cmilii with 9 more genome set
+# Cmilii with 9 more genomes
 Datasets := ['DB/ANOCA.fa', 'DB/BRAFL.fa', 'DB/CmiliiFull.Contig.fa',
 'DB/CHICK.fa', 'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa',
 'DB/MOUSE.fa', 'DB/ORYLA.fa', 'DB/XENTR.fa'];
