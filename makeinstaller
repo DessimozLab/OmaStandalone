@@ -1,7 +1,7 @@
 #!/bin/bash
 
 showUsage () {
-    echo "This script creates an installer package for omaesprit at 'path_to_installer'."
+    echo "This script creates an installer package for oma at 'path_to_installer'."
     echo "Usage: makeinstaller path_to_installer"
     exit 1
 }
@@ -11,29 +11,33 @@ then
     showUsage
 fi
 
-instpath=$1
+versionnr=`cat versionnr.txt`
+instpath=$1$versionnr
 
-mkdir -p $1/bin
-mkdir -p $1/DB
+mkdir -p $instpath/bin
+mkdir -p $instpath/DB
 
 # clone darwin repo, stripe .git folder and copy lib to $instpath
 git clone --depth 1 git@cbrg-git.ethz.ch:darwin
 rm -rf darwin/lib/.git
-mv darwin/lib $1/darwinlib
+mv darwin/lib $instpath/darwinlib
 rm -rf darwin
 
 # copy darwin binaries to $shortname/bin/${shortname}darwin
-cp /home/darwin/v2/source/BUILD-linux32/darwin $1/bin/omadarwin.linux32
-cp /home/darwin/v2/source/BUILD-linux64/darwin $1/bin/omadarwin.linux64
-cp /home/darwin/v2/source/BUILD-macintel/darwin $1/bin/omadarwin.mac32
-cp /home/darwin/v2/source/BUILD-macintel64/darwin $1/bin/omadarwin.mac64
+cp /home/darwin/v2/source/BUILD-linux32/darwin $instpath/bin/omadarwin.linux32
+cp /home/darwin/v2/source/BUILD-linux64/darwin $instpath/bin/omadarwin.linux64
+cp /home/darwin/v2/source/BUILD-macintel/darwin $instpath/bin/omadarwin.mac32
+cp /home/darwin/v2/source/BUILD-macintel64/darwin $instpath/bin/omadarwin.mac64
 
 # copy oma library to $1/lib
-cp -r lib $1/
+cp -r lib $instpath/
 
 # copy OMA files to $1
-cp OMA.drw parameters.drw install.sh README.omaesprit $1/
-cp bin/omaesprit bin/omadarwin $1/bin/
+cp OMA.drw parameters.drw install.sh README.oma versionnr.txt $instpath/
+cp bin/oma bin/omadarwin $instpath/bin/
+
+# adjust for version number
+sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt $instpath/install.sh
 
 # create tarball
-cd `dirname $1`; tar -cvzf `basename $1`.tgz `basename $1`
+cd `dirname $instpath`; tar -cvzf `basename $instpath`.tgz `basename $instpath`

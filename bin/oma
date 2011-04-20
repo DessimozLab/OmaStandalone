@@ -1,0 +1,34 @@
+#!/bin/bash
+
+OMA_PATH=$(dirname $0)
+
+pfile="parameters.drw"
+wdir="./"
+
+if [ $# -gt 0 ]
+then
+    if [ $1 = "--help" -o $1 = "-h" -o $1 = "-?" ]
+    then
+        echo "usage: oma [<parameter file>]"
+        exit 0;
+    fi
+fi
+
+if [ $# -eq 1 ]
+then
+    pfile=$1
+elif [ $# -gt 1 ]
+then
+    echo "Too many parameters!"
+    exit 1
+fi
+
+if [ ! -e $pfile ]
+then
+    echo "could not find parameter file!"
+    exit 1
+fi
+
+cat $OMA_PATH/../lib/splashscreen.txt
+echo "libdir := '$OMA_PATH/../': ReadProgram('$pfile'): ReadProgram('$OMA_PATH/../OMA.drw'): done:" | $OMA_PATH/omadarwin 
+

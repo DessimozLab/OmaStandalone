@@ -1,0 +1,28 @@
+      ___           ___           ___     
+     /\  \         /\__\         /\  \    
+    /::\  \       /::|  |       /::\  \   
+   /:/\:\  \     /:|:|  |      /:/\:\  \  
+  /:/  \:\  \   /:/|:|__|__   /::\~\:\  \ 
+ /:/__/ \:\__\ /:/ |::::\__\ /:/\:\ \:\__\
+ \:\  \ /:/  / \/__/~~/:/  / \/__\:\/:/  /
+  \:\  /:/  /        /:/  /       \::/  / 
+   \:\/:/  /        /:/  /        /:/  /  
+    \::/  /        /:/  /        /:/  /   
+     \/__/         \/__/         \/__/    
+
+      Stand-alone version
+      Gaston Gonnet, Adrian Schneider, Alexander Roth, Adrian Altenhoff,
+      and Christophe Dessimoz
+      (c) CBRG, ETH Zurich, June 2010
+
+      Version [VERSIONNR]
+
+      Please cite:
+      Dessimoz et al., 'OMA, a comprehensive, automated project for the
+      identification of orthologs from complete genome data: Introduction and
+      first achievements', Comparative Genomics, 2005
+
+      Roth et al., 'Algorithm of OMA for large-scale ortholgoy inference', BMC
+      Bioinformatics, 2008
+
+

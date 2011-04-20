@@ -1,13 +1,22 @@
 #!/bin/bash
 
-URL='http://localhost/omaesprit.tgz'
+URL='http://localhost/oma.tgz'
 
-echo "downloading omaesprit..."
-curl -s -o omaesprit.tgz $URL
-tar xvzf omaesprit.tgz
-rm omaesprit.tgz
+if ! touch .omashorttest139867.txt 2>/dev/null
+then
+    echo "You need to have write access to the directory where you call this script.
+Change into another directory (e.g. 'cd ~') and try again."
+    exit
+fi
 
-echo "Where do you want to install omaesprit?"
+rm .omashorttest139867.txt
+
+echo "Downloading OMA..."
+curl -s -o oma.tgz $URL
+tar xvzf oma.tgz
+rm oma.tgz
+
+echo "Where do you want to install OMA?"
 echo "For default (/usr/local), just press 'enter'."
 
 read userinput
@@ -20,6 +29,6 @@ else
 fi
 
 echo "Install in $install_prefix..."
-omaesprit/install.sh $install_prefix
-echo "An example file 'parameters.drw' has been placed in $install_prefix."
-rm -rf omaesprit
+oma/install.sh $install_prefix
+echo "An example file 'parameters.drw' has been placed in $install_prefix/oma."
+rm -rf oma

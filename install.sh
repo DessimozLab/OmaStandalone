@@ -6,6 +6,7 @@ os=$(uname -s)
 DARWIN_BINARY="omadarwin.linux32"
 install_prefix="/usr/local"
 current_dir=`dirname $0`
+versionnr="[VERSIONNR]"
 
 if [ $# -eq 1 ]
 then
@@ -16,7 +17,13 @@ then
     fi
     install_prefix=$(dirname $1)/$(basename $1)
 fi
-mkdir -p $install_prefix/omaesprit/bin
+omadir=$install_prefix/oma$versionnr
+if ! mkdir -p $omadir/bin 2>/dev/null
+then
+    echo "Could not create $omadir . 
+Please try again either with a different install prefix or with 'sudo ./install.sh [install_prefix]'."
+    exit
+fi
 
 if [ $os = "Linux" ]
 then
@@ -36,12 +43,17 @@ else
     echo "Operating system not supported!"
 fi
 
-echo "installing darwin binary..."
-cp $current_dir/bin/omadarwin $current_dir/bin/$DARWIN_BINARY $current_dir/bin/omaesprit $install_prefix/omaesprit/bin/
-echo "installing oma..."
-cp $current_dir/OMA.drw $current_dir/README.omaesprit $current_dir/parameters.drw $install_prefix/omaesprit/
-echo "installing libraries..."
-cp -rf $current_dir/lib $install_prefix/omaesprit/
-cp -rf $current_dir/darwinlib $install_prefix/omaesprit/
-echo "installation complete."
-echo "Make sure $install_prefix/omaesprit/bin is in your PATH."
+echo "Installing darwin binary..."
+
+if ! cp $current_dir/bin/omadarwin $current_dir/bin/$DARWIN_BINARY $current_dir/bin/oma $omadir/bin/ 2>/dev/null
+then
+    echo "Could not write to $install_prefix. Please try again either with a different install prefix or with 'sudo ./install.sh [install_prefix]."
+    exit
+fi
+echo "Installing oma..."
+cp $current_dir/OMA.drw $current_dir/README.oma $current_dir/parameters.drw $omadir/
+echo "Installing libraries..."
+cp -rf $current_dir/lib $omadir/
+cp -rf $current_dir/darwinlib $omadir/
+echo "Installation complete."
+echo "Make sure $omadir/bin is in your PATH."

@@ -7,10 +7,10 @@ that includes:
 - a wrapper for those binaries to start the platform specific one
 - the OMA library and OMA.drw
 - the example parameters.drw
-- an installer script to install omaesprit on some client machine
+- an installer script to install OMA on some client machine
 
 
-As an alternative, one can place a omaesprit.tgz tarball on some webserver,
+As an alternative, one can place a oma.tgz tarball on some webserver,
 change the script 'webinstall' accordingly (check for filename and URL in
 script) and copy it to some webserver as well; users can then just fire up
 their terminal and copy this line (change URL... )
@@ -18,6 +18,6 @@ their terminal and copy this line (change URL... )
 curl -s -o webinstall http://localhost/webinstall && bash webinstall && rm webinstall
 
 to install the whole package on their machine. 'webinstall' will download the
-tarball, untar it into /tmp, run the included installer script (with asking the
+tarball, untar it, run the included installer script (with asking the
 user for the installation path) and deletes the tarball and the unpacked folder
-in /tmp after installation.
+after installation.
