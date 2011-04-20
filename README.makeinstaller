@@ -1,13 +1,13 @@
 Usage: ./makeinstaller PATH_TO_INSTALLER
 
-This script generates a folder (and a tarball of it) that includes:
+This script generates a folder at PATH_TO_INSTALLER (and a tarball of it) 
+that includes:
 - a current version of the darwin library from the git repo
 - current versions of darwin binaries for linux32, linux64, mac32 and mac64
+- a wrapper for those binaries to start the platform specific one
 - the OMA library and OMA.drw
 - the example parameters.drw
 - an installer script to install omaesprit on some client machine
-
-
 
 
 As an alternative, one can place a omaesprit.tgz tarball on some webserver,
@@ -17,4 +17,7 @@ their terminal and copy this line (change URL... )
 
 curl -s -o webinstall http://localhost/webinstall && bash webinstall && rm webinstall
 
-to install the whole package.
+to install the whole package on their machine. 'webinstall' will download the
+tarball, untar it into /tmp, run the included installer script (with asking the
+user for the installation path) and deletes the tarball and the unpacked folder
+in /tmp after installation.
