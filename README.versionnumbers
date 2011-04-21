@@ -1,0 +1,26 @@
+Version numbers correspond to tags in the git repo.
+
+To update the version number, use something like this:
+
+git tag -a -m'Release to Customer' 1.2.3
+git push --tags origin master
+
+The current version number can be read by
+
+git describe
+
+
+Example:
+
+git commit -m'Commit One.'
+git tag -a -m'Tag One.' 1.2.3
+git describe    # => 1.2.3
+git commit -m'Commit Two.'
+git describe    # => 1.2.3-1-gaac161d
+git commit -m'Commit Three.'
+git describe    # => 1.2.3-2-g462715d
+git tag -a -m'Tag Two.' 2.0.0
+git describe    # => 2.0.0
+
+git push --tags origin master
+

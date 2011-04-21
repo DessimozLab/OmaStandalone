@@ -11,7 +11,7 @@ then
     showUsage
 fi
 
-versionnr=`cat versionnr.txt`
+versionnr=`git describe`
 instpath=$1$versionnr
 
 mkdir -p $instpath/bin
@@ -33,7 +33,7 @@ cp /home/darwin/v2/source/BUILD-macintel64/darwin $instpath/bin/omadarwin.mac64
 cp -r lib $instpath/
 
 # copy OMA files to $1
-cp OMA.drw parameters.drw install.sh README.oma versionnr.txt $instpath/
+cp OMA.drw parameters.drw install.sh README.oma $instpath/
 cp bin/oma bin/omadarwin $instpath/bin/
 
 # adjust for version number
