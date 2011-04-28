@@ -22,6 +22,10 @@
 #   This script identifies orthologs among genomes using the OMA procedure.
 #   (http://omabrowser.org).
 #
+#   If you received this script per standalone installer for OMA, please have
+#   also a look at the included README.oma file in the installation folder
+#   (default location is /usr/local/oma).
+#
 #   - Run this script from the same directory.
 #   - Script parameters are set in parameters.drw in the same directory
 #   - Each genome should have its own fasta file (filename ending with .fa)
@@ -315,10 +319,19 @@ params := [MinScore, LengthTol, StablePairTol, VerifiedPairTol]:
 ParamSet := [];
 Ort := OrthologousMatrix( op(params) ):
 
+# Find contig genome in Datasets
+contigdata := '':
+for i to length(genomes) do
+    if isContig[i] then
+        contigdata := genomes[i]:
+        break:
+    fi:
+od:
+
 # Write results of ESPRIT
 if WriteAtAll then
     WriteResults(WriteContigSet, fasta=WriteContigFasta,
-                    fake=WriteContigFake, writeallmsas=WriteAllMSAs);
+                    contigset=contigdata, writeallmsas=WriteAllMSAs);
 fi:
 
 # # Retrieve all IDs

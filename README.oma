@@ -21,8 +21,10 @@ Usage
 -----
 First, set up a working directory. Copy the file 'parameters.drw' into this 
 folder and change it to your needs. Create a directory 'DB' in your working
-directory that holds the genome data in fasta format and copy your data into
-this directory. Then, simply call
+directory that holds the genome data in fasta format (filename ending with
+.fa)and copy your data into this directory. If you want to use ESPRIT, the
+fasta file should be called {YourGenome}.Contig.fa .
+Then, simply call
 oma
 from your working directory to run OMA and/or ESPRIT.
 

@@ -1,4 +1,17 @@
-# OMA Parameters
+###################################################################################
+#        ___           ___           ___     
+#       /\  \         /\__\         /\  \    
+#      /::\  \       /::|  |       /::\  \   
+#     /:/\:\  \     /:|:|  |      /:/\:\  \  
+#    /:/  \:\  \   /:/|:|__|__   /::\~\:\  \ 
+#   /:/__/ \:\__\ /:/ |::::\__\ /:/\:\ \:\__\
+#   \:\  \ /:/  / \/__/~~/:/  / \/__\:\/:/  /
+#    \:\  /:/  /        /:/  /       \::/  / 
+#     \:\/:/  /        /:/  /        /:/  /  
+#      \::/  /        /:/  /        /:/  /   
+#       \/__/         \/__/         \/__/    
+#   
+###################################################################################
 
 # if you want to recompute everything from scratch everytime the script
 # is run, set the following parameter to false.
@@ -12,14 +25,11 @@ MinScore := 181:
 # is not considered.
 LengthTol := 0.61:
 
-
 # During the stable pair formation, if a pair has a distance provable
 # higher than another pair (i.e. StablePairTol standard deviations
 # away) then it is discarded.
 StablePairTol := 1.81;
 ContigStablePairTol := 3.3;
-
-#StablePairTol := 3.3;
 
 # during the verification of stable pairs, if a length violation is
 # accepted if it falls StablePairTol standard deviations away.
@@ -29,13 +39,35 @@ VerifiedPairTol := 1.53;
 # regular genomes is not considered.
 MinSeqLen := 50:
 
-# ESPRIT parameters
+###################################################################################
 #
-# Any sequence which is less than MinSeqLen amino acids long in
+#      ___           ___           ___           ___                       ___     
+#     /\  \         /\  \         /\  \         /\  \          ___        /\  \    
+#    /::\  \       /::\  \       /::\  \       /::\  \        /\  \       \:\  \   
+#   /:/\:\  \     /:/\ \  \     /:/\:\  \     /:/\:\  \       \:\  \       \:\  \  
+#  /::\~\:\  \   _\:\~\ \  \   /::\~\:\  \   /::\~\:\  \      /::\__\      /::\  \ 
+# /:/\:\ \:\__\ /\ \:\ \ \__\ /:/\:\ \:\__\ /:/\:\ \:\__\  __/:/\/__/     /:/\:\__\
+# \:\~\:\ \/__/ \:\ \:\ \/__/ \/__\:\/:/  / \/_|::\/:/  / /\/:/  /       /:/  \/__/
+#  \:\ \:\__\    \:\ \:\__\        \::/  /     |:|::/  /  \::/__/       /:/  /     
+#   \:\ \/__/     \:\/:/  /         \/__/      |:|\/__/    \:\__\       \/__/      
+#    \:\__\        \::/  /                     |:|  |       \/__/                  
+#     \/__/         \/__/                       \|__|                              
+# 
+#
+###################################################################################
+
+#
+# GENERAL PARAMETERS
+#
+
+# Run whole OMA or just up to scaffold detection?
+RunEverything := false;
+
+#Any sequence which is less than MinSeqLen amino acids long in
 # contigs is not considered.
 MinSeqLenContig := 20:
 
-# Min proportion of genomes with which contigs form many:1 StablePairs
+# Min proportion of genomes with which contigs form many:1 BestMatches
 # to consider that we might be dealing with fragments of the same gene
 MinProbContig := 0.4;
 
@@ -51,35 +83,34 @@ DistConfLevel := 2;
 # Allow more than one hits per contig?
 AllowMultipleHits := true;
 
-# Choose s1-s2 ('forward') from BestMatch instead of StablePairs?
-ForwardBestMatch := true;
-
-# Choose s2-s3 ('backward') from BestMatch instead of StablePairs?
-BackwardBestMatch := true;
-
-# Run everything or just up to scaffold detection?
-RunEverything := false;
+#
+# DATASET PARAMETERS
+#
 
 # Which datasets to use?
 # If this parameter is an empty list ( [] ), the script
-# will simply use DB/*.fa
-
-# Cmilii with 9 more genomes
+# will simply use all fasta files in folder DB/
+# The file with the contigs should be called {YourGenome}.Contig.fa .
+#
+# As an example, contigs of CmiliiFull with 9 more genomes:
 Datasets := ['DB/ANOCA.fa', 'DB/BRAFL.fa', 'DB/CmiliiFull.Contig.fa',
 'DB/CHICK.fa', 'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa',
 'DB/MOUSE.fa', 'DB/ORYLA.fa', 'DB/XENTR.fa'];
 
-# Variables for writing the ESPRIT results
 #
+# OUTPUT PARAMETERS
+#
+
+# ESPRIT will write all results into individual folders in a folder
+# ContigResults/ . This folder will be generated if needed.
+
 # Do we write at all?
-WriteAtAll := false;
-# Is the contig genome of type MOUSE34, FAKEH or FAKH2?
-# State here, otherwise leave blank.
-WriteContigFake := ''; # MOUSE34, FAKEH, FAKH2 
+WriteAtAll := true;
 # Shall we write out fasta files?
 WriteContigFasta := true;
 # Name of the set (i.e. also name of folder to write to)
-WriteContigSet := 'CmiliiSet1';
-# Do we need _all_ MSAs or just the first few?
+WriteContigSet := 'ContigTestSet1';
+# Do we need _all_ MSAs and possibleHits or just the first 50?
+# Definitive hits are not affected by this setting.
 WriteAllMSAs := false;
 

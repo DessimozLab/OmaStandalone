@@ -146,8 +146,7 @@ fi;
 #       - if that's the case, we have a candidate split gene!!
 
 ScaffoldVerification([MinProbContig, MinBestScore, DistConfLevel,
-                        AllowMultipleHits, MaxContigOverlap, ForwardBestMatch, 
-                        BackwardBestMatch]):
+                        AllowMultipleHits, MaxContigOverlap]):
 
 if RunEverything then
 

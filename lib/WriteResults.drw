@@ -5,251 +5,6 @@ module external WriteResults;
 # First some helper functions... bear with me for a moment.
 #
 
-# which genome are we processing?
-checkPosNeg := proc(setname:string, arr)
-    if setname = 'FAKH2' or setname = 'FAKEH' then
-        res := checkFakePosNeg(setname, arr):
-    elif setname = 'MOUSE34' then
-        res := checkMousePosNeg(arr):
-    elif setname = 'Cmilii' then
-        res := checkCmiliiPosNeg(arr):
-    else
-        printf('No method implemented for this genome in checkPosNeg().\n'):
-        res := -1:
-    fi:
-    return(res):
-end:
-
-# get tp, fp, precision, recall for FAKEH, FAKH2
-checkFakePosNeg := proc(setname, arr)
-    global DB:
-    DB := ReadDb('Cache/DB/'.setname.'.db');
-    tp := fp := tn := fn := 0:
-    
-    # search for true and false positives
-    for j to length(arr) do
-        i := arr[j];
-        s1 := SearchTag('ID', Entry(i[1,2]));
-        s3 := SearchTag('ID', Entry(i[2,2]));
-        t1 := SearchDelim('_', SearchDelim('|', s1)[1]);
-        t3 := SearchDelim('_', SearchDelim('|', s3)[1]);
-        if length(t1)>1 and length(t3)>1 and 
-            t1[2] = t3[2] and t1[1] <> t3[1] then
-                tp := tp+1;
-                # flag needed later for output
-                arr[j] := append(arr[j], 'isPositive'):
-        else
-            fp := fp+1;
-        fi;
-    od:
-
-    # nr of possible combinations in whole set
-    if setname = 'FAKEH' then
-        possComb := 12384;
-    elif setname = 'FAKH2' then
-        possComb := 2071;
-    fi:
-
-    precision := tp/(tp+fp):
-    recall := tp/possComb:
-
-    return([tp, fp, precision, recall, possComb]);
-end:
-
-# get tp, fp, tn, fn, nr of changed, nr of notChanged of mouse
-checkMousePosNeg := proc(arr)
-    global changed, DB;
-    
-    gendir := '/home/darwin/DB/genomes/MOUSE/';
-    dbold := ReadDb('Cache/DB/MOUSE34.db');
-    dbnew := ReadDb(gendir.'MOUSE37.nodup.db');
-
-    DB := dbold;
-    c := 0;
-    changed := CreateArray(1..DB[TotEntries],false):
-    for i to DB[TotEntries] do
-        DB := dbold;
-        o := SearchTag('SEQ', Entry(i));
-        DB := dbnew;
-        n := SearchSeqDb(o);
-        if n[1,1] <> n[1,2] then
-            changed[i] := true;
-            c := c+1;
-        fi:
-    od:
-
-    DB := dbold;
-    tp := fp := 0;
-    for j to length(arr) do
-        i := arr[j]:
-        if changed[i[1,2]] and changed[i[2,2]] then
-            tp := tp+1;
-            # flag needed later for output
-            arr[j] := append(arr[j], 'isPositive'):
-        else
-            fp := fp+1;
-        fi:
-    od:
-
-    fn := c - tp:
-    tn := DB[TotEntries]-c - fp:
-
-    return([tp, fp, tn, fn, c, DB[TotEntries]-c]):
-end:
-
-# get tp, fp, tn, fn, nr of knownPos, nr of knownNeg of cmilii
-checkCmiliiPosNeg := proc(arr)
-    global DB;
-    DB := ReadDb('Cache/DB/CmiliiFull.db');
-
-    #knownPos := [{'|1748|', '|10926|'}, {'|6242|', '|2548|'}, 
-    #            {'|5304|', '|17775|'}, {'|5304|', '|18380|'}, 
-    #            {'|17775|', '|18380|'}, {'|14089|', '|15176|'}, 
-    #            {'|3133|', '|10924|'}, {'|16829|', '|13237|'}, 
-    #            {'|8499|', '|21124|'}, {'|5459|', '|597|'}, 
-    #            {'|5459|', '|10394|'}, {'|597|', '|10394|'}, 
-    #            {'|6221|', '|4119|'}, {'|7598|', '|390|'}, 
-    #            {'|7598|', '|7590|'}]:
-    # the IDs below refer to the numbers between bars 
-    # and are NOT entry ids!!!
-    knownPosFull := [
-        ['N16-Shh',{'444','20676','10045'}],
-        ['N10-BDNF',{'5420','779'}],
-        ['N2-Lin7',{'9788','8093'}],
-        ['80-prosapip1',{'5459','597','10394'}],
-        ['79-Ubox5',{'8449','21124'}],
-        ['78-VT',{'16829','13237'}],
-        ['68-LWS1',{'3133','10924'}],
-        ['61-rhodopsin',{'14089','15176'}],
-        ['58-FOXN1',{'1811','8316','11507'}],
-        ['57-FoxN4',{'5304','18380','17775'}],
-        ['32-TTLL6',{'6242','2548'}],
-        ['4-prolactin2',{'5619','6229'}],
-    NULL]:
-    knownNegFull := [
-        ['Negative1',{'7695', '1978'}],
-    NULL];
-
-    tp := fp := 0:
-    kp := length(knownPosFull);
-    kn := length(knownNegFull);
-    
-    knownPos := transpose(knownPosFull)[2];
-    knownNeg := transpose(knownNegFull)[2];
-
-    for a in [knownPos,knownNeg] do
-        for i to length(a) do
-            if length(a[i]) > 2 then
-                n := length(a[i]);
-                if a = knownPos then
-                    kp := kp+n-2;
-                else
-                    kn := kn+n-2;
-                fi;
-                for j1 to n do for j2 from j1+1 to n do
-                    a := append(a,{a[i,j1],a[i,j2]});
-                od; od;
-            fi;
-        od;
-    od;
-    found := [];
-    for i in arr do
-        t1 :=  SearchDelim('|', SearchTag('ID', Entry(i[1,2])))[2] :
-        t2 :=  SearchDelim('|', SearchTag('ID', Entry(i[2,2])))[2] :
-        tuple := {t1, t2}:
-        if SearchArray(tuple, knownPos) <> 0 then
-            tp := tp+1:
-            # check which one was there
-            for j to length(knownPosFull) do
-                if member(t1,knownPosFull[j,2]) then
-                     found := append(found,knownPosFull[j,1]);
-                     break;
-                fi;
-            od;    
-            # flag needed later for output
-            i := append(i, 'isPositive'):
-        elif SearchArray(tuple, knownNeg) <> 0 then
-            fp := fp+1:
-            for j to length(knownNegFull) do
-                if member(t1,knownNegFull[j,2]) then
-                     found := append(found,knownNegFull[j,1]);
-                     break;
-                fi;
-            od;    
-        fi:
-    od:
-
-    fn := kp - tp:
-    tn := kn - fp:
-
-    return([tp, fp, tn, fn, kp, kn, found]):
-end:
-
-
-# for Cmilii: get avg distance of first contig to begin,
-# avg distance of second contig to end,
-# avg background distance to begin,
-# avg background distance to end,
-# nr of contigs in arr in set 1,
-# nr of contigs in arr in set 2
-checkCmiliiPositions := proc(arr)
-    global DB;
-    DB := ReadDb('Cache/DB/CmiliiFull.db');
-    t := IdentifyPosition('augustus.gff','eshark_contigs_length');
-    gRanges := t[1];
-    cLengths := t[2];
-    order := sort(Indices(gRanges),x->DistBounds(x,gRanges,cLengths)[1]);
-
-    set1 := set2 := 0:
-    avgToBegin := avgToEnd := 0;
-    avgBgToBegin := avgBgToEnd := 0:
-    splitter := ceil(length(order)/2);
-    
-    for i in arr do
-        contigOrder := i[3,1,5]:
-        firstContig := i[contigOrder[1], 2]:
-        secondContig := i[contigOrder[2], 2]:
-        g1 := SearchDelim('.', SearchDelim(';', SearchDelim('|', 
-                SearchTag('ID', Entry(firstContig)))[-1])[-1])[1]:
-        g2 := SearchDelim('.', SearchDelim(';', SearchDelim('|', 
-                SearchTag('ID', Entry(secondContig)))[-1])[-1])[1]:
-        
-        g1db := DistBounds(g1, gRanges, cLengths):
-        g2db := DistBounds(g2, gRanges, cLengths):
-        avgToBegin := avgToBegin + g1db[2]:
-        avgToEnd := avgToEnd + g2db[3]:
-        
-        # check set of first contig
-        if SearchArray(g1, order) < splitter then
-            set1 := set1+1;
-        else
-            set2 := set2+1;
-        fi:
-
-        # check set of second contig
-        if SearchArray(g2, order) < splitter then
-            set1 := set1+1;
-        else
-            set2 := set2+1;
-        fi:
-    od:
-    
-    for z in Entries() do
-        g := SearchDelim('.', 
-                SearchDelim(';', 
-                    SearchDelim('|',SearchTag('ID', z))[-1])[-1])[1]:
-        gdb := DistBounds(g, gRanges, cLengths):
-        avgBgToBegin := avgBgToBegin + gdb[2]:
-        avgBgToEnd := avgBgToEnd + gdb[3]:
-    od:
-
-    avgBgToBegin := avgBgToBegin/DB['TotEntries']:
-    avgBgToEnd := avgBgToEnd/DB['TotEntries']:
-    avgToBegin := avgToBegin/length(arr):
-    avgToEnd := avgToEnd/length(arr):
-
-    return([avgToBegin, avgToEnd, avgBgToBegin, avgBgToEnd, set1, set2]);
-end:
 
 # get nr of second contigs in arr w/o start codon,
 # nr of contigs w/o start codon in whole DB,
@@ -258,14 +13,16 @@ end:
 checkStartCodon := proc(setname:string, arr)
     global DB;
     
-    if setname = 'FAKH2' or setname = 'FAKEH' or setname = 'MOUSE34' then
-        DB := ReadDb('Cache/DB/'.setname.'.db');
-    elif setname = 'Cmilii' then
-        DB := ReadDb('Cache/DB/CmiliiFull.db');
-    else
-        printf('DB not recognized in checkStartCodon().\n'):
-        return(-1):
-    fi:
+    #if setname = 'FAKH2' or setname = 'FAKEH' or setname = 'MOUSE34' then
+    #    DB := ReadDb('Cache/DB/'.setname.'.db');
+    #elif setname = 'Cmilii' then
+    #    DB := ReadDb('Cache/DB/CmiliiFull.db');
+    #else
+    #    printf('DB not recognized in checkStartCodon().\n'):
+    #    return(-1):
+    #fi:
+
+    DB := ReadDb('Cache/DB/' . setname . '.db'):
 
     missSec := 0;
     bgMiss := 0:
@@ -305,15 +62,16 @@ ParseContigHits := proc(setname:string, arr;
         species := []:
         corder := []:
 
-        if setname = 'FAKH2' or setname = 'FAKEH' or 
-            setname = 'MOUSE34' then
-                DB := ReadDb('Cache/DB/'.setname.'.db');
-        elif setname = 'Cmilii' then
-            DB := ReadDb('Cache/DB/CmiliiFull.db');
-        else
-            printf('DB not recognized in ParseContigHits().\n'):
-            return(-1):
-        fi:
+        #if setname = 'FAKH2' or setname = 'FAKEH' or 
+        #    setname = 'MOUSE34' then
+        #        DB := ReadDb('Cache/DB/'.setname.'.db');
+        #elif setname = 'Cmilii' then
+        #    DB := ReadDb('Cache/DB/CmiliiFull.db');
+        #else
+        #    printf('DB not recognized in ParseContigHits().\n'):
+        #    return(-1):
+        #fi:
+        DB := ReadDb('Cache/DB/'.setname.'.db'):
 
 
         if arr[i,3,1,5] = [1,2] then
@@ -367,16 +125,12 @@ end:
 #
 WriteResults := proc(foldername;
     'fasta'=((fasta=true):boolean),
-    'fake'=((fake=''):string),
+    'contigset'=((contigset=''):string),
     'writeallmsas'=((writeallmsas=true):boolean))
 
     global DB, PossContigHits, DefContigHits:
 
     outFolder := '';
-
-    if not member(fake, {'FAKEH', 'FAKH2', 'MOUSE34', ''}) then
-        error('needs FAKEH, FAKH2, MOUSE34 or empty string as fake parameter.');
-    fi:
 
     outFolder := 'ContigOutput/'.foldername.'/';
 
@@ -385,91 +139,39 @@ WriteResults := proc(foldername;
         TimedCallSystem('mkdir -p '.outFolder);
     fi:
 
-    if fake <> '' then
-        setname := fake:
-        DB := ReadDb('Cache/DB/'.fake.'.db');
+    if contigset <> '' then
+        setname := contigset:
+        DB := ReadDb('Cache/DB/'.contigset.'.db');
     else
-        setname := 'Cmilii':
-        DB := ReadDb('Cache/DB/CmiliiFull.db');
+        error(' needs name of contig set as parameter.');
     fi:
-
-    # get tp, fp, tn, fn of definitive hits for Cmilii, MOUSE34
-    # get tp, fp, precision, recall, nrTotPos for FAKEH, FAKH2
-    defPosNegArr := checkPosNeg(setname, DefContigHits):
-    possPosNegArr := checkPosNeg(setname, PossContigHits):
-    if defPosNegArr = -1 then
-        printf('Could not provide statistics. Check genome name.\n'):
-        return():
-    fi:
-    posNegArrs := [[defPosNegArr, 'conclusive hits'], [possPosNegArr, 'inconclusive hits']]:
 
     printf('Write results: params.txt\n');
     OpenWriting(outFolder.'params.txt'):
-        printf('MinSeqLenContig := %a\nMinProbContig := %a\nMaxContigOverlap := %a\nMinBestScore := %a\nDistConfLevel := %a\nAllowMultipleHits := %a\nDatasets := %a\nForwardBestMatch := %a\nBackwardBestMatch := %a\nContigStablePairTol := %a\nStablePairTol := %a\n\n',
+        printf('MinSeqLenContig := %a;\nMinProbContig := %a;\nMaxContigOverlap := %a;\nMinBestScore := %a;\nDistConfLevel := %a;\nAllowMultipleHits := %a;\nDatasets := %a;\nContigStablePairTol := %a;\nStablePairTol := %a;\n\n',
                 MinSeqLenContig, MinProbContig,
                 MaxContigOverlap, MinBestScore, DistConfLevel, 
-                AllowMultipleHits, G, ForwardBestMatch, BackwardBestMatch, 
-                ContigStablePairTol, StablePairTol);
+                AllowMultipleHits, G, ContigStablePairTol, StablePairTol);
         
-        # total amount of hits, number of inconclusive hits
-        totalHits := length(ContigHits):
-        inconclusive := length(PossContigHits):
-        if totalHits = 0 then
-            if inconclusive > 0 then inconPerc := 100
-            else inconPerc := 0:
-            fi:
-        else
-            inconPerc := 100*inconclusive/totalHits:
+    # total amount of hits, number of inconclusive hits
+    totalHits := length(ContigHits):
+    inconclusive := length(PossContigHits):
+    if totalHits = 0 then
+        if inconclusive > 0 then inconPerc := 100
+        else inconPerc := 0:
         fi:
-        printf('%a hits in total; %a (%2.2f%%) are not conclusive.\n\n',
-                totalHits, inconclusive, inconPerc);
-        
-        for i in posNegArrs do
-            resultArr := i[1]:
-            printf('Results for %s:\n', i[2]):
-            # tp, tn, fp, fn etc.
-            if setname='FAKEH' or setname='FAKH2' then
-                printf('Found %a true positives (out of %a possible combinations).\n',
-                        resultArr[1], resultArr[5]):
-                printf('Found %a false positives.\n', resultArr[2]);
-                printf('Precision is %a, recall is %a.\n\n', 
-                        resultArr[3], resultArr[4]);
-            elif setname='MOUSE34' then
-                printf('Found %a true positives.\n', resultArr[1]);
-                printf('Found %a false positives.\n', resultArr[2]);
-                printf('True negatives: %a, false negatives: %a.\n', 
-                        resultArr[3], resultArr[4]);
-                printf('%a genes have changed, %a genes have not.\n\n', 
-                        resultArr[5], resultArr[6]);
-            elif setname='Cmilii' then
-                printf('Found %a true positives (out of %a known positives).\n', 
-                        resultArr[1], resultArr[5]);
-                printf('Found %a false positives (out of %a known negatives).\n', 
-                        resultArr[2], resultArr[6]);
-                printf('True negatives: %a, false negatives: %a.\n', 
-                        resultArr[3], resultArr[4]);
-                printf('The cases found were %a\n\n',resultArr[7]);
-            fi:
-        od:
-        # Cmilii: avg positions of contigs
-        if setname='Cmilii' then
-            defPosArr := checkCmiliiPositions(DefContigHits):
-            printf('Avg distance of first contig to begin: %a.\n', 
-                    defPosArr[1]);
-            printf('Avg distance of second contig to end: %a.\n', 
-                    defPosArr[2]);
-            printf('Avg distance in background to begin and end: %a, %a.\n',
-                    defPosArr[3], defPosArr[4]):
-            printf('Nr of contigs in set1: %a, in set2: %a.\n',
-                    defPosArr[5], defPosArr[6]):
-        fi:
-
-        # % of second contig w/o start codon
-        startCodonArr := checkStartCodon(setname, DefContigHits):
-        printf('Nr of second contigs w/o start codon: %a (%2.2f%%)\n',
-                startCodonArr[1], startCodonArr[2]):
-        printf('Nr of entries w/o start codon in whole genome: %a (%2.2f%%)\n',
-                startCodonArr[3], startCodonArr[4]):
+    else
+        inconPerc := 100*inconclusive/totalHits:
+    fi:
+    printf('%a hits in total; %a (%2.2f%%) are not conclusive.\n\n',
+            totalHits, inconclusive, inconPerc);
+    
+    # % of second contig w/o start codon
+    startCodonArr := checkStartCodon(setname, DefContigHits):
+    printf('Nr of second contigs w/o start codon: %a (%2.2f%%)\n',
+            startCodonArr[1], startCodonArr[2]):
+    printf('Nr of entries w/o start codon in whole genome: %a (%2.2f%%)\n',
+            startCodonArr[3], startCodonArr[4]):
 
     OpenWriting(previous):
     
@@ -486,7 +188,7 @@ WriteResults := proc(foldername;
         fi:
         limitcount := 0;
         for k to length(hits) do
-            if not writeall and limitcount > 50 and (not i[8] or setname='MOUSE34') then next fi:
+            if not writeall and limitcount = 50 and (not i[8] or setname='MOUSE34') then next fi:
             i := hits[k];
             for j to (length(i[2])-2) do
                 printf('%a\t%a\t%a\t%a\t%a\t%a\t%a\t%a',
@@ -539,20 +241,13 @@ WriteResults := proc(foldername;
         OpenWriting(previous);
     end:
     
-    printf('Write results: stdfacs.txt\n');
+    printf('Write results: hits.txt\n');
     defHits := ParseContigHits(setname, DefContigHits):
-    WriteResultFile(outFolder.'stdfacs.txt', defHits, 'defhits', true);
+    WriteResultFile(outFolder.'hits.txt', defHits, 'defhits', true);
 
     printf('Write results: possibleHits.txt\n');
     possHits := ParseContigHits(setname, PossContigHits, 'allarr'=writeallmsas):
     WriteResultFile(outFolder.'possibleHits.txt', possHits, 'posshits', writeallmsas);
-
-    printf('Write results: contighits.txt\n');
-    OpenWriting(outFolder.'contighits.txt'):
-        print('ContigHits := ');
-        dprint(ContigHits);
-        print(';');
-    OpenWriting(previous);
 
     actuallyWriteFasta := proc(arr, writeall:boolean, fastaset)
         CallSystem('mkdir -p '.outFolder.'fasta/'.fastaset):
