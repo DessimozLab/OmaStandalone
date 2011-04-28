@@ -60,8 +60,11 @@ MinSeqLen := 50:
 # GENERAL PARAMETERS
 #
 
-# Run whole OMA or just up to scaffold detection?
-RunEverything := false;
+# Use esprit?
+# You can either set this to 'true', which will enable esprit and shut down the
+# parts of OMA that are not directly needed for esprit, or set it to 'false' to
+# make no use of esprit at all.
+UseEsprit := false;
 
 #Any sequence which is less than MinSeqLen amino acids long in
 # contigs is not considered.

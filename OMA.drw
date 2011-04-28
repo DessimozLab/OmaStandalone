@@ -309,13 +309,13 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
 
 
 ##############################################################################
-# Verification of stable pairs and clique building 
+# Verification of stable pairs and clique building or esprit 
 
 print('\n\n****\n\nStarting Verification of Stable Pairs\n');
 cput_mid := time(); time_mid := UTCTime();
 printlevel := 3:
 NumberFormat := '%.8g':
-params := [MinScore, LengthTol, StablePairTol, VerifiedPairTol]:
+params := [MinScore, LengthTol, StablePairTol, VerifiedPairTol, UseEsprit]:
 ParamSet := [];
 Ort := OrthologousMatrix( op(params) ):
 
@@ -328,10 +328,12 @@ for i to length(genomes) do
     fi:
 od:
 
-# Write results of ESPRIT
-if WriteAtAll then
-    WriteResults(WriteContigSet, fasta=WriteContigFasta,
+if UseEsprit then
+    # Write results of ESPRIT
+    if WriteAtAll then
+        WriteResults(WriteContigSet, fasta=WriteContigFasta,
                     contigset=contigdata, writeallmsas=WriteAllMSAs);
+    fi:
 fi:
 
 # # Retrieve all IDs
