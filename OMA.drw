@@ -13,9 +13,7 @@
 #      \/__/         \/__/         \/__/    
 # 
 #       Stand-alone version
-#          Gaston Gonnet, Adrian Schneider, Alexander Roth, Adrian Altenhoff,
-#          and Christophe Dessimoz
-#          (c) CBRG, ETH Zurich, June 2010
+#          (c) CBRG, ETH Zurich, 2004-2011
 ##############################################################################
 # Usage
 #
@@ -39,7 +37,7 @@ GetStats := true;
 
 # Read libraries
 if assigned(libdir) then
-    ReadProgram( libdir . 'lib/darwinit'):
+    ReadProgram( libdir . 'darwinit'):
 else
     ReadProgram('lib/darwinit'):
 fi:
@@ -47,7 +45,7 @@ fi:
 # Convert FASTA databases to darwin databases
 print('Starting database conversion and checks...');
 
-if length(Datasets) = 0 then
+if not assigned(Datasets) then
     G := TimedCallSystem('find DB -name "*.fa" -print')[2];
     G := SearchDelim('\n',G);
 else
@@ -133,8 +131,11 @@ for g in G do
     DBs := append(DBs,DB); 
 od:
 if length(genomes) < 2 then
-    error(printf('%d genome found... make sure you start the script'
-    .'from the right directory',length(genomes)));
+    printf('\n\n'
+          .'%d genome found... make sure that your genomes (in fasta format)\n'
+          .'are located in a directory called "DB", itself located in\n'
+          .'the present directory.\n\n'
+         , length(genomes));
     quit;
 fi;
 
