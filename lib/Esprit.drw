@@ -52,10 +52,6 @@ Esprit := proc(params)
                                 fi;
                                 s3 := s3Iter['Entry'];
                                 if s3<=s1 then next fi;
-                                if s3-s1 < 50 then # and isSplicing(s1, s3, genomes[i]) then 
-                                    next 
-                                fi:
-
                                 s3Pair := s3Iter:
                                 r3 := s3Pair['r1']:
                                 

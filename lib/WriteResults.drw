@@ -12,15 +12,6 @@ module external WriteResults;
 # % of contig w/o start codon in whole DB
 checkStartCodon := proc(setname:string, arr)
     global DB;
-    
-    #if setname = 'FAKH2' or setname = 'FAKEH' or setname = 'MOUSE34' then
-    #    DB := ReadDb('Cache/DB/'.setname.'.db');
-    #elif setname = 'Cmilii' then
-    #    DB := ReadDb('Cache/DB/CmiliiFull.db');
-    #else
-    #    printf('DB not recognized in checkStartCodon().\n'):
-    #    return(-1):
-    #fi:
 
     DB := ReadDb('Cache/DB/' . setname . '.db'):
 

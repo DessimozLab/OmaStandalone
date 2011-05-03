@@ -37,7 +37,7 @@ VerifiedPairTol := 1.53;
 
 # Any sequence which is less than MinSeqLen amino acids long in
 # regular genomes is not considered.
-MinSeqLen := 50:
+MinSeqLen := 20:
 
 ###############################################################################
 #
@@ -78,7 +78,7 @@ DistConfLevel := 2;
 # to consider that we might be dealing with fragments of the same gene
 # (this is the parameter "MinRefGenomes" described in the paper,
 # normalized by the total number of reference genomes)
-MinProbContig := 0.4;
+MinProbContig := 0.2;
 
 # Maximum overlap between fragmnents of same gene from different contigs
 MaxContigOverlap := 5;
