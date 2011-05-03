@@ -28,6 +28,9 @@ Then, simply call
 oma
 from your working directory to run OMA and/or ESPRIT.
 
+After installation of oma, you could cd into the 'ToyExample' directory,
+have a look at 'parameters.drw' and run 'oma' to get a first impression.
+
 OMA/ESPRIT is built on top of Darwin, a bioinformatics software package created
 by CBRG at ETHZ. After the installation of OMA/ESPRIT, you can also just use
 Darwin by starting
