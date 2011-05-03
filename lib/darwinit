@@ -1,5 +1,5 @@
 if assigned(libdir) then
-    OrthologsLib := libdir . '/lib/':
+    OrthologsLib := libdir:
 else
     OrthologsLib := TimedCallSystem('pwd')[2,1..-2].'/lib/':
 fi:

@@ -335,7 +335,8 @@ if UseEsprit then
         WriteResults(WriteContigSet, fasta=WriteContigFasta,
                     contigset=contigdata, writeallmsas=false);
     fi:
-fi:
+    CallSystem('rm -rf Output'):
+else
 
 # # Retrieve all IDs
 # # Create File MapSeqNum-ID:
@@ -435,5 +436,7 @@ for r to length(Ort) do
 od;
 OpenWriting(previous);
 
+# end 'if UseEsprit... '
+fi:
 
 print('\n\n***\n\nDone!!\n\n');

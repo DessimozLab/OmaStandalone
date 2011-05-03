@@ -36,6 +36,9 @@ cp -r lib $instpath/
 cp OMA.drw parameters.drw install.sh README.oma $instpath/
 cp bin/oma bin/omadarwin $instpath/bin/
 
+# copy toy example to $1
+cp -r ToyExample $instpath/ToyExample
+
 # adjust for version number
 sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt $instpath/install.sh
 

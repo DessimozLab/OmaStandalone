@@ -54,7 +54,7 @@ ParseContigHits := proc(setname:string, arr;
         if length(arr[i]) > 4 and arr[i,5] = 'isPositive' then
                 isPositive := true:
         fi:
-        if not allarr and limitcount > 50 and (not isPositive or setname='MOUSE34') then next fi:
+        if not allarr and limitcount > 50 and (not isPositive) then next fi:
         seqs := []:
         labels := []:
         stdfacs := []:
@@ -62,15 +62,6 @@ ParseContigHits := proc(setname:string, arr;
         species := []:
         corder := []:
 
-        #if setname = 'FAKH2' or setname = 'FAKEH' or 
-        #    setname = 'MOUSE34' then
-        #        DB := ReadDb('Cache/DB/'.setname.'.db');
-        #elif setname = 'Cmilii' then
-        #    DB := ReadDb('Cache/DB/CmiliiFull.db');
-        #else
-        #    printf('DB not recognized in ParseContigHits().\n'):
-        #    return(-1):
-        #fi:
         DB := ReadDb('Cache/DB/'.setname.'.db'):
 
 
@@ -102,7 +93,7 @@ ParseContigHits := proc(setname:string, arr;
             DB := DBs[arr[1,1,1]];
             s3set := append(s3set, SearchDelim(';', SearchTag('ID', Entry(e)))[1]);
         od:
-        if not isPositive or setname='MOUSE34' then limitcount := limitcount + 1 fi:
+        if not isPositive then limitcount := limitcount + 1 fi:
         hits := append(hits, [seqs, labels, stdfacs, species, gaps, corder, s3set, isPositive]):
     od:
 
@@ -132,7 +123,7 @@ WriteResults := proc(foldername;
 
     outFolder := '';
 
-    outFolder := 'ContigOutput/'.foldername.'/';
+    outFolder := 'EspritOutput/'.foldername.'/';
 
     print(length(FileStat(outFolder)));
     if length(FileStat(outFolder)) = 0 then
@@ -143,7 +134,9 @@ WriteResults := proc(foldername;
         setname := contigset:
         DB := ReadDb('Cache/DB/'.contigset.'.db');
     else
-        error(' needs name of contig set as parameter.');
+        print('Esprit could not find out which of your genome sets was the one with contigs.
+        
+Please name the genome that includes contigs $NAME.Contig.fa, such as ''mouse.Contig.fa''.');
     fi:
 
     printf('Write results: params.txt\n');
@@ -167,12 +160,13 @@ WriteResults := proc(foldername;
             totalHits, inconclusive, inconPerc);
     
     # % of second contig w/o start codon
-    startCodonArr := checkStartCodon(setname, DefContigHits):
-    printf('Nr of second contigs w/o start codon: %a (%2.2f%%)\n',
+    if length(DefContigHits) > 0 then
+        startCodonArr := checkStartCodon(setname, DefContigHits):
+        printf('Nr of second contigs w/o start codon: %a (%2.2f%%)\n',
             startCodonArr[1], startCodonArr[2]):
-    printf('Nr of entries w/o start codon in whole genome: %a (%2.2f%%)\n',
+        printf('Nr of entries w/o start codon in whole genome: %a (%2.2f%%)\n',
             startCodonArr[3], startCodonArr[4]):
-
+    fi:
     OpenWriting(previous):
     
     # method to write proper file format
@@ -188,14 +182,14 @@ WriteResults := proc(foldername;
         fi:
         limitcount := 0;
         for k to length(hits) do
-            if not writeall and limitcount = 50 and (not i[8] or setname='MOUSE34') then next fi:
+            if not writeall and limitcount = 50 and (not i[8]) then next fi:
             i := hits[k];
             for j to (length(i[2])-2) do
                 printf('%a\t%a\t%a\t%a\t%a\t%a\t%a\t%a',
                     k, i[2,1], i[2,2], i[2,2+j], i[4,j], i[3,j], i[5,j], i[7]);
                 printf('\n');
             od:
-            if not i[8] or setname='MOUSE34' then limitcount := limitcount + 1 fi:
+            if not i[8] then limitcount := limitcount + 1 fi:
         od:
         OpenWriting(previous);
     end:

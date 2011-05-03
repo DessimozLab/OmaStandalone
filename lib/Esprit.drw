@@ -8,7 +8,7 @@
 #       - now make sure that these matches do not overlap with more than MaxOverlap 
 #       - if that's the case, we have a candidate split gene!!
 
-ScaffoldVerification := proc(params)
+Esprit := proc(params)
     global DB, DefContigHits, PossContigHits, ContigHits;
 
     # parse input params

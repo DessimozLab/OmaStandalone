@@ -30,5 +30,5 @@ then
 fi
 
 cat $OMA_PATH/../lib/splashscreen.txt
-echo "libdir := '$OMA_PATH/../': ReadProgram('$pfile'): ReadProgram('$OMA_PATH/../OMA.drw'): done:" | $OMA_PATH/omadarwin -q 
+echo "libdir := '$OMA_PATH/../lib/': ReadProgram('$pfile'): ReadProgram('$OMA_PATH/../OMA.drw'): done:" | $OMA_PATH/omadarwin -q 
 

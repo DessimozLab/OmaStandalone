@@ -1,0 +1,104 @@
+################################################################################
+#        ___           ___           ___     
+#       /\  \         /\__\         /\  \    
+#      /::\  \       /::|  |       /::\  \   
+#     /:/\:\  \     /:|:|  |      /:/\:\  \  
+#    /:/  \:\  \   /:/|:|__|__   /::\~\:\  \ 
+#   /:/__/ \:\__\ /:/ |::::\__\ /:/\:\ \:\__\
+#   \:\  \ /:/  / \/__/~~/:/  / \/__\:\/:/  /
+#    \:\  /:/  /        /:/  /       \::/  / 
+#     \:\/:/  /        /:/  /        /:/  /  
+#      \::/  /        /:/  /        /:/  /   
+#       \/__/         \/__/         \/__/    
+#   
+################################################################################
+
+# if you want to recompute everything from scratch everytime the script
+# is run, set the following parameter to false.
+ReuseCachedResults := true;
+
+# alignments which have a score lower than MinScore will not be considered.
+# The scores are in Gonnet PAM matrices units.
+MinScore := 181:  
+
+# Length tolerance ratio.  If the length of the effective alignement
+# is less than LengthTol*min(length(s1),length(s2)) then the alignment
+# is not considered.
+LengthTol := 0.61:
+
+# During the stable pair formation, if a pair has a distance provable
+# higher than another pair (i.e. StablePairTol standard deviations
+# away) then it is discarded.
+StablePairTol := 1.81;
+
+# during the verification of stable pairs, if a length violation is
+# accepted if it falls StablePairTol standard deviations away.
+VerifiedPairTol := 1.53;
+
+# Any sequence which is less than MinSeqLen amino acids long in
+# regular genomes is not considered.
+MinSeqLen := 50:
+
+###############################################################################
+#
+#      ___           ___           ___           ___                    ___     
+#     /\  \         /\  \         /\  \         /\  \          ___     /\  \    
+#    /::\  \       /::\  \       /::\  \       /::\  \        /\  \    \:\  \   
+#   /:/\:\  \     /:/\ \  \     /:/\:\  \     /:/\:\  \       \:\  \    \:\  \  
+#  /::\~\:\  \   _\:\~\ \  \   /::\~\:\  \   /::\~\:\  \      /::\__\   /::\  \ 
+# /:/\:\ \:\__\ /\ \:\ \ \__\ /:/\:\ \:\__\ /:/\:\ \:\__\  __/:/\/__/  /:/\:\__\
+# \:\~\:\ \/__/ \:\ \:\ \/__/ \/__\:\/:/  / \/_|::\/:/  / /\/:/  /    /:/  \/__/
+#  \:\ \:\__\    \:\ \:\__\        \::/  /     |:|::/  /  \::/__/    /:/  /     
+#   \:\ \/__/     \:\/:/  /         \/__/      |:|\/__/    \:\__\    \/__/      
+#    \:\__\        \::/  /                     |:|  |       \/__/               
+#     \/__/         \/__/                       \|__|                           
+# 
+#
+###############################################################################
+
+#
+# GENERAL PARAMETERS
+#
+
+# Use esprit?
+# You can either set this to 'true', which will enable esprit and shut down the
+# parts of OMA that are not directly needed for esprit, or set it to 'false' to
+# make no use of esprit at all.
+UseEsprit := true;
+
+#Any sequence which is less than MinSeqLen amino acids long in
+# contigs is not considered.
+MinSeqLenContig := 20:
+
+# Confidence level variable for contigs
+# (this is the parameter "tol" described in the paper)
+DistConfLevel := 2;
+
+# Min proportion of genomes with which contigs form many:1 BestMatches
+# to consider that we might be dealing with fragments of the same gene
+# (this is the parameter "MinRefGenomes" described in the paper,
+# normalized by the total number of reference genomes)
+MinProbContig := 0.4;
+
+# Maximum overlap between fragmnents of same gene from different contigs
+MaxContigOverlap := 5;
+
+# Minimum score for BestMatch in scaffold recognition
+MinBestScore := 250;
+
+# Allow more than one hits per contig?
+AllowMultipleHits := true;
+
+#
+# OUTPUT PARAMETERS
+#
+
+# ESPRIT will write all results into individual folders in a folder
+# ContigResults/ . This folder will be generated if needed.
+
+# Do we write at all?
+WriteAtAll := true;
+# Shall we write out fasta files?
+WriteContigFasta := true;
+# Name of the set (i.e. also name of folder to write to)
+WriteContigSet := 'Example';
