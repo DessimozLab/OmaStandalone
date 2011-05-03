@@ -332,7 +332,7 @@ if UseEsprit then
     # Write results of ESPRIT
     if WriteAtAll then
         WriteResults(WriteContigSet, fasta=WriteContigFasta,
-                    contigset=contigdata, writeallmsas=WriteAllMSAs);
+                    contigset=contigdata, writeallmsas=false);
     fi:
 fi:
 

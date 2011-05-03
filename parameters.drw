@@ -1,4 +1,4 @@
-###################################################################################
+################################################################################
 #        ___           ___           ___     
 #       /\  \         /\__\         /\  \    
 #      /::\  \       /::|  |       /::\  \   
@@ -11,13 +11,14 @@
 #      \::/  /        /:/  /        /:/  /   
 #       \/__/         \/__/         \/__/    
 #   
-###################################################################################
+################################################################################
 
 # if you want to recompute everything from scratch everytime the script
 # is run, set the following parameter to false.
 ReuseCachedResults := true;
 
-# alignments which have a score lower than MinScore will not be considered.  
+# alignments which have a score lower than MinScore will not be considered.
+# The scores are in Gonnet PAM matrices units.
 MinScore := 181:  
 
 # Length tolerance ratio.  If the length of the effective alignement
@@ -29,7 +30,6 @@ LengthTol := 0.61:
 # higher than another pair (i.e. StablePairTol standard deviations
 # away) then it is discarded.
 StablePairTol := 1.81;
-ContigStablePairTol := 3.3;
 
 # during the verification of stable pairs, if a length violation is
 # accepted if it falls StablePairTol standard deviations away.
@@ -39,22 +39,22 @@ VerifiedPairTol := 1.53;
 # regular genomes is not considered.
 MinSeqLen := 50:
 
-###################################################################################
+###############################################################################
 #
-#      ___           ___           ___           ___                       ___     
-#     /\  \         /\  \         /\  \         /\  \          ___        /\  \    
-#    /::\  \       /::\  \       /::\  \       /::\  \        /\  \       \:\  \   
-#   /:/\:\  \     /:/\ \  \     /:/\:\  \     /:/\:\  \       \:\  \       \:\  \  
-#  /::\~\:\  \   _\:\~\ \  \   /::\~\:\  \   /::\~\:\  \      /::\__\      /::\  \ 
-# /:/\:\ \:\__\ /\ \:\ \ \__\ /:/\:\ \:\__\ /:/\:\ \:\__\  __/:/\/__/     /:/\:\__\
-# \:\~\:\ \/__/ \:\ \:\ \/__/ \/__\:\/:/  / \/_|::\/:/  / /\/:/  /       /:/  \/__/
-#  \:\ \:\__\    \:\ \:\__\        \::/  /     |:|::/  /  \::/__/       /:/  /     
-#   \:\ \/__/     \:\/:/  /         \/__/      |:|\/__/    \:\__\       \/__/      
-#    \:\__\        \::/  /                     |:|  |       \/__/                  
-#     \/__/         \/__/                       \|__|                              
+#      ___           ___           ___           ___                    ___     
+#     /\  \         /\  \         /\  \         /\  \          ___     /\  \    
+#    /::\  \       /::\  \       /::\  \       /::\  \        /\  \    \:\  \   
+#   /:/\:\  \     /:/\ \  \     /:/\:\  \     /:/\:\  \       \:\  \    \:\  \  
+#  /::\~\:\  \   _\:\~\ \  \   /::\~\:\  \   /::\~\:\  \      /::\__\   /::\  \ 
+# /:/\:\ \:\__\ /\ \:\ \ \__\ /:/\:\ \:\__\ /:/\:\ \:\__\  __/:/\/__/  /:/\:\__\
+# \:\~\:\ \/__/ \:\ \:\ \/__/ \/__\:\/:/  / \/_|::\/:/  / /\/:/  /    /:/  \/__/
+#  \:\ \:\__\    \:\ \:\__\        \::/  /     |:|::/  /  \::/__/    /:/  /     
+#   \:\ \/__/     \:\/:/  /         \/__/      |:|\/__/    \:\__\    \/__/      
+#    \:\__\        \::/  /                     |:|  |       \/__/               
+#     \/__/         \/__/                       \|__|                           
 # 
 #
-###################################################################################
+###############################################################################
 
 #
 # GENERAL PARAMETERS
@@ -70,8 +70,14 @@ UseEsprit := false;
 # contigs is not considered.
 MinSeqLenContig := 20:
 
+# Confidence level variable for contigs
+# (this is the parameter "tol" described in the paper)
+DistConfLevel := 2;
+
 # Min proportion of genomes with which contigs form many:1 BestMatches
 # to consider that we might be dealing with fragments of the same gene
+# (this is the parameter "MinRefGenomes" described in the paper,
+# normalized by the total number of reference genomes)
 MinProbContig := 0.4;
 
 # Maximum overlap between fragmnents of same gene from different contigs
@@ -80,25 +86,8 @@ MaxContigOverlap := 5;
 # Minimum score for BestMatch in scaffold recognition
 MinBestScore := 250;
 
-# Confidence level variable for contigs
-DistConfLevel := 2;
-
 # Allow more than one hits per contig?
 AllowMultipleHits := true;
-
-#
-# DATASET PARAMETERS
-#
-
-# Which datasets to use?
-# If this parameter is an empty list ( [] ), the script
-# will simply use all fasta files in folder DB/
-# The file with the contigs should be called {YourGenome}.Contig.fa .
-#
-# As an example, contigs of CmiliiFull with 9 more genomes:
-Datasets := ['DB/ANOCA.fa', 'DB/BRAFL.fa', 'DB/CmiliiFull.Contig.fa',
-'DB/CHICK.fa', 'DB/CIOIN.fa', 'DB/DANRE.fa', 'DB/HUMAN.fa',
-'DB/MOUSE.fa', 'DB/ORYLA.fa', 'DB/XENTR.fa'];
 
 #
 # OUTPUT PARAMETERS
@@ -112,8 +101,4 @@ WriteAtAll := true;
 # Shall we write out fasta files?
 WriteContigFasta := true;
 # Name of the set (i.e. also name of folder to write to)
-WriteContigSet := 'ContigTestSet1';
-# Do we need _all_ MSAs and possibleHits or just the first 50?
-# Definitive hits are not affected by this setting.
-WriteAllMSAs := false;
-
+WriteContigSet := 'EspritOutput';

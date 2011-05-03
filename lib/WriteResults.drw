@@ -148,10 +148,10 @@ WriteResults := proc(foldername;
 
     printf('Write results: params.txt\n');
     OpenWriting(outFolder.'params.txt'):
-        printf('MinSeqLenContig := %a;\nMinProbContig := %a;\nMaxContigOverlap := %a;\nMinBestScore := %a;\nDistConfLevel := %a;\nAllowMultipleHits := %a;\nDatasets := %a;\nContigStablePairTol := %a;\nStablePairTol := %a;\n\n',
+        printf('MinSeqLenContig := %a;\nMinProbContig := %a;\nMaxContigOverlap := %a;\nMinBestScore := %a;\nDistConfLevel := %a;\nAllowMultipleHits := %a;\nDatasets := %a;\nStablePairTol := %a;\n\n',
                 MinSeqLenContig, MinProbContig,
                 MaxContigOverlap, MinBestScore, DistConfLevel, 
-                AllowMultipleHits, G, ContigStablePairTol, StablePairTol);
+                AllowMultipleHits, G, StablePairTol);
         
     # total amount of hits, number of inconclusive hits
     totalHits := length(ContigHits):

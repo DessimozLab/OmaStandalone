@@ -11,18 +11,20 @@
      \/__/         \/__/         \/__/    
 
       Stand-alone version
-      Gaston Gonnet, Adrian Schneider, Alexander Roth, Adrian Altenhoff,
-      and Christophe Dessimoz
-      (c) CBRG, ETH Zurich, June 2010
+      Christophe Dessimoz, Adrian Schneider, Adrian Altenhoff,
+      Alexander Roth, Stefan Zoller, and Gaston Gonnet
+
+      (c) CBRG, ETH Zurich, June 2011
 
       Version [VERSIONNR]
 
       Please cite:
-      Dessimoz et al., 'OMA, a comprehensive, automated project for the
-      identification of orthologs from complete genome data: Introduction and
-      first achievements', Comparative Genomics, 2005
 
-      Roth et al., 'Algorithm of OMA for large-scale ortholgoy inference', BMC
+      Dessimoz et al., "OMA, a comprehensive, automated project for the
+      identification of orthologs from complete genome data: Introduction and
+      first achievements", RECOMB-CG 2005, LNCS 3678, Springer, 2005
+
+      Roth et al., "Algorithm of OMA for large-scale ortholgoy inference", BMC
       Bioinformatics, 2008
 
 
