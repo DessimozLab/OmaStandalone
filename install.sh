@@ -17,7 +17,7 @@ then
     fi
     install_prefix=$(dirname $1)/$(basename $1)
 fi
-omadir=$install_prefix/oma$versionnr
+omadir=$install_prefix/OMA$versionnr
 if ! mkdir -p $omadir/bin 2>/dev/null
 then
     echo "Could not create $omadir . 
@@ -56,4 +56,6 @@ echo "Installing libraries..."
 cp -rf $current_dir/lib $omadir/
 cp -rf $current_dir/darwinlib $omadir/
 echo "Installation complete."
-echo "Make sure $omadir/bin is in your PATH."
+echo "Make sure $omadir/bin is in your PATH, e.g by adding the line"
+echo "  export PATH=$PATH:/usr/local/OMA[VERSIONNR]/bin"
+echo "to your ~/.profile file (under bash)"

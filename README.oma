@@ -1,31 +1,37 @@
-OMA StandAlone Version
-----------------------
+OMA StandAlone Version [VERSIONNR]
+----------------------------------
 
 Installation
 ------------
+
 To install this software on your system, run the included installer script:
 
-./install.sh [install_prefix]
+   ./install.sh [install_prefix]
 
 If you do not choose an install prefix, oma will be installed in
-/usr/local/oma . 
+/usr/local/oma (for that, you might need to install it using the root account
+or sudo). 
 
 After installation, make sure the bin folder of oma is in your PATH
 variable, e.g., if you are using bash, add a line in ~/.profile such as:
 
-export PATH=/usr/local/oma1.0/bin:$PATH
+   export PATH=$PATH:/usr/local/OMA[VERSIONNR]/bin
 
 For other shells, choose the appropriate syntax.
 
+
 Usage
 -----
+
 First, set up a working directory. Copy the file 'parameters.drw' into this 
 folder and change it to your needs. Create a directory 'DB' in your working
 directory that holds the genome data in fasta format (filename ending with
 .fa)and copy your data into this directory. If you want to use ESPRIT, the
-fasta file should be called {YourGenome}.Contig.fa .
+fasta file should be called {YourGenome}.contig.fa .
 Then, simply call
-oma
+
+  oma
+
 from your working directory to run OMA and/or ESPRIT.
 
 After installation of oma, you could cd into the 'ToyExample' directory,
@@ -34,7 +40,9 @@ have a look at 'parameters.drw' and run 'oma' to get a first impression.
 OMA/ESPRIT is built on top of Darwin, a bioinformatics software package created
 by CBRG at ETHZ. After the installation of OMA/ESPRIT, you can also just use
 Darwin by starting
-omadarwin
+
+  omadarwin
+
 in the terminal.
 
 For more information about OMA and ESPRIT, please have a look at 
@@ -52,3 +60,5 @@ License
 OMA is licensed under a Creative Commons Attribution-Noncommercial-Share Alike 
 2.5 License. For more info, please consult the following page:
 http://creativecommons.org/licenses/by-nc-sa/2.5/ch/
+
+Essentially, OMA is free for non-commercial use.

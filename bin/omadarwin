@@ -10,14 +10,14 @@ fi
 machine=$(uname -m)
 os=$(uname -s)
 
-DARWIN_BINARY="$DARWIN_PATH/bin/omadarwin.linux32"
+DARWIN_BINARY="$DARWIN_PATH/omadarwin.linux32"
 
 if [ $os = "Linux" ]
 then
     ulimit -s unlimited
     if [ $machine = "x86_64" ]
     then
-        DARWIN_BINARY="$DARWIN_PATH/bin/omadarwin.linux64"
+        DARWIN_BINARY="$DARWIN_PATH/omadarwin.linux64"
     fi
 elif [ $os = "Darwin" ]
 then

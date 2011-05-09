@@ -318,125 +318,121 @@ printlevel := 3:
 NumberFormat := '%.8g':
 params := [MinScore, LengthTol, StablePairTol, VerifiedPairTol, UseEsprit]:
 ParamSet := [];
-Ort := OrthologousMatrix( op(params) ):
-
-# Find contig genome in Datasets
-contigdata := '':
-for i to length(genomes) do
-    if isContig[i] then
-        contigdata := genomes[i]:
-        break:
-    fi:
-od:
 
 if UseEsprit then
-    # Write results of ESPRIT
-    if WriteAtAll then
-        WriteResults(WriteContigSet, fasta=WriteContigFasta,
-                    contigset=contigdata, writeallmsas=false);
-    fi:
-    CallSystem('rm -rf Output'):
+    Esprit([MinProbContig, MinBestScore, DistConfLevel,
+            true, MaxContigOverlap]):
+    # Find contig genome in Datasets
+    contigdata := '':
+    for i to length(genomes) do
+        if isContig[i] then
+            contigdata := genomes[i]:
+            break:
+        fi:
+    od:
+    WriteResults('EspritOutput', 'fasta'=true,
+                    'contigset'=contigdata, writeallmsas=false);
 else
+    Ort := OrthologousMatrix( op(params) ):
 
-# # Retrieve all IDs
-# # Create File MapSeqNum-ID:
-CallSystem('rm -rf Output; mkdir -p Output/PairwiseOrthologs');
-IDtable := CreateArray(1..N);
-OpenWriting('Output/Map-SeqNum-ID.txt');
-print('\#Format: genome<tab>sequence number<tab>id');
-for i to N do
-    DB := DBs[i];
-    tmp := CreateArray(1..ns[i]);
-    for j to DB[TotEntries] do
-        tmp[j] := SearchTag('ID',Entry(j));
-        printf('%s\t%d\t%s\n',genomes[i],j,tmp[j]);
-    od;
-    IDtable[i] := tmp;
-od:
-OpenWriting(previous);
-
-
-##############################################################################
-# Store results
-print('\n\n****\n\nStoring results\n');
-
-if lasterror <> 'lasterror' then
-    print('Abort because of error: '.lasterror);
-    # quit;
-fi:
-
-OGtable := CreateArray(1..N):
-for i to N do OGtable[i] := CreateArray(1..ns[i]); od:
-for r to length(Ort) do
-    for k to N do
-        t := Ort[r,k];
-        if t <> 0 then 
-            OGtable[k,t] := r;
-        fi;
-    od;
-od:
-
-# Store the pairwise orthologs
-for i to N do for j from i+1 to N do
-    if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
-        g1 := i;  g2 := j else g2 := i;  g1 := j fi;
-    OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2].'.txt');
-    printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
-         .'<tab>Orthology type<tab>OMA group (if any)\n');
-    printf('\# Every pair is listed only once, and in no particular order.\n');
-    printf('\# The map between sequence number and ID are given\n');
-    printf('\# in the file "Map-SeqNum-ID.map\n');
-
-    for k to ns[g1] do
-        vp := decompress(VPairs[g1,g2,k]);
-        typ2 := If(length(vp)>1,'many','1');
-        for l in vp do
-            # if only 1 in target -> :1, else :many
-            # l
-            typ1 := If(length(decompress(VPairs[g2,g1,l]))>1,'many','1');
-            printf('%d\t%d\t%s\t%s\t%s:%s\t%s\n',
-                k,l,
-                IDtable[g1,k],
-                IDtable[g2,l],
-                typ1, typ2,
-                If(OGtable[g1,k]=OGtable[g2,l] and OGtable[g1,k] <> 0, 
-                    string(OGtable[g1,k]),
-                    '')
-            );
+    # # Retrieve all IDs
+    # # Create File MapSeqNum-ID:
+    CallSystem('rm -rf Output; mkdir -p Output/PairwiseOrthologs');
+    IDtable := CreateArray(1..N);
+    OpenWriting('Output/Map-SeqNum-ID.txt');
+    print('\#Format: genome<tab>sequence number<tab>id');
+    for i to N do
+        DB := DBs[i];
+        tmp := CreateArray(1..ns[i]);
+        for j to DB[TotEntries] do
+            tmp[j] := SearchTag('ID',Entry(j));
+            printf('%s\t%d\t%s\n',genomes[i],j,tmp[j]);
         od;
+        IDtable[i] := tmp;
     od:
     OpenWriting(previous);
-od;od:
 
-# Store the groups of orthologs
-OpenWriting('Output/OrthologousMatrix.txt');
-print('\# The groups of orthologs are given as matrix with group per row', 
-     '\# and one genome per tab-separated column. Numbers refer to',
-     '\# entry number as listed in the file "Map-SeqNum-id.map.',
-     '\# Alternatively, use the OrthologousGroup.txt representation.');
-print(ConcatStrings(genomes,'\t'));
-for r to length(Ort) do
-    print(ConcatStrings(zip(string(Ort[r])),'\t'));
-od;
-OpenWriting(previous);
 
-OpenWriting('Output/OrthologousGroups.txt');
-print('\# The groups of orthologs are given as one per row, starting',
-      '\# with a group identifier, followed by all group members, all',
-      '\# separated by tabs. For a more compact representation, use the',
-      '\# OrthologousMatrix.txt representation.');
-for r to length(Ort) do
-    printf('OMA%05d',r);
-    for l to N do
-        if Ort[r,l] <> 0 then
-            printf('\t%s:%s',genomes[l],IDtable[l,Ort[r,l]]);
-        fi;
+    ############################################################################
+    # Store results
+    print('\n\n****\n\nStoring results\n');
+
+    if lasterror <> 'lasterror' then
+        print('Abort because of error: '.lasterror);
+        # quit;
+    fi:
+
+    OGtable := CreateArray(1..N):
+    for i to N do OGtable[i] := CreateArray(1..ns[i]); od:
+    for r to length(Ort) do
+        for k to N do
+            t := Ort[r,k];
+            if t <> 0 then 
+                OGtable[k,t] := r;
+            fi;
+        od;
+    od:
+
+    # Store the pairwise orthologs
+    for i to N do for j from i+1 to N do
+        if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+            g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+            OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
+                .'.txt');
+        printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
+             .'<tab>Orthology type<tab>OMA group (if any)\n');
+        printf('\# Every pair is listed only once, and in no particular order.\n');
+        printf('\# The map between sequence number and ID are given\n');
+        printf('\# in the file "Map-SeqNum-ID.map\n');
+
+        for k to ns[g1] do
+            vp := decompress(VPairs[g1,g2,k]);
+            typ2 := If(length(vp)>1,'many','1');
+            for l in vp do
+                # if only 1 in target -> :1, else :many
+                # l
+                typ1 := If(length(decompress(VPairs[g2,g1,l]))>1,'many','1');
+                printf('%d\t%d\t%s\t%s\t%s:%s\t%s\n',
+                    k,l,
+                    IDtable[g1,k],
+                    IDtable[g2,l],
+                    typ1, typ2,
+                    If(OGtable[g1,k]=OGtable[g2,l] and OGtable[g1,k] <> 0, 
+                        string(OGtable[g1,k]),
+                        '')
+                );
+            od;
+        od:
+        OpenWriting(previous);
+    od;od:
+
+    # Store the groups of orthologs
+    OpenWriting('Output/OrthologousMatrix.txt');
+    print('\# The groups of orthologs are given as matrix with group per row', 
+         '\# and one genome per tab-separated column. Numbers refer to',
+         '\# entry number as listed in the file "Map-SeqNum-id.map.',
+         '\# Alternatively, use the OrthologousGroup.txt representation.');
+    print(ConcatStrings(genomes,'\t'));
+    for r to length(Ort) do
+        print(ConcatStrings(zip(string(Ort[r])),'\t'));
     od;
-    printf('\n');
-od;
-OpenWriting(previous);
+    OpenWriting(previous);
 
-# end 'if UseEsprit... '
+    OpenWriting('Output/OrthologousGroups.txt');
+    print('\# The groups of orthologs are given as one per row, starting',
+          '\# with a group identifier, followed by all group members, all',
+          '\# separated by tabs. For a more compact representation, use the',
+          '\# OrthologousMatrix.txt representation.');
+    for r to length(Ort) do
+        printf('OMA%05d',r);
+        for l to N do
+            if Ort[r,l] <> 0 then
+                printf('\t%s:%s',genomes[l],IDtable[l,Ort[r,l]]);
+            fi;
+        od;
+        printf('\n');
+    od;
+    OpenWriting(previous);
 fi:
 
 print('\n\n***\n\nDone!!\n\n');

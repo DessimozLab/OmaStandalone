@@ -127,7 +127,7 @@ WriteResults := proc(foldername;
     else
         print('Esprit could not find out which of your genome sets was the one with contigs.
         
-Please name the genome that includes contigs $NAME.Contig.fa, such as ''mouse.Contig.fa''.');
+Please name the genome that includes contigs $NAME.contig.fa, such as ''mouse.contig.fa''.');
     fi:
 
     printf('Write results: params.txt\n');

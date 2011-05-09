@@ -60,10 +60,6 @@ global CliqueIterFactor, histog, triangle_analysis, StablePairs, VPairs,
        BreakingStatsG,witnesses, PossContigHits, DefContigHits, ContigHits,
        DB, ParamSet;
 
-# If we want to use Esprit, stable pairs are not needed and therefore not
-# calculated.
-if not UseEsprit then
-
 # Boundary scores for stable pairs
 starttime := time();
 
@@ -139,26 +135,6 @@ if printlevel >= 3 then printf(
     thnr, thnt )
 fi;
 
-# if use Esprit, run the method
-else
-
-##############################################################################
-# Esprit
-#
-#  - go over all genomes marked as being scaffolds
-#   - look for best matches in all other genomes
-#     - if # of genomes with many:1 matches > threshold = proportion * nb of genomes
-#       (keep track of the number of matches
-#       - now make sure that these matches do not overlap with more than MaxOverlap 
-#       - if that's the case, we have a candidate split gene!!
-
-Esprit([MinProbContig, MinBestScore, DistConfLevel,
-            AllowMultipleHits, MaxContigOverlap]):
-
-fi:
-
-# if use Esprit, no need to go on from here; otherwise, finish OMA algorithm
-if not UseEsprit then
 
 #
 #    ------------------                     ------------------
@@ -438,9 +414,6 @@ for z in Orthologous do
     t := sum( If( w=0, 0, 1 ), w=z );  histog[t] := histog[t]+1 od;
 printf( '%d orthologous groups, histog=%a\n', length(Orthologous), histog );
 
-
-# end of 'if not UseEsprit then...'
-fi:
 
 Orthologous
 end:
