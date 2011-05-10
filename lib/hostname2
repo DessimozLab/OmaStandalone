@@ -1,6 +1,0 @@
-#
-hostname2 := proc()
-r := TimedCallSystem( 'hostname -i' );
-if r[1] <> 0 then error('hostname -i failed') fi;
-sprintf( '%s:%s', hostname(), r[2,1..-2] )
-end:
