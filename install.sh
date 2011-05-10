@@ -17,13 +17,15 @@ then
     fi
     install_prefix=$(dirname $1)/$(basename $1)
 fi
-omadir=$install_prefix/OMA$versionnr
+omadir=$install_prefix/OMA/OMA.$versionnr
+linkdir=$install_prefix/OMA/bin
 if ! mkdir -p $omadir/bin 2>/dev/null
 then
     echo "Could not create $omadir . 
 Please try again either with a different install prefix or with 'sudo ./install.sh [install_prefix]'."
     exit
 fi
+mkdir -p $linkdir
 
 if [ $os = "Linux" ]
 then
@@ -55,7 +57,14 @@ cp $current_dir/OMA.drw $current_dir/README.oma $current_dir/parameters.drw $oma
 echo "Installing libraries..."
 cp -rf $current_dir/lib $omadir/
 cp -rf $current_dir/darwinlib $omadir/
+echo "Creating symlinks to current version..."
+if [ -s $linkdir/OMA ]
+then
+    rm $linkdir/OMA
+fi
+ln -s $omadir/bin/oma $linkdir/OMA.$versionnr
+ln -s $omadir/bin/oma $linkdir/OMA
 echo "Installation complete."
-echo "Make sure $omadir/bin is in your PATH, e.g by adding the line"
-echo "  export PATH=\$PATH:$omadir/bin"
+echo "Make sure $linkdir is in your PATH, e.g by adding the line"
+echo "  export PATH=\$PATH:$linkdir"
 echo "to your ~/.profile file (under bash)"
