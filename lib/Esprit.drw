@@ -341,9 +341,9 @@ WriteEspritResults := proc()
     defHits := ParseContigHits(DefContigHits):
     WriteResultFile(outFolder.'hits.txt', defHits, 'defhits');
 
-    printf('Write results: possibleHits.txt\n');
+    printf('Write results: dubious.txt\n');
     possHits := ParseContigHits(PossContigHits):
-    WriteResultFile(outFolder.'possibleHits.txt', possHits, 'posshits');
+    WriteResultFile(outFolder.'dubious.txt', possHits, 'posshits');
 
     actuallyWriteFasta := proc(arr, fastaset)
         CallSystem('mkdir -p '.outFolder.'fasta/'.fastaset):

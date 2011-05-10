@@ -256,7 +256,7 @@ fi:
 ##############################################################################
 # Candidate Pairs
 
-print('\n\n****\n\nStarting putative ortholog identification...\n');
+print('\n\n****\n\nReading the all-against-all files...\n');
 
 N := length(genomes):
 ns := CreateArray(1..N):
@@ -312,7 +312,6 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
 ##############################################################################
 # Verification of stable pairs and clique building or esprit 
 
-print('\n\n****\n\nStarting Verification of Stable Pairs\n');
 cput_mid := time(); time_mid := UTCTime();
 printlevel := 3:
 NumberFormat := '%.8g':
@@ -320,10 +319,12 @@ params := [MinScore, LengthTol, StablePairTol, VerifiedPairTol, UseEsprit]:
 ParamSet := [];
 
 if UseEsprit then
+    print('\n\n****\n\nRunning ESPRIT for the detection of split-genes\n');
     Esprit([MinProbContig, MinBestScore, DistConfLevel,
             true, MaxContigOverlap]):
     WriteEspritResults();
 else
+    print('\n\n****\n\nIdentification of Stable-Pairs (Putative Orthologs)\n');
     Ort := OrthologousMatrix( op(params) ):
 
     # # Retrieve all IDs
@@ -427,3 +428,4 @@ else
 fi:
 
 print('\n\n***\n\nDone!!\n\n');
+done;
