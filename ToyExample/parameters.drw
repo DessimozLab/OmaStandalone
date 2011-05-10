@@ -37,7 +37,7 @@ VerifiedPairTol := 1.53;
 
 # Any sequence which is less than MinSeqLen amino acids long in
 # regular genomes is not considered.
-MinSeqLen := 20:
+MinSeqLen := 50:
 
 
 
