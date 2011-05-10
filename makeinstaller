@@ -12,7 +12,7 @@ then
 fi
 
 versionnr=`git describe`
-instpath=$1/OMA$versionnr
+instpath=$1/OMA.$versionnr
 
 mkdir -p $instpath/bin
 mkdir -p $instpath/DB
@@ -41,7 +41,7 @@ cp -r ToyExample $instpath/ToyExample
 
 # adjust for version number
 sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
-  $instpath/install.sh $instpath/README.oma
+  $instpath/install.sh $instpath/README.oma $instpath/bin/oma
 
 # create tarball
 cd `dirname $instpath`; tar -cvzf `basename $instpath`.tgz `basename $instpath`

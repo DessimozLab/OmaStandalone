@@ -1,6 +1,8 @@
 #!/bin/bash
 
-OMA_PATH=$(dirname $0)
+# $OMA_PATH points to the folder containing the current
+# version of OMA.
+OMA_PATH=$(dirname $0)/../OMA.[VERSIONNR]
 
 pfile="parameters.drw"
 wdir="./"
@@ -9,7 +11,7 @@ if [ $# -gt 0 ]
 then
     if [ $1 = "--help" -o $1 = "-h" -o $1 = "-?" ]
     then
-        echo "usage: oma [<parameter file>]"
+        echo "Usage: OMA [<parameter file>]"
         exit 0;
     fi
 fi
@@ -25,10 +27,11 @@ fi
 
 if [ ! -e $pfile ]
 then
-    echo "could not find parameter file!"
+    echo "Could not find parameter file!"
     exit 1
 fi
 
-cat $OMA_PATH/../lib/splashscreen.txt
-echo "libdir := '$OMA_PATH/../lib/': ReadProgram('$pfile'): ReadProgram('$OMA_PATH/../OMA.drw'): done:" | $OMA_PATH/omadarwin -q 
+cat $OMA_PATH/lib/splashscreen.txt
+echo "libdir := '$OMA_PATH/lib/': ReadProgram('$pfile'): \
+ReadProgram('$OMA_PATH/OMA.drw'): done:" | $OMA_PATH/bin/omadarwin -q 
 
