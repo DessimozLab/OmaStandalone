@@ -57,5 +57,5 @@ cp -rf $current_dir/lib $omadir/
 cp -rf $current_dir/darwinlib $omadir/
 echo "Installation complete."
 echo "Make sure $omadir/bin is in your PATH, e.g by adding the line"
-echo "  export PATH=$PATH:/usr/local/OMA[VERSIONNR]/bin"
+echo "  export PATH=$omadir/bin:\$PATH"
 echo "to your ~/.profile file (under bash)"

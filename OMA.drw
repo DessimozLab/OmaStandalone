@@ -322,16 +322,7 @@ ParamSet := [];
 if UseEsprit then
     Esprit([MinProbContig, MinBestScore, DistConfLevel,
             true, MaxContigOverlap]):
-    # Find contig genome in Datasets
-    contigdata := '':
-    for i to length(genomes) do
-        if isContig[i] then
-            contigdata := genomes[i]:
-            break:
-        fi:
-    od:
-    WriteResults('EspritOutput', 'fasta'=true,
-                    'contigset'=contigdata, writeallmsas=false);
+    WriteEspritResults();
 else
     Ort := OrthologousMatrix( op(params) ):
 

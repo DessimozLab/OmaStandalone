@@ -13,7 +13,8 @@ RefinedMatches := noeval(ReadLibrary( OrthologsLib.'RefinedMatches.drw',
         RefinedMatches)):
 ReadProgram( OrthologsLib.'Pair');
 
-WriteResults := noeval(ReadLibrary( OrthologsLib.'WriteResults.drw', WriteResults));
+WriteEspritResults := noeval(ReadLibrary( OrthologsLib.'Esprit.drw',
+    WriteEspritResults));
 Esprit := noeval(ReadLibrary( OrthologsLib.'Esprit.drw', Esprit));
 ObjScaffold := noeval(ReadLibrary( OrthologsLib.'ScaffoldVerification.drw', ObjScaffold));
 

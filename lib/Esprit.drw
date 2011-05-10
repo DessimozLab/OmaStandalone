@@ -156,3 +156,223 @@ Esprit := proc(params)
        
     return(DefContigHits,PossContigHits);
 end;
+
+
+module external WriteEspritResults;
+
+#####################################################################
+#
+# Methods for writing the esprit results
+#
+
+# Parses array of contig hits and produces
+# new array with, foreach element:
+# [seqs, labels, stdfacs, species, gaps, corder, s3set]
+ParseContigHits := proc(arr)
+    global DB;
+    hits := []: 
+    # first, get labels and seq-data of found hits
+    limitcount := 0;
+    for i to length(arr) do
+        isPositive := false:
+        if length(arr[i]) > 4 and arr[i,5] = 'isPositive' then
+                isPositive := true:
+        fi:
+        if limitcount > 50 and (not isPositive) then next fi:
+        seqs := []:
+        labels := []:
+        stdfacs := []:
+        gaps := [];
+        species := []:
+        corder := []:
+        DB := DBs[arr[1,1,1]]:
+
+        if arr[i,3,1,5] = [1,2] then
+            first := 1;
+            second := 2;
+        else
+            first := 2;
+            second := 1;
+        fi:
+        
+        seqs :=  append(seqs, string(SearchTag('SEQ', Entry(arr[i,first,2])))):
+        labels := append(labels, string(SearchTag('ID', Entry(arr[i,first,2])))):
+
+        seqs :=  append(seqs, string(SearchTag('SEQ', Entry(arr[i,second,2])))):
+        labels := append(labels, string(SearchTag('ID', Entry(arr[i,second,2])))):
+
+        for j to length(arr[i,3]) do
+            DB := DBs[arr[i,3,j,1]];
+            seqs :=  append(seqs, string(SearchTag('SEQ', Entry(arr[i,3,j,2])))):
+            labels := append(labels, string(SearchTag('ID', Entry(arr[i,3,j,2])))):
+            stdfacs := append(stdfacs, string(arr[i,3,j,3]));
+            gaps := append(gaps, string(arr[i,3,j,4]));
+            species := append(species, genomes[arr[i,3,j,1]]);
+            corder := append(corder, arr[i,3,j,5]);
+        od:
+        s3set := []:
+        for e in arr[i,4] do
+            DB := DBs[arr[1,1,1]];
+            s3set := append(s3set, SearchDelim(';', SearchTag('ID', Entry(e)))[1]);
+        od:
+        if not isPositive then limitcount := limitcount + 1 fi:
+        hits := append(hits, [seqs, labels, stdfacs, species, gaps, corder, s3set, isPositive]):
+    od:
+
+    # do some polishing on the labels    
+    len := length(hits):
+    for i to len do
+        for j to length(hits[i,2]) do
+            t := SearchDelim(';', hits[i,2,j]):
+            hits[i,2,j] := t[1]:
+        od:
+    od:
+    return(hits);
+end:
+
+####################################################
+# 
+# Writes parameters and metainformation to files in
+# folder 'EspritOutput'; additionally, also writes all
+# seqs in fasta format in a tarball.
+#
+WriteEspritResults := proc()
+
+    global DB, PossContigHits, DefContigHits:
+
+    outFolder := 'EspritOutput/';
+    if length(FileStat(outFolder)) = 0 then
+        TimedCallSystem('mkdir -p '.outFolder);
+    fi:
+
+    # Find contig genome in Datasets
+    contigdata := '':
+    for i to length(genomes) do
+        if isContig[i] then
+            contigdata := genomes[i]:
+            break:
+        fi:
+    od:
+
+    printf('Write results: params.txt\n');
+    OpenWriting(outFolder.'params.txt'):
+        printf('MinSeqLenContig := %a;\nMinProbContig := %a;\nMaxContigOverlap := %a;\nMinBestScore := %a;\nDistConfLevel := %a;\nAllowMultipleHits := %a;\nDatasets := %a;\nStablePairTol := %a;\n\n',
+                MinSeqLenContig, MinProbContig,
+                MaxContigOverlap, MinBestScore, DistConfLevel, 
+                AllowMultipleHits, G, StablePairTol);
+        
+    # total amount of hits, number of inconclusive hits
+    totalHits := length(ContigHits):
+    inconclusive := length(PossContigHits):
+    if totalHits = 0 then
+        if inconclusive > 0 then inconPerc := 100
+        else inconPerc := 0:
+        fi:
+    else
+        inconPerc := 100*inconclusive/totalHits:
+    fi:
+    printf('%a hits in total; %a (%2.2f%%) are not conclusive.\n\n',
+            totalHits, inconclusive, inconPerc);
+    OpenWriting(previous):
+    
+    # method to write proper file format
+    WriteResultFile := proc(filename, hits, fastafolder)
+        OpenWriting(filename);
+        printf('# contigs are ordered according to their position relative to the putative ortholog\n');
+        printf('# see for fasta files in folder "fasta/%a"\n', fastafolder):
+        printf('## fragment-pair\tfirst fragment\tsecond fragment\tcorresponding full gene\tspecies\tdistance difference between fragments\t# positions between fragments\ts3 IDs\n');
+        limit := min(length(hits), 500):
+        limitcount := 0;
+        for k to length(hits) do
+            if limitcount = 50 and (not i[8]) then next fi:
+            i := hits[k];
+            for j to (length(i[2])-2) do
+                printf('%a\t%a\t%a\t%a\t%a\t%a\t%a\t%a',
+                    k, i[2,1], i[2,2], i[2,2+j], i[4,j], i[3,j], i[5,j], i[7]);
+                printf('\n');
+            od:
+            if not i[8] then limitcount := limitcount + 1 fi:
+        od:
+        OpenWriting(previous);
+    end:
+    
+    # method to write a simple results file of hits
+    WriteSimpleResultFile := proc(filename)
+        global DB:
+        OpenWriting(filename);
+        printf('# contigs are ordered according to their position relative to the putative ortholog\n');
+        printf('#first fragment\tsecond fragment\tlist of reference genes separated with semi-colons\n');
+        for z in DefContigHits do
+            DB := DBs[z[1,1]]; 
+            id1arr := SearchDelim('|', SearchTag('ID', Entry(z[1,2]))):
+            id1 := id1arr[2] . '|' . id1arr[3]:
+            id1 := SearchDelim(';', id1)[1]:
+
+            id2arr := SearchDelim('|', SearchTag('ID', Entry(z[2,2]))):
+            id2 := id2arr[2] . '|' . id2arr[3]:
+            id2 := SearchDelim(';', id2)[1]:
+
+            if z[3,1,-1,1] = 2 then
+                t := id1;
+                id1 := id2;
+                id2 := t;
+            fi;
+
+            printf('%a\t', id1):
+            printf('%a\t', id2):
+
+            if length(z[3]) > 1 then
+                for i from 1 to length(z[3])-1 do
+                    DB := DBs[z[3,i,1]]:
+                    id := SearchDelim('|', SearchTag('ID', Entry(z[3,i,2])))[-1]:
+                    id := SearchDelim(';', id)[1]:
+                    printf('%a:%a; ', genomes[z[3,i,1]], id);
+                od:
+            fi:
+            DB := DBs[z[3,length(z[3]),1]]:
+            id := SearchDelim('|', SearchTag('ID', Entry(z[3,length(z[3]),2])))[-1]:
+            id := SearchDelim(';', id)[1]:
+            printf('%a:%a\n', genomes[z[3,length(z[3]),1]], id):
+        od:
+        OpenWriting(previous);
+    end:
+    
+    printf('Write results: hits.txt\n');
+    defHits := ParseContigHits(DefContigHits):
+    WriteResultFile(outFolder.'hits.txt', defHits, 'defhits');
+
+    printf('Write results: possibleHits.txt\n');
+    possHits := ParseContigHits(PossContigHits):
+    WriteResultFile(outFolder.'possibleHits.txt', possHits, 'posshits');
+
+    actuallyWriteFasta := proc(arr, fastaset)
+        CallSystem('mkdir -p '.outFolder.'fasta/'.fastaset):
+        limit := min(50, length(arr)):
+        for j to limit do
+            i := arr[j]:
+            seqs := i[1]:
+            labels := i[2]:
+            # try to create MSA
+            m := traperror(MafftMSA(seqs, labels)):
+            if not type(m,string) then
+                seqs := m[2]:
+            fi:
+            # some postprocessing of strings
+            for s in seqs do
+                s := ReplaceString('_', '-', s);
+            od:
+            WriteFasta(seqs, labels, outFolder.'fasta/'.fastaset.'/'.j.'.fa');
+        od:
+    end:
+
+    # write fasta files and/or MSAs and make tarball
+    printf('Write results: fasta files\n');
+    actuallyWriteFasta(defHits, 'defhits'):
+    actuallyWriteFasta(possHits, 'posshits'):
+    TimedCallSystem('cd '.outFolder.' && tar cvzf fasta.tgz fasta');
+    TimedCallSystem('rm -rf '.outFolder.'fasta');
+
+    return();
+end:
+
+end: # module
