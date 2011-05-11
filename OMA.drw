@@ -148,6 +148,7 @@ print('\n\n****\n\nStarting the all-against-all phase...\n');
 CreateDayMatrices();
 DM := DayMatrix(224):
 NumberFormat := '%.10g':
+JustScoreBound := MinScore;
 
 tot := length(genomes)*(length(genomes)+1)/2:
 c1 := 0:
@@ -195,7 +196,8 @@ for g1 to length(genomes) do
             for i2 from If( name1=name2, i1+1, 1 ) to n2 do
                 c2 := c2+1;
                 if mod(c2,50000)=0 then
-                    printf('      %.2f%% complete\n',100*c2/tot2);
+                    printf('      %.2f%% complete, time left=%.1fh\n',
+                        100*c2/tot2,tot2/c2*(UTCTime()-t0)/3600);
                     if res <> [] then
                         OpenAppending('Cache/AllAll/'.name1.'/'.name2);
                         printf( '[' );
@@ -207,8 +209,8 @@ for g1 to length(genomes) do
                     fi:
                 fi;
                 len2 := length(Seqs2[i2]);
-                dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScore);
-                if dps[1] >= .65*MinScore then
+                dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
+                if dps[1] >= .75*MinScore then
                     a := Align(Seqs1[i1],Seqs2[i2],DMS);
                     if a[Score] < MinScore or min(a[Length1],a[Length2]) <
                                 max(30,0.3*min(len1,len2)) then next fi;
