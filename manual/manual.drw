@@ -1,0 +1,243 @@
+# Some helpers
+
+Link := proc(t:TextBlock)
+    noeval(Link(args)):
+end:
+
+Link_type := noeval(structure(TextBlock, Link)):
+
+Link_string := proc(l:Link)
+    return(string(l[1])):
+end:
+
+Link_HTMLC := proc(l:Link)
+    return(HTMLC(l[1])):
+end:
+
+Link_LaTeXC := proc(l:Link)
+    li := DocEl('href', l[1,2,2]):
+    tx := '{'.l[1,3].'}':
+    return(LaTeXC(li).tx):
+end:
+
+
+##############################################################################
+# Here comes the content
+
+currentVersion := TimedCallSystem('git describe')[2, 1..-2]:
+binaryName := 'OMA.'.currentVersion.'.tgz':
+binaryLink := 'http://omabrowser.org/standalone/'.binaryName:
+folderName := ConcatStrings(SearchDelim('.', binaryName)[1..-2], '.'):
+
+# PAGETITLE
+pagetitle := 'OMA stand-alone':
+
+# INTRO
+intro := [  SectionHeader(1, 'Introduction'),
+            Paragraph(0, 'You can download and install OMA as a stand-alone
+            version. Included are the algorithms for OMA itself plus its
+            addition ESPRIT. This version can be installed on Linux 
+            (x86, both 64bit and 32bit) and MacOSX (x86, both 32bit and 
+            64bit).'),
+            Paragraph(0, 'For more information about OMA and ESPRIT in general, 
+            please have a look at ', Link(TextBlock('a', 
+                href='http://omabrowser.org/Algorithm.html',
+                'http://omabrowser.org/Algorithm.html')), ' .'),
+            Paragraph(0, 'If you have specific questions about the installation 
+            or the usage of OMA, please contact {adrian or cdessimoz}
+            @inf.ethz.ch .')
+        ]:
+
+downloads := [ SectionHeader(1, 'Downloads'),
+                Paragraph(0, 'The current version of OMA
+                stand-alone can be found here:'),
+                List('-', 
+                    Link(TextBlock('a',href=binaryLink, binaryName))
+                )
+            ]:
+
+# INSTALL
+install := [
+            SectionHeader(1, 'Installation'),
+            Paragraph(0, 'To install OMA stand-alone on your system, download
+            the installer, untar the package and run the included installer
+            script:'),
+            Paragraph(0, 
+                Code('curl '.binaryLink.'\n
+tar xvzf '.binaryName.'\n
+cd '.folderName.'\n
+./install.sh [install_prefix]'
+                )
+            ),
+            Paragraph(0, 'If you do not choose an install prefix, OMA will be 
+installed in ', TT('/usr/local/OMA'), ' (for this, you might need to install it 
+using the root account or ', TT('sudo'), ').'), 
+            Paragraph(0, 'After installation, make sure the ', TT('bin'), 
+            ' folder of OMA is in your ', TT('PATH'), ' variable, e.g., if
+            you are using bash, add a line in ', TT('~/.profile'), ' such as:')
+            ]:
+
+# latex uses $ for math, need to escape...
+linstall := [op(install), 
+                Paragraph(0, Code('export PATH=\\$PATH:/usr/local/OMA/bin'))
+            ]:
+# HTML has no problem with this
+hinstall := [op(install), 
+                Paragraph(0, Code('export PATH=$PATH:/usr/local/OMA/bin'))
+            ]:
+
+addinstallp := Paragraph(0, 'For other shells, choose the appropriate syntax.'):
+
+linstall := append(linstall, addinstallp):
+hinstall := append(hinstall, addinstallp):
+
+# USAGE
+usage := [ SectionHeader(1, 'Usage'),
+        Paragraph(0, 'First, set up a working directory. Copy the file
+', TT('parameters.drw'), ' into this folder and change it to your needs. Create
+a directory ', TT('DB'), ' in your working directory that holds the genome data in 
+fasta format (see ''File formats'') and copy your data into this directory. 
+If you want to use ESPRIT, the fasta file should be called ',
+TT('{YourGenome}.contig.fa'), ' . Then, simply call'),
+        Paragraph(0, Code('OMA')),
+        Paragraph(0, 'from your working directory to run OMA and/or ESPRIT.'),
+        Paragraph(0, 'After installation of OMA, you could ', TT('cd'), ' into the
+''ToyExample'' directory, have a look at ', TT('parameters.drw'), ' and run ', TT('OMA'), '
+ to get a first impression.')
+        ]:
+
+# INPUT FORMATS
+iformat := [ SectionHeader(2, 'Input Files'),
+            Paragraph(0, 'OMA uses two different input formats:'),
+            List('-',
+                'FASTA files for genome input',
+                'Darwin file as parameter input'
+            ),
+            Paragraph(0, 'The Fasta format is explained in detail on ',
+                Link(
+                    TextBlock('a', 
+                        href='http://en.wikipedia.org/wiki/FASTA_format',
+                        'wikipedia'
+                    )
+                ), '.'
+            ),
+            Paragraph(0, 'OMA uses the greater-than symbol ''>'' to distinguish
+            labels from sequences (in contrast to the possibility of using
+            a semicolon, '';''). Each sequence in an MSA is supposed to have
+            its own label. Have a look at the Fasta files included in 
+            ToyExample/DB in our installer package for some example files.'),
+            Paragraph(0, 'If you want to use ESPRIT, make sure that Fasta files
+            containing contigs are called ', TT('{YourGenome}.contig.fa'), ', e.g.
+            if you want to experiment with some mouse genome, call the Fasta
+            file ', TT('mouse.contig.fa'), ' or ', TT('mymouse.contig.fa'), ' or
+            something similar.'),
+            Paragraph(0, 'Parameter files use Darwin syntax. 
+            Key-value-pairs are written as'),
+            Paragraph(0, Code('key := value;')),
+            Paragraph(0, 'Note the colon in ', TT(':='), ' and the semicolon at the end
+            of the line. If your parameter file does not use valid Darwin syntax,
+            OMA will print out a short message and stop its execution.')
+            ]:
+
+# OUTPUT FORMATS
+oformat := [   SectionHeader(2, 'Output Files'),
+                Paragraph(0, 'something important.')
+            ]:
+
+formats := [ SectionHeader(1, 'File Formats'),
+                op(iformat),
+                op(oformat)
+            ]:
+
+# PARAMETERS
+parameters := [ SectionHeader(1, 'Parameters'),
+                List('-',
+                    'First parameter',
+                    'Second parameter',
+                    'Third parameter'
+                )
+              ]:
+
+# LICENSE
+license := [ SectionHeader(1, 'License'),
+            Paragraph(0, 'OMA is licensed under a Creative Commons 
+Attribution-Noncommercial-Share Alike 2.5 License. For more info, please 
+consult the following page:'),
+            Link(
+                TextBlock('a',
+                href='http://creativecommons.org/licenses/by-nc-sa/2.5/ch/',
+                'http://creativecommons.org/licenses/by-nc-sa/2.5/ch/')
+            ),
+            Paragraph(0, 'In a nutshell, OMA is free for non-commercial use.')
+            ]:
+
+
+# JAVASCRIPTS FOR GOOGLE
+googlejs1 := TextBlock('script', type='text/javascript',
+  'var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+   document.write(unescape("%3Cscript src=''" + gaJsHost
+   + "google-analytics.com/ga.js''
+   type=''text/javascript''%3E%3C/script%3E"));'
+   ):
+googlejs2 := TextBlock('script', type='text/javascript',
+            'try {
+       var pageTracker = _gat._getTracker("UA-1093824-1");
+        pageTracker._trackPageview();
+	 } catch(err) {}'
+            ):
+
+##############################################################################
+# create and write the documents
+
+# LaTeX output
+OpenWriting('manual.tex'):
+    prints( LaTeXC(DocEl('documentclass', 'article') ) ):
+    prints( LaTeXC(DocEl('usepackage', 'hyperref') ) ):
+    prints( LaTeXC(DocEl('hypersetup', 'colorlinks,
+citecolor=blue,
+filecolor=blue,
+linkcolor=blue,
+urlcolor=blue') ) ):
+    prints( LaTeXC(DocEl('title', pagetitle)) . '\n' ):
+    prints( LaTeXC(DocEl('author', 'CBRG, ETHZ')) . '\n' ):
+    prints( LaTeXC(DocEl('date', '')) . '\n' ):
+    prints( LaTeXC(DocEl('begin', 'document')) . '\n' ):
+    prints( '\\maketitle\n' ):
+    prints( LaTeXC( Document( 
+        op(intro),
+        op(downloads),
+        op(linstall),
+        op(usage),
+        op(formats),
+        op(parameters),
+        op(license)
+    ) ) ):
+    prints( LaTeXC( DocEl('end', 'document')) . '\n' ):
+OpenWriting( previous ):
+CallSystem('pdflatex manual.tex'):
+
+# HTML output
+
+omabrowsercss := TextBlock('link', href='browser.css',
+            rel='stylesheet', type='text/css'):
+
+additionalcss := TextBlock('link', href='manual.css',
+            rel='stylesheet', type='text/css'):
+
+
+OpenWriting('manual.html'):
+    prints(HTML(Document(
+            TextBlock('div', class='content',
+                TextBlock('div', class='title', pagetitle),
+                op(intro),
+                op(downloads),
+                op(hinstall),
+                op(usage),
+                op(formats),
+                op(parameters),
+                op(license)
+            )
+        ), pagetitle, css1=omabrowsercss, css2=additionalcss, title=false)):
+OpenWriting(previous):
+
+done

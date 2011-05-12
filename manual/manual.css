@@ -1,0 +1,27 @@
+div.content {
+    width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 2em;
+}
+
+div.title {
+    font-size: 24px;
+    background-color: #009933;
+    color: #fff;
+    font-weight: bold;
+    padding: 5px;
+}
+
+h1 {
+    font-size: 18px;
+}
+
+h2 {
+    font-size: 16px;
+}
+
+pre {
+    background-color: #ddd;
+    padding: 4px;
+}

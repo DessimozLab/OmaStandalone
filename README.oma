@@ -8,11 +8,11 @@ To install this software on your system, run the included installer script:
 
    ./install.sh [install_prefix]
 
-If you do not choose an install prefix, oma will be installed in
-/usr/local/oma (for that, you might need to install it using the root account
+If you do not choose an install prefix, OMA will be installed in
+/usr/local/OMA (for that, you might need to install it using the root account
 or sudo). 
 
-After installation, make sure the bin folder of oma is in your PATH
+After installation, make sure the bin folder of OMA is in your PATH
 variable, e.g., if you are using bash, add a line in ~/.profile such as:
 
    export PATH=$PATH:/usr/local/OMA/bin
@@ -34,8 +34,8 @@ Then, simply call
 
 from your working directory to run OMA and/or ESPRIT.
 
-After installation of oma, you could cd into the 'ToyExample' directory,
-have a look at 'parameters.drw' and run 'oma' to get a first impression.
+After installation of OMA, you could cd into the 'ToyExample' directory,
+have a look at 'parameters.drw' and run 'OMA' to get a first impression.
 
 For more information about OMA and ESPRIT, please have a look at 
 http://omabrowser.org/Algorithm.html .
