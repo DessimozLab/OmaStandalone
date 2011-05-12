@@ -1,4 +1,6 @@
-# Some helpers
+Set(printgc=false);
+
+# Some helpers: Link element to create links in HTML and LaTeX
 
 Link := proc(t:TextBlock)
     noeval(Link(args)):
@@ -24,6 +26,10 @@ end:
 ##############################################################################
 # Here comes the content
 
+
+# If you want to use a 'fixed' tarball name, change 'binaryName' accordingly;
+# otherwise, the name of the tarball is created by using the current version
+# tag in the git repo.
 currentVersion := TimedCallSystem('git describe')[2, 1..-2]:
 binaryName := 'OMA.'.currentVersion.'.tgz':
 binaryLink := 'http://omabrowser.org/standalone/'.binaryName:
@@ -51,9 +57,8 @@ intro := [  SectionHeader(1, 'Introduction'),
 downloads := [ SectionHeader(1, 'Downloads'),
                 Paragraph(0, 'The current version of OMA
                 stand-alone can be found here:'),
-                List('-', 
-                    Link(TextBlock('a',href=binaryLink, binaryName))
-                )
+                Link(TextBlock('a',href=binaryLink, binaryName))
+               
             ]:
 
 # INSTALL
@@ -63,9 +68,9 @@ install := [
             the installer, untar the package and run the included installer
             script:'),
             Paragraph(0, 
-                Code('curl '.binaryLink.'\n
-tar xvzf '.binaryName.'\n
-cd '.folderName.'\n
+                Code('curl '.binaryLink.'
+tar xvzf '.binaryName.'
+cd '.folderName.'
 ./install.sh [install_prefix]'
                 )
             ),
@@ -121,42 +126,187 @@ iformat := [ SectionHeader(2, 'Input Files'),
                     )
                 ), '.'
             ),
-            Paragraph(0, 'OMA uses the greater-than symbol ''>'' to distinguish
-            labels from sequences (in contrast to the possibility of using
-            a semicolon, '';''). Each sequence in an MSA is supposed to have
-            its own label. Have a look at the Fasta files included in 
+            Paragraph(0, 'OMA uses the greater-than symbol ''>'' to 
+            distinguish labels from sequences (in contrast to the possibility
+            of using a semicolon, '';''). Each sequence in an MSA is supposed
+            to have its own label. Have a look at the Fasta files included in 
             ToyExample/DB in our installer package for some example files.'),
             Paragraph(0, 'If you want to use ESPRIT, make sure that Fasta files
-            containing contigs are called ', TT('{YourGenome}.contig.fa'), ', e.g.
-            if you want to experiment with some mouse genome, call the Fasta
-            file ', TT('mouse.contig.fa'), ' or ', TT('mymouse.contig.fa'), ' or
-            something similar.'),
-            Paragraph(0, 'Parameter files use Darwin syntax. 
-            Key-value-pairs are written as'),
+            containing contigs are called ', TT('{YourGenome}.contig.fa'), ',
+            e.g. if you want to experiment with some mouse genome, call the 
+            Fasta file ', TT('mouse.contig.fa'), ' or ', 
+            TT('mymouse.contig.fa'), ' or something similar.'),
+            Paragraph(0, 'Parameter files use Darwin syntax.  Key-value-pairs 
+            are written as'),
             Paragraph(0, Code('key := value;')),
-            Paragraph(0, 'Note the colon in ', TT(':='), ' and the semicolon at the end
-            of the line. If your parameter file does not use valid Darwin syntax,
-            OMA will print out a short message and stop its execution.')
+            Paragraph(0, 'Note the colon in ', TT(':='), ' and the semicolon at 
+            the end of the line. If your parameter file does not use valid 
+            Darwin syntax, OMA will print out a short message and stop its 
+            execution.')
             ]:
 
 # OUTPUT FORMATS
-oformat := [   SectionHeader(2, 'Output Files'),
-                Paragraph(0, 'something important.')
-            ]:
+oformat := [ SectionHeader(2, 'Output Files'),
+            SectionHeader(3, 'OMA Output'),
+            Paragraph(0, 'The output of OMA gets written to files stored in 
+            a folder ', TT('Output'), ' in your working directory. There are 
+            three text files plus an additional folder ', 
+            TT('PairwiseOrthologs'), ' that contains one file for each pair of
+            your genome sets.'),
+            Paragraph(0,'The textfiles are organized as described in Table 1.'),
+            Table( hastitlerow, ColAlign('l', 'p{7cm}'),
+                    title = 'Table 1: Contents of the OMA output files',
+                    Row(Bold('Filename'), Bold('Contents')),
+                    Row(TT('Map-SeqNum-ID.txt'), 
+                        Paragraph(0, 'Lists all genes of all datasets  
+                    with their unique sequence number and the labels read from
+                    the Fasta files.')),
+                    Row(TT('OrthologousGroups.txt'), 
+                        Paragraph(0, 'The groups of orthologs are
+                    given as one per row, starting with a unique group
+                    identifier, followed by all group members, all separated
+                    by tabs.')),
+                    Row(TT('OrthologousMatrix.txt'), 
+                        Paragraph(0, 'More compact version of ',
+                    TT('OrthologousGroups.txt'), '. The groups of orthologs
+                    are given as matrix with group per row and one genome
+                    per tab-separated column. Numbers refer to entry number as
+                    listed in the file ', TT('Map-SeqNum-ID.txt'), '.'))
+            ) ,
+            Paragraph(0, 'The textfiles in ', TT('Output/PairwiseOrthologs'), 
+            ' are named according to ', TT('{genome a}-{genome b}.txt'),
+            ' and consist of a list of pairwise orthologs for the two given
+            genomes. Every pair is listed only once, and in no particular
+            order. Each line in the file contains one pair; all fields are 
+            separated by tabs. In the first two field, the unique IDs of the
+            proteins are given. The next two fields contain the labels of
+            the proteins, and in the last two fields, the type of orthology
+            and (if any) the OMA group is given.'),
 
-formats := [ SectionHeader(1, 'File Formats'),
-                op(iformat),
-                op(oformat)
+            SectionHeader(3, 'ESPRIT Output'),
+            Paragraph(0, 'ESPRIT stores its output files in a folder',
+            TT('EspritOutput'), ' in your working directory. The output
+            consists of three text files and one tarball. In the tarball,
+            Fasta files with the MSAs of the hits ESPRIT found are stored.
+             The other three files are explained in detail in Table 2.'),
+            Table( hastitlerow, ColAlign('l', 'p{7cm}'),
+                title = 'Table 2: Contents of the ESPRIT output files',
+                Row(Bold('Filename'), Bold('Contents')),
+                Row(TT('params.txt'),
+                    Paragraph(0, 'This file is kept as a reference and 
+                    contains all parameters used in the current run.')),
+                Row(TT('hits.txt'),
+                    Paragraph(0, 'All hits found by ESPRIT are listed in this
+                    file. It is a list of contigs, ordered according to their
+                    position relative to the putative ortholog. Each line 
+                    describes one contig, the fields are separated by tabs.
+                    In the first field, the fragment pair ID is printed; the
+                    next two fields contain the labels of the first and
+                    second fragments found in this hit. The forth and fifth 
+                    fields contain the label of the corresponding full gene
+                    and its genome name. Then follows the distance difference
+                    between the two fragments and the number of positions
+                    between them (i.e. the gap); at last, an array is listed
+                    containing the IDs of all s3 genes corresponding to this
+                    hit.')),
+                Row(TT('dubious.txt'),
+                    Paragraph(0, 'ESPRIT often detects more candidate pairs than
+                    it will list in the ', TT('hits.txt'), ' file, but not all
+                    of them survive the quality check. Still, if you want to
+                    see which triplets have been filtered out, have a look at ',
+                    TT('dubious.txt'), ' where they are still listed. The file
+                    format is the same as for ', TT('hits.txt'), '.'))
+            )
             ]:
 
 # PARAMETERS
 parameters := [ SectionHeader(1, 'Parameters'),
-                List('-',
-                    'First parameter',
-                    'Second parameter',
-                    'Third parameter'
+                Paragraph(0, 'All parameters for OMA and/or ESPRIT are
+                set in a parameters file. There is an example file in the
+                OMA installer package; we encourage you to copy this file
+                into your working directory and change it to your needs.'),
+                Paragraph(0, 'The parameter file consists of two main parts:
+                First, general parameters for OMA are set; see Table 3 for
+                detailed explanations. Second, more specific parameters 
+                that only affect the ESPRIT algorithm can be changed. 
+                These parameters are explained in Table 4.
+                Note that changing the ESPRIT parameters
+                will not have an effect unless you set the boolean variable ',
+                TT('UseEsprit'), ' to ', TT('true'), '.'),
+                Table( hastitlerow, ColAlign('l', 'p{7cm}', 'p{2cm}'),
+                    title = 'Table 3: General parameters in OMA',
+                    Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
+                    Row(TT('ReuseCachedResults'), 
+                        Paragraph(0, 'If you want to recompute everything from
+                        scratch everytime the script is run, set this to ',
+                        TT('false'), '.'),
+                        TT('true')),
+                    Row(TT('MinScore'), 
+                        Paragraph(0, 'Alignments which have a score lower than ',
+                        TT('MinScore'), ' will not be considered. The scores
+                        are in Gonnet PAM matrices units.' ),
+                        TT('181')),
+                    Row(TT('LengthTol'), 
+                        Paragraph(0, 'Length tolerance ratio. If the length of
+                        the effective alignment is less than ', 
+                        TT('LengthTol'), '*min(length(s1),length(s2)), then 
+                        the alignment is not considered.'),
+                        TT('0.61')),
+                    Row(TT('StablePairTol'), 
+                        Paragraph(0, 'During the stable pair formation, if a
+                        pair has a distance provable higher than another pair
+                        (i.e. ', TT('StablePairTol'), ' standard deviations
+                        away) then it is discarded.'),
+                        TT('1.81')),
+                    Row(TT('VerifiedPairTol'), 
+                        Paragraph(0, 'Length tolerance ratio. If the length of
+                        the effective alignment is less than ', TT('LengthTol'),
+                        '*min(length(s1),length(s2)), then the alignment is
+                        not considered.'),
+                        TT('1.53')),
+                    Row(TT('MinSeqLen'),
+                        Paragraph(0, 'Any sequence which is less than ',
+                        TT('MinSeqLen'), ' amino acids long in regular genomes
+                        is not considered.'),
+                        TT('50'))
+                ),
+                Table( hastitlerow, ColAlign('l', 'p{7cm}', 'p{2cm}'),
+                    title = 'Table 4: ESPRIT parameters',
+                    Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
+                    Row(TT('UseEsprit'), 
+                        Paragraph(0, 'You can either set this to ', TT('true'),
+                        ', which will enable ESPRIT and shut down the parts of
+                        OMA that are not directly needed for ESPRIT, or set it
+                        to ', TT('false'), ' to make no use of ESPRIT at all.'),
+                        TT('false')),
+                    Row(TT('DistConfLevel'),
+                        Paragraph(0, 'Confidence level variable for contigs.
+                        This is the parameter ', TT('tol'), ' described in the
+                        paper.'),
+                        TT('2')),
+                    Row(TT('MinProbContig'),
+                        Paragraph(0, 'Minimal proportion of genomes with which
+                        contigs form many:1 BestMatches to consider that we
+                        might be dealing with fragments of the same gene.
+                        This is the parameter ', TT('MinRefGenomes'), 
+                        ' described in the paper, normalized by the total
+                        number of reference genomes.'),
+                        TT('0.4')),
+                    Row(TT('MaxContigOverlap'),
+                        Paragraph(0, 'Maximum overlap between fragments of
+                        same gene from different contigs.'),
+                        TT('5')),
+                    Row(TT('MinSeqLenContig'),
+                        Paragraph(0, 'Any sequence which is less than ',
+                        TT('MinSeqLenContig'), ' amino acids long in contigs
+                        is not considered.'),
+                        TT('20')),
+                    Row(TT('MinBestScore'),
+                        Paragraph(0, 'Minimum best score for BestMatch in
+                        scaffold recognition.'),
+                        TT('250'))
                 )
-              ]:
+                ]:
 
 # LICENSE
 license := [ SectionHeader(1, 'License'),
@@ -188,16 +338,26 @@ googlejs2 := TextBlock('script', type='text/javascript',
 
 ##############################################################################
 # create and write the documents
+#
+
+# Create one section 'File Formats'
+formats := [ SectionHeader(1, 'File Formats'),
+                op(iformat),
+                op(oformat)
+            ]:
 
 # LaTeX output
 OpenWriting('manual.tex'):
-    prints( LaTeXC(DocEl('documentclass', 'article') ) ):
+    prints( LaTeXC(DocEl('documentclass', 'scrartcl') ) ):
     prints( LaTeXC(DocEl('usepackage', 'hyperref') ) ):
     prints( LaTeXC(DocEl('hypersetup', 'colorlinks,
 citecolor=blue,
 filecolor=blue,
 linkcolor=blue,
 urlcolor=blue') ) ):
+    prints( '\\renewcommand*{\\figureformat}{}
+    \\renewcommand*{\\tableformat}{}
+    \\renewcommand*{\\captionformat}{}' );
     prints( LaTeXC(DocEl('title', pagetitle)) . '\n' ):
     prints( LaTeXC(DocEl('author', 'CBRG, ETHZ')) . '\n' ):
     prints( LaTeXC(DocEl('date', '')) . '\n' ):
