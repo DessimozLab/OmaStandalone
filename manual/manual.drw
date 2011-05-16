@@ -292,7 +292,7 @@ parameters := [ SectionHeader(1, 'Parameters'),
                     Row(TT('LengthTol'), 
                         Paragraph(0, 'Length tolerance ratio. If the length of
                         the effective alignment is less than ', 
-                        TT('LengthTol'), '*min(length(s1),length(s2)), then 
+                        TT('LengthTol'), ' * min( length(s1), length(s2) ), then 
                         the alignment is not considered.'),
                         TT('0.61')),
                     Row(TT('StablePairTol'), 
@@ -304,7 +304,7 @@ parameters := [ SectionHeader(1, 'Parameters'),
                     Row(TT('VerifiedPairTol'), 
                         Paragraph(0, 'Length tolerance ratio. If the length of
                         the effective alignment is less than ', TT('LengthTol'),
-                        '*min(length(s1),length(s2)), then the alignment is
+                        ' * min( length(s1), length(s2) ), then the alignment is
                         not considered.'),
                         TT('1.53')),
                     Row(TT('MinSeqLen'),
