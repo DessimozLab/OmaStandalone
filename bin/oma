@@ -2,7 +2,7 @@
 
 # $OMA_PATH points to the folder containing the current
 # version of OMA.
-OMA_PATH=$(dirname $0)/../OMA.[VERSIONNR]
+OMA_PATH=$(dirname $0)/..
 
 pfile="parameters.drw"
 wdir="./"

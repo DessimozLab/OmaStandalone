@@ -42,7 +42,7 @@ pagetitle := 'OMA stand-alone':
 intro := [  SectionHeader(1, 'Introduction'),
             Paragraph(0, 'You can download and install OMA as a stand-alone
             version. Included are the algorithms for OMA itself plus its 
-            addition ESPRIT. This version can be installed on Linux (x86, 
+            addition ESPRIT. The software can be installed on Linux (x86, 
             both 64bit and 32bit) and MacOSX (x86, both 32bit and 64bit).'),
             
             Paragraph(0, 'For more information about OMA and ESPRIT in general, 
@@ -110,13 +110,19 @@ hinstall := append(hinstall, addinstp):
 
 # USAGE
 usage := [ SectionHeader(1, 'Usage'),
-        Paragraph(0, 'First, set up a working directory. Copy the file', 
+        Paragraph(0, 'First, set up a working directory. Copy the file ', 
         TT('parameters.drw'), ' into this folder and change it to your needs. 
         Create a directory ', TT('DB'), ' in your working directory that holds 
         the genome data in FASTA format (see ''File formats'') and copy your 
         data into this directory. If you want to use ESPRIT, the FASTA file 
-        should be called ',TT('{YourGenome}.contig.fa'),'. Then, simply call ',
-        TT('OMA'), ' from your working directory to run OMA and/or ESPRIT'),
+        containing the contigs should be called ',TT('{YourGenome}.contig.fa'),
+        '. Then, simply call ', TT('OMA'), ' from your working directory to 
+        run OMA and/or ESPRIT'),
+
+        Paragraph(0, 'If you have not installed OMA yet, use the complete
+        path to ', TT('bin/oma'), ' in the installer folder to start the
+        script.'),
+
         
         Paragraph(0, 'As an example, assume you installed ', TT('OMA'), ' in ',
         TT('/your/install/prefix'), ' and want to use ESPRIT on two genome 
@@ -124,20 +130,25 @@ usage := [ SectionHeader(1, 'Usage'),
         ', do something like this:'),
         
         Paragraph(0,
-            Code('mkdir myWorkingDir
+            Code('# create working directory
+mkdir myWorkingDir
 cd myWorkingDir
+# create DB directory in working directory
 mkdir DB
+# copy FASTA files into DB directory
 cp /home/you/fasta/yourFirstGenomeFile.fa DB/
 cp /home/you/fasta/yourSecondGenomeFile.fa DB/
 cp /home/you/fasta/yourContigFile.contig.fa DB/
 cp /your/install/prefix/OMA/'.folderName.'/parameters.drw ./
+# adjust parameters
 vim parameters.drw
+# run OMA
 OMA')),
         
-        Paragraph(0, 'After installation of OMA, you could ', TT('cd'), 
-        ' into the ', TT('ToyExample'), ' directory, have a look at ', 
-        TT('parameters.drw'), ' and run ', TT('OMA'), ' to get a first 
-        impression.')
+        Paragraph(0, 'To get a first impression of ', TT('OMA'), ' you 
+        could ', TT('cd'), ' into the ', TT('ToyExample'), ' directory, 
+        have a look at ', TT('parameters.drw'), ' and run ', TT('OMA'),
+        ' to process our example files.')
         ]:
 
 # INPUT FORMATS
@@ -161,8 +172,8 @@ iformat := [ SectionHeader(2, 'Input Files'),
             ToyExample/DB in our installer package for some example files.'),
             
             Paragraph(0, 'If you want to use ESPRIT, make sure that FASTA files
-            containing contigs are called ', TT('{YourGenome}.contig.fa'), ',
-            e.g. if you want to experiment with some mouse genome, call the 
+            containing contigs are called ', TT('{YourGenome}.contig.fa'), '.
+            So if you want to experiment with some mouse genome, call the 
             FASTA file ', TT('mouse.contig.fa'), ' or ', 
             TT('mymouse.contig.fa'), ' or something similar.'),
             Paragraph(0, 'Parameter files use Darwin syntax.  Key-value-pairs 
@@ -391,11 +402,12 @@ filecolor=blue,
 linkcolor=blue,
 urlcolor=blue') ) ):
     prints( '\\renewcommand*{\\figureformat}{}
-    \\renewcommand*{\\tableformat}{}
-    \\renewcommand*{\\captionformat}{}' );
+\\renewcommand*{\\tableformat}{}
+\\renewcommand*{\\captionformat}{}' );
     prints( LaTeXC(DocEl('title', pagetitle)) . '\n' ):
     prints( LaTeXC(DocEl('author', 'CBRG, ETHZ')) . '\n' ):
     prints( LaTeXC(DocEl('date', '')) . '\n' ):
+    prints( '\\renewcommand{\\familydefault}{\\sfdefault}' ):
     prints( LaTeXC(DocEl('begin', 'document')) . '\n' ):
     prints( '\\maketitle\n' ):
     prints( LaTeXC( Document( 
