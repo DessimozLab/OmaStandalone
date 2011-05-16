@@ -4,3 +4,7 @@ ToyExample/EspritOutput/*
 manual/manual.aux
 manual/manual.log
 manual/manual.out
+manual/manual.html
+manual/manual.css
+manual/manual.tex
+manual/manual.pdf
