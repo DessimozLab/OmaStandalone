@@ -1,0 +1,39 @@
+Manual for OMA Stand-alone
+--------------------------
+
+Generating output files for HTML and LaTeX
+------------------------------------------
+
+The manual for OMA Stand-alone is contained in a darwin script
+under 'manual/manual.drw' . To generate the HTML file and the
+LaTeX output, just pipe 'manual.drw' into darwin:
+
+darwin < manual.drw
+
+The darwin script also tries to compile the LaTeX source with
+'pdflatex'; if the tool is not available, the script just
+fails at that stage but will still produce valid HTML and
+LaTeX output.
+
+For the HTML version, there is a CSS file 'manual.css' included
+in the manual folder; the HTML file will also try to include
+'../browser.css' which is the path to the OMA browser CSS if the
+file is deployed on the webserver.
+
+
+Adapting and/or updating the manual
+-----------------------------------
+
+Updating the manual consists in changing the appropriate
+parts in 'manual.drw' and rerun 'darwin < manual.drw' to
+regenerate the output files.
+
+
+Download links for OMA Stand-alone
+----------------------------------
+
+If you don't change anything in 'manual.drw', the darwin script
+tries to create the download links according to the current tag
+in the git repository. If you want to use a different name for
+installer tarball, change the variables at the top of the script
+according to your needs.

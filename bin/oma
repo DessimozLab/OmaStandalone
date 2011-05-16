@@ -2,16 +2,27 @@
 
 # $OMA_PATH points to the folder containing the current
 # version of OMA.
-OMA_PATH=$(dirname $0)/../OMA.[VERSIONNR]
+OMA_PATH=$(dirname $0)/..
 
 pfile="parameters.drw"
 wdir="./"
+paramerror="
+
+I found an error in your parameter file.
+Most probably, you missed a semicolon at the end of a line.
+
+Please fix it and try again."
 
 if [ $# -gt 0 ]
 then
     if [ $1 = "--help" -o $1 = "-h" -o $1 = "-?" ]
     then
         echo "Usage: OMA [<parameter file>]"
+        exit 0;
+    fi
+    if [ $1 = "--version" -o $1 = "-v" ]
+    then
+        echo "OMA version [VERSIONNR]"
         exit 0;
     fi
 fi
@@ -32,6 +43,8 @@ then
 fi
 
 cat $OMA_PATH/lib/splashscreen.txt
-echo "libdir := '$OMA_PATH/lib/': ReadProgram('$pfile'): \
+echo "libdir := '$OMA_PATH/lib/': \
+e : traperror(eval(parse(ReadRawFile('$pfile')))): \
+if e=lasterror then print('$paramerror'): done: fi: \
 ReadProgram('$OMA_PATH/OMA.drw'): done:" | $OMA_PATH/bin/omadarwin -q 
 

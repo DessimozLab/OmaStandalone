@@ -53,6 +53,7 @@ then
     exit
 fi
 echo "Installing oma..."
+sed -i '' "s:OMA_PATH=.*\$:OMA_PATH=\$(dirname \$0)/../OMA.${versionnr}:g" $omadir/bin/oma
 cp $current_dir/OMA.drw $current_dir/README.oma $current_dir/parameters.drw $omadir/
 echo "Installing libraries..."
 cp -rf $current_dir/lib $omadir/

@@ -19,12 +19,12 @@ ReuseCachedResults := true;
 
 # alignments which have a score lower than MinScore will not be considered.
 # The scores are in Gonnet PAM matrices units.
-MinScore := 181:  
+MinScore := 181; 
 
 # Length tolerance ratio.  If the length of the effective alignement
 # is less than LengthTol*min(length(s1),length(s2)) then the alignment
 # is not considered.
-LengthTol := 0.61:
+LengthTol := 0.61;
 
 # During the stable pair formation, if a pair has a distance provable
 # higher than another pair (i.e. StablePairTol standard deviations
@@ -37,7 +37,7 @@ VerifiedPairTol := 1.53;
 
 # Any sequence which is less than MinSeqLen amino acids long in
 # regular genomes is not considered.
-MinSeqLen := 50:
+MinSeqLen := 50;
 
 
 
@@ -73,7 +73,7 @@ MaxContigOverlap := 5;
 
 #Any sequence which is less than MinSeqLen amino acids long in
 # contigs is not considered.
-MinSeqLenContig := 20:
+MinSeqLenContig := 20;
 
 # Minimum score for BestMatch in scaffold recognition
 MinBestScore := 250;
