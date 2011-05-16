@@ -1,10 +1,9 @@
 ToyExample/Cache/*
 ToyExample/Output/*
 ToyExample/EspritOutput/*
-manual/manual.aux
-manual/manual.log
-manual/manual.out
-manual/manual.html
-manual/manual.css
-manual/manual.tex
-manual/manual.pdf
+Manual/manual.aux
+Manual/manual.log
+Manual/manual.out
+Manual/manual.html
+Manual/manual.tex
+Manual/manual.pdf

@@ -13,6 +13,17 @@ div.title {
     padding: 5px;
 }
 
+div.navigation {
+    padding-top: 1em;
+}
+
+div.navigation a {
+}
+
+a:hover {
+    text-decoration: none;
+}
+
 h1 {
     font-size: 22px;
     color: #333;

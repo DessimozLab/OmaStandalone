@@ -36,6 +36,14 @@ cp -r lib $instpath/
 cp OMA.drw parameters.drw install.sh README.oma $instpath/
 cp bin/oma bin/omadarwin $instpath/bin/
 
+# create manual and copy files to $instpath
+darwin < Manual/manual.drw
+mkdir $instpath/Manual
+cp manual.pdf $instpath/Manual/
+cp Manual/manual.css $instpath/Manual/
+cp Manual/manual.html $instpath/Manual/
+rm manual.*
+
 # copy toy example to $1/OMA$versionnr
 cp -r ToyExample $instpath/ToyExample
 
