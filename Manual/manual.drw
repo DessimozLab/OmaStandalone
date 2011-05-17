@@ -118,8 +118,7 @@ install := [
             script:'),
             
             Paragraph(0, 
-                Code('curl '.binaryLink.' \\
-    -o oma.tgz
+                Code('curl '.binaryLink.' -o oma.tgz
 tar xvzf oma.tgz
 cd '.folderName.'
 ./install.sh /your/install/prefix'
