@@ -468,7 +468,9 @@ htmltabs := TextBlock('div', class='navigation',
                 ' - ',
                 Anchor(TextBlock('a', href='parameters', 'Parameters')),
                 ' - ',
-                Anchor(TextBlock('a', href='license', 'License'))
+                Anchor(TextBlock('a', href='license', 'License')),
+                ' - ',
+                Link(TextBlock('a', href='http://omabrowser.org', 'Omabrowser'))
             ):
 
 
@@ -514,14 +516,14 @@ urlcolor=blue') ) ):
     ) ) ):
     prints( LaTeXC( DocEl('end', 'document')) . '\n' ):
 OpenWriting( previous ):
-CallSystem('pdflatex Manual/manual.tex'):
-CallSystem('pdflatex Manual/manual.tex'):
-CallSystem('pdflatex Manual/manual.tex'):
+# Create PDF: call pdflatex twice to make sure toc gets built
+CallSystem('cd Manual && pdflatex manual.tex'):
+CallSystem('cd Manual && pdflatex manual.tex'):
 
 
 # HTML output
 
-omabrowsercss := TextBlock('link', href='browser.css',
+omabrowsercss := TextBlock('link', href='../browser.css',
             rel='stylesheet', type='text/css'):
 
 additionalcss := TextBlock('link', href='manual.css',
