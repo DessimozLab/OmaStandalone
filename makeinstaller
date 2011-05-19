@@ -25,9 +25,9 @@ mv darwin/lib $instpath/darwinlib
 rm -rf darwin
 
 # copy darwin binaries to $shortname/bin/${shortname}darwin
-cp /home/darwin/v2/source/BUILD-linux32/darwin $instpath/bin/omadarwin.linux32
-cp /home/darwin/v2/source/BUILD-linux64/darwin $instpath/bin/omadarwin.linux64
-cp /home/darwin/v2/source/BUILD-macintel/darwin $instpath/bin/omadarwin.mac32
+cp /home/darwin/v2/source/linuxPIV/darwin $instpath/bin/omadarwin.linux32
+cp /home/darwin/v2/source/linux64/darwin $instpath/bin/omadarwin.linux64
+cp /home/darwin/v2/source/macintel/darwin $instpath/bin/omadarwin.mac32
 cp /home/darwin/v2/source/BUILD-macintel64/darwin $instpath/bin/omadarwin.mac64
 
 # copy oma library to $1/OMA$versionnr/lib
