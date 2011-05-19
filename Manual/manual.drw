@@ -22,6 +22,41 @@ Link_LaTeXC := proc(l:Link)
     return(LaTeXC(li).tx):
 end:
 
+# Anchor element to create anchors (HTML) and labels (LaTeX)
+# Usage: 
+# Set an anchor: Anchor('a', name='somewhere', 'some element'):
+# Use an anchor: Anchor('a', href='somewhere', 'some element'):
+
+Anchor := proc(t:TextBlock)
+    if t[1] <> 'a' then
+        error('only ''a'' tags allowed as anchors'):
+    fi:
+    noeval(Anchor(args)):
+end:
+
+Anchor_type := noeval(structure(TextBlock, Anchor)):
+
+Anchor_string := proc(a:Anchor)
+    return(string(a[1])):
+end:
+
+Anchor_HTMLC := proc(a:Anchor)
+    if a[1,2,1] = 'name' then
+        return(HTMLC(a[1])):
+    elif a[1,2,1] = 'href' then
+        a[1,2,2] := '#'.a[1,2,2]:
+        return(HTMLC(a[1])):
+    fi:
+end:
+
+Anchor_LaTeXC := proc(a:Anchor)
+    if a[1,2,1] = 'name' then
+        return(LaTeXC(a[1,3]) . LaTeXC(DocEl('label', a[1,2,2]))):
+    elif a[1,2,1] = 'href' then
+        return(LaTeXC(a[1,3]) . LaTeXC(DocEl('ref', a[1,2,2]))):
+    fi:
+end:
+
 
 ##############################################################################
 # Here comes the content
@@ -39,7 +74,9 @@ folderName := ConcatStrings(SearchDelim('.', binaryName)[1..-2], '.'):
 pagetitle := 'OMA stand-alone':
 
 # INTRO
-intro := [  SectionHeader(1, 'Introduction'),
+intro := [  Anchor(TextBlock('a', name='introduction', 
+                SectionHeader(1, 'Introduction')
+            )),
             Paragraph(0, 'You can download and install OMA as a stand-alone
             version. Included are the algorithms for OMA itself plus its 
             addition ESPRIT. The software can be installed on Linux (x86, 
@@ -57,7 +94,9 @@ intro := [  SectionHeader(1, 'Introduction'),
             {adrian or cdessimoz}@inf.ethz.ch .')
         ]:
 
-downloads := [ SectionHeader(1, 'Downloads'),
+downloads := [ Anchor(TextBlock('a', name='downloads',
+                    SectionHeader(1, 'Downloads')
+                )),
                 Paragraph(0, 'The current version of OMA stand-alone can be 
                 found here:'),
                 
@@ -66,15 +105,21 @@ downloads := [ SectionHeader(1, 'Downloads'),
 
 # INSTALL
 install := [
-            SectionHeader(1, 'Installation'),
+            Anchor(TextBlock('a', name='installation', SectionHeader(1, 'Installation'))),
+
+            Paragraph(0, 'You do not need to install OMA stand-alone on your
+            system; the script will also run if you just call it by using 
+            the complete path to ', TT('bin/oma'), ' in the installer folder. 
+            But we still encourage you to run the installer script, since it 
+            makes working with OMA considerably more convenient.'),
+
             Paragraph(0, 'To install OMA stand-alone on your system, download
             the installer, untar the package and run the included installer
             script:'),
             
             Paragraph(0, 
-                Code('curl '.binaryLink.' \\
-    -o '.binaryName.'
-tar xvzf '.binaryName.'
+                Code('curl '.binaryLink.' -o oma.tgz
+tar xvzf oma.tgz
 cd '.folderName.'
 ./install.sh /your/install/prefix'
                 )
@@ -109,7 +154,7 @@ linstall := append(linstall, addinstp):
 hinstall := append(hinstall, addinstp):
 
 # USAGE
-usage := [ SectionHeader(1, 'Usage'),
+usage := [ Anchor(TextBlock('a', name='usage', SectionHeader(1, 'Usage'))),
         Paragraph(0, 'First, set up a working directory. Copy the file ', 
         TT('parameters.drw'), ' into this folder and change it to your needs. 
         Create a directory ', TT('DB'), ' in your working directory that holds 
@@ -152,7 +197,9 @@ OMA')),
         ]:
 
 # INPUT FORMATS
-iformat := [ SectionHeader(2, 'Input Files'),
+iformat := [ Anchor(TextBlock('a', name='iformat', 
+                SectionHeader(2, 'Input Files'))
+            ),
             Paragraph(0, 'OMA uses two different input formats: FASTA files for 
             genome input and a Darwin file for parameter input.'),
             
@@ -176,9 +223,12 @@ iformat := [ SectionHeader(2, 'Input Files'),
             So if you want to experiment with some mouse genome, call the 
             FASTA file ', TT('mouse.contig.fa'), ' or ', 
             TT('mymouse.contig.fa'), ' or something similar.'),
+            
             Paragraph(0, 'Parameter files use Darwin syntax.  Key-value-pairs 
             are written as'),
+            
             Paragraph(0, Code('key := value;')),
+            
             Paragraph(0, 'Note the colon in ', TT(':='), ' and the semicolon at 
             the end of the line. If your parameter file does not use valid 
             Darwin syntax, OMA will print out a short message and stop its 
@@ -186,14 +236,21 @@ iformat := [ SectionHeader(2, 'Input Files'),
             ]:
 
 # OUTPUT FORMATS
-oformat := [ SectionHeader(2, 'Output Files'),
-            SectionHeader(3, 'OMA Output'),
+oformat := [ Anchor(TextBlock('a', name='oformat',
+                SectionHeader(2, 'Output Files')
+            )),
+            Anchor(TextBlock('a', name='omaout',
+                SectionHeader(3, 'OMA Output')
+            )),
+            
             Paragraph(0, 'The output of OMA gets written to files stored in 
             a folder ', TT('Output'), ' in your working directory. There are 
             three text files plus an additional folder ', 
             TT('PairwiseOrthologs'), ' that contains one file for each pair of
             your genome sets.'),
+            
             Paragraph(0,'The textfiles are organized as described in Table 1.'),
+            
             Table( hastitlerow, ColAlign('l', 'p{10cm}'),
                     title = 'Table 1: Contents of the OMA output files',
                     Row(Bold('Filename'), Bold('Contents')),
@@ -214,6 +271,7 @@ oformat := [ SectionHeader(2, 'Output Files'),
                     per tab-separated column. Numbers refer to entry number as
                     listed in the file ', TT('Map-SeqNum-ID.txt'), '.'))
             ) ,
+            
             Paragraph(0, 'The textfiles in ', TT('Output/PairwiseOrthologs'), 
             ' are named according to ', TT('{genome a}-{genome b}.txt'),
             ' and consist of a list of pairwise orthologs for the two given
@@ -224,12 +282,16 @@ oformat := [ SectionHeader(2, 'Output Files'),
             the proteins, and in the last two fields, the type of orthology
             and (if any) the OMA group is given.'),
 
-            SectionHeader(3, 'ESPRIT Output'),
+            Anchor(TextBlock('a', name='espritout',
+                SectionHeader(3, 'ESPRIT Output')
+            )),
+            
             Paragraph(0, 'ESPRIT stores its output files in a folder',
             TT('EspritOutput'), ' in your working directory. The output
             consists of three text files and one tarball. In the tarball,
             FASTA files with the MSAs of the hits ESPRIT found are stored.
              The other three files are explained in detail in Table 2.'),
+            
             Table( hastitlerow, ColAlign('l', 'p{12cm}'),
                 title = 'Table 2: Contents of the ESPRIT output files',
                 Row(Bold('Filename'), Bold('Contents')),
@@ -262,7 +324,10 @@ oformat := [ SectionHeader(2, 'Output Files'),
             ]:
 
 # PARAMETERS
-parameters := [ SectionHeader(1, 'Parameters'),
+parameters := [ Anchor(TextBlock('a', name='parameters',
+                    SectionHeader(1, 'Parameters')
+                )),
+                
                 Paragraph(0, 'All parameters for OMA and/or ESPRIT are
                 set in a parameters file. There is an example file in the
                 OMA installer package; we encourage you to copy this file
@@ -275,6 +340,7 @@ parameters := [ SectionHeader(1, 'Parameters'),
                 Note that changing the ESPRIT parameters
                 will not have an effect unless you set the boolean variable ',
                 TT('UseEsprit'), ' to ', TT('true'), '.'),
+                
                 Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
                     title = 'Table 3: General parameters in OMA',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
@@ -313,6 +379,7 @@ parameters := [ SectionHeader(1, 'Parameters'),
                         is not considered.'),
                         TT('50'))
                 ),
+                
                 Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
                     title = 'Table 4: ESPRIT parameters',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
@@ -353,7 +420,10 @@ parameters := [ SectionHeader(1, 'Parameters'),
                 ]:
 
 # LICENSE
-license := [ SectionHeader(1, 'License'),
+license := [ Anchor(TextBlock('a', name='license',
+                SectionHeader(1, 'License')
+            )),
+            
             Paragraph(0, 'OMA is licensed under a Creative Commons 
 Attribution-Noncommercial-Share Alike 2.5 License. For more info, please 
 consult the following page:'),
@@ -382,18 +452,41 @@ googlejs2 := TextBlock('script', type='text/javascript',
 	 } catch(err) {}'
             ):
 
+
+# CONTENT TABS FOR HTML
+htmltabs := TextBlock('div', class='navigation',
+                Anchor(TextBlock('a', href='introduction', 'Introduction')),
+                ' - ',
+                Anchor(TextBlock('a', href='downloads', 'Downloads')),
+                ' - ',
+                Anchor(TextBlock('a', href='installation', 'Installation')),
+                ' - ',
+                Anchor(TextBlock('a', href='usage', 'Usage')),
+                ' - ',
+                Anchor(TextBlock('a', href='fileformats', 'File formats')),
+                ' - ',
+                Anchor(TextBlock('a', href='parameters', 'Parameters')),
+                ' - ',
+                Anchor(TextBlock('a', href='license', 'License')),
+                ' - ',
+                Link(TextBlock('a', href='http://omabrowser.org', 'Omabrowser'))
+            ):
+
+
 ##############################################################################
 # create and write the documents
 #
 
 # Create one section 'File Formats'
-formats := [ SectionHeader(1, 'File Formats'),
+formats := [ Anchor(TextBlock('a', name='fileformats',
+                SectionHeader(1, 'File Formats')
+             )),
                 op(iformat),
                 op(oformat)
             ]:
 
 # LaTeX output
-OpenWriting('manual.tex'):
+OpenWriting('Manual/manual.tex'):
     prints( LaTeXC(DocEl('documentclass', 'scrartcl') ) ):
     prints( LaTeXC(DocEl('usepackage', 'hyperref') ) ):
     prints( LaTeXC(DocEl('hypersetup', 'colorlinks,
@@ -410,6 +503,7 @@ urlcolor=blue') ) ):
     prints( '\\renewcommand{\\familydefault}{\\sfdefault}' ):
     prints( LaTeXC(DocEl('begin', 'document')) . '\n' ):
     prints( '\\maketitle\n' ):
+    prints( '\\tableofcontents\n' ):
     prints( LaTeXC( Document( 
         op(intro),
         op(downloads),
@@ -421,21 +515,25 @@ urlcolor=blue') ) ):
     ) ) ):
     prints( LaTeXC( DocEl('end', 'document')) . '\n' ):
 OpenWriting( previous ):
-CallSystem('pdflatex manual.tex'):
+# Create PDF: call pdflatex twice to make sure toc gets built
+CallSystem('cd Manual && pdflatex manual.tex'):
+CallSystem('cd Manual && pdflatex manual.tex'):
+
 
 # HTML output
 
-omabrowsercss := TextBlock('link', href='browser.css',
+omabrowsercss := TextBlock('link', href='../browser.css',
             rel='stylesheet', type='text/css'):
 
 additionalcss := TextBlock('link', href='manual.css',
             rel='stylesheet', type='text/css'):
 
 
-OpenWriting('manual.html'):
+OpenWriting('Manual/manual.html'):
     prints(HTML(Document(
             TextBlock('div', class='content',
                 TextBlock('div', class='title', pagetitle),
+                htmltabs,
                 op(intro),
                 op(downloads),
                 op(hinstall),
