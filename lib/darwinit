@@ -22,3 +22,5 @@ IdentifyPosition := noeval(ReadLibrary (OrthologsLib.'IdentifyPosition.drw',
 IdentifyPosition));
 DistBounds := noeval(ReadLibrary(OrthologsLib.'IdentifyPosition.drw',
 DistBounds));
+
+WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));

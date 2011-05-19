@@ -51,6 +51,8 @@ if not assigned(Datasets) then
 else
     G := Datasets;
 fi:
+if not type(NP,posint) then NP := 1 fi;
+
 GS := table();
 DBs := genomes := isContig := [];
 if not ReuseCachedResults then
@@ -139,18 +141,43 @@ if length(genomes) < 2 then
     quit;
 fi;
 
+# check whether we find AllAll-files which have been computed using a 
+# different NP. In that case, warn the user and/or stop
+if length(FileStat('Cache/AllAll'))>0 then
+t := TimedCallSystem('find Cache/AllAll -type f')[2];
+files := [seq(f[1..-2], f=SplitLines(t))]:
+for file in files do
+    b := SearchString('-', file);
+    if b<=0 then next fi:
+    e := If(file[-3..-1]='.gz', -4, -1);
+    if parse(file[b+2..e])<>NP then
+        printf('\n\n'
+            .'WARNING: found allall-files which have not the same value '
+            .'for ''NP''.\n'
+            .'  If you continue, the previous results will be not be used.\n');
+        sleep(5);
+        break;
+    fi:
+od:
+fi:
+    
+if NP>1 then sleep( Rand(1..10) ) fi:
+
 ##############################################################################
 # All-against-all
 #   assign name1, name2, db1, db2
 
 print('\n\n****\n\nStarting the all-against-all phase...\n');
+print('Note, if you want to parallelize this process, you may start ',
+    'several instances of OMA from the same directory now.\n');
 
 CreateDayMatrices();
 DM := DayMatrix(224):
 NumberFormat := '%.10g':
 JustScoreBound := MinScore;
 
-tot := length(genomes)*(length(genomes)+1)/2:
+tot := length(genomes)*(length(genomes)+1)/2*NP;
+totAls := [seq( seq( seq( DBs[g1,TotEntries]/NP*DBs[g2,TotEntries], NP), g2=g1..length(genomes)), g1=1..length(genomes))];
 c1 := 0:
 for g1 to length(genomes) do 
     for g2 from g1 to length(genomes) do
@@ -174,71 +201,73 @@ for g1 to length(genomes) do
         for i2 to n2 do Seqs2[i2] := SearchTag('SEQ',Entry(i2)) od:
 
         # Phase 1
-        printf('Computing pair %d/%d (%s-%s)\n',
-            c1+1,tot,genomes[g1],genomes[g2]);
-        t0 := UTCTime():
-        res := []:
         CallSystem('mkdir -p Cache/AllAll/'.name1);
-        # skip if cached:
-        if length(FileStat('Cache/AllAll/'.name1.'/'.name2)) > 0 or
-           length(FileStat('Cache/AllAll/'.name1.'/'.name2.'.gz')) > 0 then
+        partLen := ceil( n1/NP ); 
+        for part to NP do
             c1 := c1+1;
-            printf('Pair %d/%d already computed. Skipped.\n',c1,tot);
-            next;
-        fi;
-        OpenWriting('Cache/AllAll/'.name1.'/'.name2);
-        lprint( 'RefinedMatches(' );
-        OpenWriting(previous);
-        c2 := 0;
-        tot2 := n1*n2;
-        for i1 to n1 do
-            len1 := length(Seqs1[i1]);
-            for i2 from If( name1=name2, i1+1, 1 ) to n2 do
-                c2 := c2+1;
-                if mod(c2,50000)=0 then
-                    printf('      %.2f%% complete, time left=%.1fh\n',
-                        100*c2/tot2,tot2/c2*(UTCTime()-t0)/3600);
-                    if res <> [] then
-                        OpenAppending('Cache/AllAll/'.name1.'/'.name2);
-                        printf( '[' );
-                        for i to length(res)-1 do printf('%a,\n',res[i]) od:
-                        lprint( res[-1], ']):' );
-                        lprint( 'RefinedMatches(' );
-                        res := [];
-                        OpenAppending(previous);
-                    fi:
-                fi;
-                len2 := length(Seqs2[i2]);
-                dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
-                if dps[1] >= .75*MinScore then
-                    a := Align(Seqs1[i1],Seqs2[i2],DMS);
-                    if a[Score] < MinScore or min(a[Length1],a[Length2]) <
-                                max(30,0.3*min(len1,len2)) then next fi;
-                    i := GetOffset(a[Seq1])-GetOffset(Seqs1[i1]);
-                    ran1 := i+1 .. i+a[Length1];
-                    i := GetOffset(a[Seq2])-GetOffset(Seqs2[i2]);
-                    ran2 := i+1 .. i+a[Length2];
-                    res := append(res,[i1,i2,a[Score],a[PamDistance],
-                                ran1,ran2,a[PamVariance]] );
-                fi;
-            od;
-        od:
-        OpenAppending('Cache/AllAll/'.name1.'/'.name2);
-        if res = [] then lprint( res, '):' )
-        else printf( '[' );
-            for i to length(res)-1 do printf('%a,\n',res[i]) od:
-            lprint( res[-1], ']):' );
-        fi:
-        drt := UTCTime()-t0:
-        dat := time():
-        printf('# %s: %ds/%ds active = %.1f%%  %s\n',hostname(),round(dat),
-            round(drt), 100*dat/drt,If(dat/drt<0.7,'SLOW!',''));
-        OpenAppending(previous);
+            # skip if cached or already computed
+            fn := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, NP);
+            if length(FileStat(fn))>0 or length(FileStat(fn.'.gz'))>0 then
+                printf('Pair %s/%s part %d of %d already computed. Skipped.\n',
+                    name1, name2, part, NP);
+                next;
+            fi:
 
-        # Compress file
-        CallSystem('gzip -9f '.'Cache/AllAll/'.name1.'/'.name2);
-        c1 := c1+1;
-        printf('Finished %d/%d pairs of genomes\n',c1,tot);
+            printf('[pid %6d]: Computing %s vs %s (Part %d of %d)\n', 
+                getpid(), name1, name2, part, NP);
+            OpenWriting(fn);
+            printf( '# AllAll of %s vs %s (Part %d of %d)\n',
+                name1,name2,part,NP );
+            OpenWriting(previous);
+    
+            t0 := UTCTime():
+            res := []:
+            c2 := 0;
+            tot2 := partLen*n2;
+            for i1 from (part-1)*partLen+1 to min(n1, part*partLen) do 
+
+                len1 := length(Seqs1[i1]);
+                for i2 from If( name1=name2, i1+1, 1 ) to n2 do
+                    c2 := c2+1;
+                    if mod(c2,50000)=0 then
+                        printf('   [pid %6d]: %.2f%% complete, time left for this '.
+                            'part=%.1fh, %.1f%% of AllAll done\n',
+                            getpid(),100*c2/tot2,tot2/c2*(UTCTime()-t0)/3600,
+                            100*( (c1-1+c2/tot2)/tot ));
+                    fi:
+                    len2 := length(Seqs2[i2]);
+                    dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
+                    if dps[1] >= .75*MinScore then
+                        a := Align(Seqs1[i1],Seqs2[i2],DMS);
+                        if a[Score] < MinScore or min(a[Length1],a[Length2]) <
+                                    max(30,0.3*min(len1,len2)) then next fi;
+                        i := GetOffset(a[Seq1])-GetOffset(Seqs1[i1]);
+                        ran1 := i+1 .. i+a[Length1];
+                        i := GetOffset(a[Seq2])-GetOffset(Seqs2[i2]);
+                        ran2 := i+1 .. i+a[Length2];
+                        res := append(res,[i1,i2,a[Score],a[PamDistance],
+                                    ran1,ran2,a[PamVariance]] );
+                    fi;
+                    if length(res)>1e5 then 
+                        WriteMatches(fn, res);
+                        res := []:
+                    fi:
+                od;
+            od:
+            WriteMatches(fn,res):
+
+            drt := UTCTime()-t0:
+            dat := time():
+            OpenAppending(fn);
+            printf('# %s: %ds/%ds active = %.1f%%  %s\n',hostname(),round(dat),
+                round(drt), 100*dat/drt,If(dat/drt<0.7,'SLOW!',''));
+            OpenAppending(previous);
+            # Compress file
+            CallSystem('gzip -9f '.fn);
+            printf('Finished %s vs %s (Part %d of %d)\n'.
+                '  %.1f%% of AllAll done, estimated remaining time: %.1fh\n\n',
+                name1,name2,part,NP, 100*c1/tot, drt*sum(totAls[c1..tot])/c2/3600);
+        od: 
     od; 
 od:
 
@@ -286,27 +315,32 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
         if j>i then BestMatch[j,i] := CreateArray(1..ns[j],[]) fi;
         if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
             g1 := i;  g2 := j else g2 := i;  g1 := j fi;
-            BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
-            fn := genomes[g1] . '/' . genomes[g2];
-            t3+1;
-            Exclude1 := Exclude2 := {}:
-            ReadProgram(  'Cache/AllAll/' . fn );
-            # no Pairs should be cut for being below the Scoretol, as those
-            # may serve to break a stable pair
-            sij := sum(length(BestMatch[i,j,k]), k=1..length(BestMatch[i,j]));
-            sji := sum(length(BestMatch[j,i,k]), k=1..length(BestMatch[j,i]));
-            t5+max(sij,sji);
-            if sij=0 or sji=0 then
-                t6+1;
+        BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
+        t3+1;
+        Exclude1 := Exclude2 := {}:
+        for part to NP do 
+            fn := sprintf('Cache/AllAll/%s/%s_%d-%d', genomes[g1], genomes[g2],
+                part, NP);
+            ReadProgram( fn );
+        od:
+        # no Pairs should be cut for being below the Scoretol, as those
+        # may serve to break a stable pair
+        sij := sum(length(BestMatch[i,j,k]), k=1..length(BestMatch[i,j]));
+        sji := sum(length(BestMatch[j,i,k]), k=1..length(BestMatch[j,i]));
+        t5+max(sij,sji);
+        if sij=0 or sji=0 then
+            t6+1;
             # relax in case of mitochondion genome or synthetic evolution
-                lprint('Warning: empty all-all for', genomes[g1], genomes[g2] ) fi;
+            lprint('Warning: empty all-all for', genomes[g1], genomes[g2] ) 
+        fi;
         for k to length(BestMatch[i,j]) do
             if BestMatch[i,j,k] <> [] then
             BestMatch[i,j,k] := compress(BestMatch[i,j,k]) fi od;
         for k to length(BestMatch[j,i]) do
             if BestMatch[j,i,k] <> [] then
             BestMatch[j,i,k] := compress(BestMatch[j,i,k]) fi od;
-            printf( '# %s done, (%d/%d)\n', fn, sij, sji );
+        printf( '# %s vs %s done, (%d/%d)\n', genomes[g1],genomes[g2], 
+            sij, sji );
     od od:
 
 

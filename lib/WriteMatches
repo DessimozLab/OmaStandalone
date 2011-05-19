@@ -1,0 +1,16 @@
+
+WriteMatches:= proc(fn:string, ms:list)
+    verb := Set(printgc=false):
+    OpenAppending(fn):
+    lprint('RefinedMatches(');
+    if ms=[] then lprint( ms,'):');
+    else
+        printf('[');
+        for i to length(res)-1 do
+            printf('%a,\n', ms[i]);
+        od:
+        lprint( res[-1], ']):');
+    fi:
+    OpenAppending(previous):
+    Set(printgc=verb);
+end:

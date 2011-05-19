@@ -350,6 +350,13 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         scratch everytime the script is run, set this to ',
                         TT('false'), '.'),
                         TT('true')),
+                    Row(TT('NP'),
+                        Paragraph(0, 'In the all-against-all phase, each genome
+                        pair is split in ',TT('NP'), parts. This allows for 
+                        shorter milestone steps (e.g. in case of computer 
+                        crash) and allows to parallelize jobs with few but 
+                        large genomes.'),
+                        TT(4)),
                     Row(TT('MinScore'), 
                         Paragraph(0, 'Alignments which have a score lower than ',
                         TT('MinScore'), ' will not be considered. The scores

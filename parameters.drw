@@ -17,6 +17,11 @@
 # is run, set the following parameter to false.
 ReuseCachedResults := true;
 
+# number of parts into which a genome pair is split. This allows for 
+# shorter milestone steps (e.g. in case of computer crash) and allows 
+# to parallelize jobs with few but large genomes.
+NP := 4;
+
 # alignments which have a score lower than MinScore will not be considered.
 # The scores are in Gonnet PAM matrices units.
 MinScore := 181;
