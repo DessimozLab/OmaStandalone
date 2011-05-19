@@ -352,7 +352,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         TT('true')),
                     Row(TT('NP'),
                         Paragraph(0, 'In the all-against-all phase, each genome
-                        pair is split in ',TT('NP'), parts. This allows for 
+                        pair is split in ',TT('NP'), 'parts. This allows for 
                         shorter milestone steps (e.g. in case of computer 
                         crash) and allows to parallelize jobs with few but 
                         large genomes.'),
