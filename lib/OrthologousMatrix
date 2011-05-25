@@ -320,6 +320,124 @@ od od:
 
 BreakingStatsG:=[NumAllBreak,NumAllGenom];
 
+# make VP assignement consistent: Between a genome pair, only one speciation 
+# event took place. hence, the VP graph must consist of disconnected, complete 
+# bipartite graphs
+CCFind := proc(x:posint) global CCpnt;
+    y := x;
+    while CCpnt[CCpnt[y]]<>CCpnt[y] do
+        y := CCpnt[y] := CCpnt[CCpnt[y]];
+    od:
+    return( CCpnt[y] ):
+end:
+
+ExtractBestMatchesSubgroupAsEdges := proc( X, Y, p1, p2, off1, off2 ; 
+       'score'=(score:numeric) )
+    edges2verify := table([],[]):
+    edges := [];
+    for x1 in p1 do for a1 in decompress(BestMatch[X,Y,x1]) do
+        y2 := a1[Entry];
+        if not member(y2, p2) then next fi;
+        if X=Y then 
+            edges := append(edges, Edge( If(assigned(score), score,a1['Score100']),
+               x1+off1, y2+off2) ):
+        else 
+            edges2verify[y2] := append(edges2verify[y2],x1);
+        fi:
+    od od:
+    if X=Y then return( edges ) fi:
+
+    for y2 in Indices(edges2verify) do  for a1 in decompress(BestMatch[Y,X,y2]) do
+        x1 := a1['Entry'];
+        if member(x1, edges2verify[y2]) then
+            edges := append(edges, Edge( If(assigned(score),score,a1[Score100]),
+               x1+off1, y2+off2) );
+        fi:
+    od od:
+    return( edges ):
+end:
+
+ConsistentPairs := CreateArray(1..N,1..N):
+idone := totVPadded := totVPremoved := 0; 
+for X to N do for Y from X+1 to N do
+    ConsistentPairs[X,Y] := CreateArray(1..ns[X],{}):
+    ConsistentPairs[Y,X] := CreateArray(1..ns[Y],{}):
+    CCpnt := CreateArray(1..ns[X]+ns[Y]):
+    for i to length(CCpnt) do CCpnt[i] := i od:
+    CCsize := CreateArray(1..ns[X]+ns[Y],1):
+    # find connected components
+    for x1 to ns[X] do for z in decompress(VPairs[X,Y,x1]) do
+        i := CCFind(x1): j := CCFind(ns[X]+z):
+        if i<>j then 
+            if CCsize[i]<CCsize[j] then t:=i; i:=j; j:=t fi;
+            CCpnt[j] := CCpnt[i];
+            CCsize[i] := CCsize[i]+CCsize[j]; CCsize[j]:=0;
+        fi:
+    od od:
+    for i to ns[X]+ns[Y] do CCpnt[i]:= CCFind(i) od:
+    CC := sort( [seq(i, i=1..ns[X]+ns[Y])], x->CCpnt[x] ):
+    c0 := 1;
+    grps := grpsEdited := 0;
+    while c0<ns[X]+ns[Y] do 
+        curCC := CCpnt[CC[c0]];
+        pX := pY := []:
+        for c1 from c0 to ns[X]+ns[Y] while CCpnt[CC[c1]]=curCC do
+            if CC[c1]<=ns[X] then pX := append(pX, CC[c1]);
+            else pY := append(pY, CC[c1]-ns[X]) fi:
+        od:
+        pX := {op(pX)}; pY := {op(pY)};
+        # if more than a pair and missing edges to form compl bipartite graph, fix
+        if c1-c0 > 1 then grps := grps + 1 fi:
+        if c1-c0 > 1 and length(pX)*length(pY) > 
+            sum( length(decompress(VPairs[X,Y,z])), z=pX) then
+            
+            grpsEdited := grpsEdited + 1;
+            # build graph and search for cliques
+            e2 := ExtractBestMatchesSubgroupAsEdges(X,Y,pX,pY,0,ns[X]);
+            if length(e2)=length(pX)*length(pY) then
+                # with additional edges, bipartite graph is now complete.
+                for x1 in pX do ConsistentPairs[X,Y,x1] := compress(pY) od:
+                for y2 in pY do ConsistentPairs[Y,X,y2] := compress(pX) od:
+            else
+                # bibartite graph is still not complete. we have to do something.
+                # edges within species need weight 0, then MaxEdgeWeightClique will not
+                # use them greedily
+                # TODO: maybe better to just add complete graph instead of only BestMatches
+                e1 := ExtractBestMatchesSubgroupAsEdges(X, X, pX, pX, 0, 0, 'score'=0);
+                e3 := ExtractBestMatchesSubgroupAsEdges(Y, Y, pY, pY, ns[X], ns[X], 'score'=0);
+                G := Graph(Edges(op(e1),op(e2),op(e3)),Nodes(op(pX),seq(ns[X]+z,z=pY))):
+                while length(G[Nodes])>1 do
+                     cli := MaxEdgeWeightClique(G);
+                     Lcli := length(cli);
+                     npX := {seq(If(z<=ns[X],z,NULL),z=cli)}:
+                     npY := {seq(If(z<=ns[X],NULL,z-ns[X]),z=cli)}:
+                     for x1 in npX do ConsistentPairs[X,Y,x1] := compress(npY); od:
+                     for y2 in npY do ConsistentPairs[Y,X,y2] := compress(npX); od:
+                     G := G minus cli;
+                od:
+            fi:
+        else
+            for x1 in pX do ConsistentPairs[X,Y,x1] := compress(pY); od:
+            for y2 in pY do ConsistentPairs[Y,X,y2] := compress(pX); od:
+        fi:
+        c0 := c1;
+    od:
+    nrVPs := [seq( length(decompress(z)), z=VPairs[X,Y] )];
+    nrCPs := [seq( length(decompress(z)), z=ConsistentPairs[X,Y] )];
+    changes := [seq( If(nrVPs[i]<>nrCPs[i], nrCPs[i]-nrVPs[i],NULL), i=1..ns[X])]; 
+    VPadded := sum(If(z>0,z,0),z=changes); 
+    VPremoved := sum(If(z<0,-z,0),z=changes);
+    totVPadded := totVPadded + VPadded; totVPremoved := totVPremoved + VPremoved;
+    idone := idone + 1;
+    printf('%s/%s (%d/%d) made consistent. %d/%d CC affected; pairs +%d, -%d; %.2f%% done\n', 
+        genomes[X], genomes[Y], X, Y, grpsEdited, grps, VPadded, VPremoved,
+        200*idone/(N*(N-1)) );
+od od:
+printf('MakeVPsConsistent Summary: Adding %d, removing %d VPs\n', totVPadded, totVPremoved);
+VPairs := ConsistentPairs: ConsistentPairs := 0;
+
+
+
  EdgeCost := proc( s:set(posint) )
    if length(s) <> 2 then error(s,'invalid arguments') fi;
    n1 := cli[s[1]];  n2 := cli[s[2]];
