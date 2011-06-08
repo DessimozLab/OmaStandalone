@@ -53,7 +53,14 @@ then
     exit
 fi
 echo "Installing oma..."
-sed -i '' "s:OMA_PATH=.*\$:OMA_PATH=\$(dirname \$0)/../OMA.${versionnr}:g" $omadir/bin/oma
+
+if [ $os = "Darwin" ]
+then
+    sed -i '' "s:OMA_PATH=.*\$:OMA_PATH=\$(dirname \$0)/../OMA.${versionnr}:g" $omadir/bin/oma
+else
+    sed -i "s:OMA_PATH=.*\$:OMA_PATH=\$(dirname \$0)/../OMA.${versionnr}:g" $omadir/bin/oma
+fi
+
 cp $current_dir/OMA.drw $current_dir/README.oma $current_dir/parameters.drw $omadir/
 echo "Installing libraries..."
 cp -rf $current_dir/lib $omadir/
