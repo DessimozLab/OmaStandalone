@@ -1,5 +1,7 @@
 #!/bin/bash
 
+os=$(uname -s)
+
 showUsage () {
     echo "This script creates an installer package for oma at 'path_to_installer'."
     echo "Usage: makeinstaller path_to_installer"
@@ -28,7 +30,7 @@ rm -rf darwin
 cp /home/darwin/v2/source/linuxPIV/darwin $instpath/bin/omadarwin.linux32
 cp /home/darwin/v2/source/linux64/darwin $instpath/bin/omadarwin.linux64
 cp /home/darwin/v2/source/macintel/darwin $instpath/bin/omadarwin.mac32
-cp /home/darwin/v2/source/BUILD-macintel64/darwin $instpath/bin/omadarwin.mac64
+cp /home/darwin/v2/source/macintel64/darwin $instpath/bin/omadarwin.mac64
 
 # copy oma library to $1/OMA$versionnr/lib
 cp -r lib $instpath/
@@ -48,8 +50,14 @@ cp Manual/manual.html $instpath/Manual/
 cp -r ToyExample $instpath/ToyExample
 
 # adjust for version number
-sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
-  $instpath/install.sh $instpath/README.oma $instpath/bin/oma
+if [ $os = "Darwin" ]
+then
+    sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
+ $instpath/install.sh $instpath/README.oma $instpath/bin/oma
+else
+    sed -i -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
+ $instpath/install.sh $instpath/README.oma $instpath/bin/oma
+fi
 
 # create tarball
 $(cd `dirname $instpath`; tar -cvzf `basename $instpath`.tgz `basename $instpath`)
