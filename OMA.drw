@@ -147,10 +147,11 @@ if length(FileStat('Cache/AllAll'))>0 then
 t := TimedCallSystem('find Cache/AllAll -type f')[2];
 files := [seq(f[1..-2], f=SplitLines(t))]:
 for file in files do
-    b := SearchString('-', file);
-    if b<=0 then next fi:
+    b := SearchAllString('-', file);
+    if b = [] then next fi:
+    b := b[-1]:
     e := If(file[-3..-1]='.gz', -4, -1);
-    if parse(file[b+2..e])<>NP then
+    if parse(file[b+1..e])<>NP then
         printf('\n\n'
             .'WARNING: found allall-files which have not the same value '
             .'for ''NP''.\n'
