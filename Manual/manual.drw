@@ -448,9 +448,7 @@ consult the following page:'),
 # JAVASCRIPTS FOR GOOGLE
 googlejs1 := TextBlock('script', type='text/javascript',
   'var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-   document.write(unescape("%3Cscript src=''" + gaJsHost
-   + "google-analytics.com/ga.js''
-   type=''text/javascript''%3E%3C/script%3E"));'
+   document.write(unescape("%3Cscript src=''" + gaJsHost + "google-analytics.com/ga.js'' type=''text/javascript''%3E%3C/script%3E"));'
    ):
 googlejs2 := TextBlock('script', type='text/javascript',
             'try {
@@ -538,6 +536,8 @@ additionalcss := TextBlock('link', href='manual.css',
 
 OpenWriting('Manual/manual.html'):
     prints(HTML(Document(
+            googlejs1,
+            googlejs2,
             TextBlock('div', class='content',
                 TextBlock('div', class='title', pagetitle),
                 htmltabs,
