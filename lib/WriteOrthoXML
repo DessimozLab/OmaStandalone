@@ -1,0 +1,119 @@
+module external WriteOrthoXML;
+
+WriteXMLHeader := proc(release:string ; notes:string)
+    printf('<?xml version="1.0" encoding="UTF-8"?>\n');
+    printf('<orthoXML xmlns="http://orthoXML.org/2011/" version="0.3" '.
+        'origin="OMA Standalone" originVersion="%s">\n', release);
+    if assigned(notes) then
+        printf(' <notes>\n%s\n </notes>\n', notes);
+    fi:
+end:
+
+WriteGeneRefs := proc()
+    global DB:
+    id := 0;
+    for gNr to length(genomes) do 
+        g := genomes[gNr];
+        tax := GS[g,TAXONID]; 
+        if tax='' then tax := string(-1) fi;
+        printf(' <species name="%s" NCBITaxId="%s">\n', g, tax);
+        printf('  <database name="%s" version="%s">\n', g, GS[g,'FileName']);
+        printf('   <genes>\n');
+        for i to GS[g,TotEntries] do 
+            id := id+1;
+            printf('    <gene id="%d" protId="%s" />\n', id, IDtable[gNr,i]);
+        od:
+        printf('   </genes>\n  </database>\n </species>\n');
+    od:
+    printf(' <groups>\n');
+end:
+
+WriteOMAPairs := proc(VP:matrix, Goff:list(integer) )
+    ns := length(VP); assert(length(VP[1])=ns);
+    for i to ns do for j from i+1 to ns do
+        nrs := [seq( z, z=Goff[i]+1..Goff[i+1]),
+                seq( z, z=Goff[j]+1..Goff[j+1])];
+        uf := UnionFind(nrs):
+        for x1 to length(VP[i,j]) do for y1 in VP[i,j,x1] do
+            union(uf, [Goff[i]+x1, Goff[j]+y1]);
+        od od:
+        for c in uf['Clusters'] do if length(c)>1 then
+            p := CreateArray(1..2,[]):
+            for z in c do 
+                k := SearchOrderedArray(z-1, Goff):
+                if k=i then p[1] := append(p[1], z);
+                elif k=j then p[2] := append(p[2],z) ;
+                else error('must not happen'); fi:
+            od:
+            printf('  <orthologGroup>\n');
+            for k to 2 do 
+                if length(p[k])>1 then printf('   <paralogGroup>\n') fi:
+                for z in p[k] do printf('    <geneRef id="%d" />\n', z); od:
+                if length(p[k])>1 then printf('   </paralogGroup>\n') fi:
+            od:
+            printf('  </orthologGroup>\n');
+        fi od:
+    od od:
+end:
+
+WriteOMAGroups := proc(M:matrix, Goff:list(integer) )
+    ns := length(M[1]):
+    for i to length(M) do
+        printf('  <orthologGroup id="%d">\n', i);
+        for j to ns do if M[i,j]<>0 then
+            printf('   <geneRef id="%d" />\n', Goff[j]+M[i,j]);
+        fi od:
+        printf('  </orthologGroup>\n');
+    od:
+end:
+
+WriteOMAHClusterR := proc( grp; id:string, (indent=2):posint )
+    inS := CreateString(indent);
+    if type(grp,posint) then 
+        printf('%s<geneRef id="%d"/>\n', inS, grp);
+    elif op(0,grp)=OrthologousCluster then 
+        printf('%s<orthologGroup %s>\n', inS,
+            If(assigned(id),sprintf('id="%a"',id),''));
+        printf('%s <property name="TaxRange" value="%s"/>\n', inS, grp[1]);
+        for z in grp[2..-1] do
+            WriteOMAHClusterR( z, indent+1);
+        od:
+        printf('%s</orthologGroup>\n',inS);
+    elif op(0,grp)=ParalogousCluster then
+        printf('%s<paralogGroup>\n',inS);
+        for z in grp do 
+            WriteOMAHClusterR( z, indent+1);
+        od:
+        printf('%s</paralogGroup>\n',inS);
+    else error('unexpected structure: '.string(op(0,grp))) fi:
+end:
+
+WriteXMLEnd := proc()
+    printf(' </groups>\n</orthoXML>\n');
+end:
+
+WriteOrthoXML := proc(data, fn:string)
+    
+    NS := length(genomes):
+    Goff := CreateArray(1..NS+1):
+    for i to NS do Goff[i+1] := Goff[i] + GS[genomes[i],TotEntries] od:
+    
+    verb := Set(printgc=false);
+    OpenWriting(fn);
+    WriteXMLHeader(OMA_STANDALONE_VERSION);
+    WriteGeneRefs();
+    if type(data,matrix(integer)) then 
+        WriteOMAGroups(data,Goff);
+    elif type(data, list(structure(anything,OrthologousCluster))) then
+        for i to length(data) do
+            WriteOMAHClusterR( data[i], string(i) );
+        od:
+    else 
+        WriteOMAPairs(data,Goff); 
+    fi:
+    WriteXMLEnd();
+    OpenWriting(previous);
+    Set(printgc=verb);
+end:
+
+end: #module

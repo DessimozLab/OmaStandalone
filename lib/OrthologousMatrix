@@ -437,7 +437,6 @@ printf('MakeVPsConsistent Summary: Adding %d, removing %d VPs\n', totVPadded, to
 VPairs := ConsistentPairs: ConsistentPairs := 0;
 
 
-
  EdgeCost := proc( s:set(posint) )
    if length(s) <> 2 then error(s,'invalid arguments') fi;
    n1 := cli[s[1]];  n2 := cli[s[2]];

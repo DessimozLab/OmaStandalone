@@ -45,6 +45,26 @@ VerifiedPairTol := 1.53;
 MinSeqLen := 50;
 
 
+##############################################################
+# Hierarchical Orthologous Groups
+##############################################################
+# Compute Hierarchical groups?
+# You can either set it to 'true', which will enable the computation or 
+# disable it by setting it to 'false'. Keep in mind that the current
+# implementation is not yet parallelized and hence needs quite some time.
+ComputeHierarchicalGroups := true;
+
+# The hierarchical groups need a hierarchy of the involved species in
+# from of a tree. This tree can either be estimated from the OMA Groups
+# by setting the SpeciesTreeForReconcilation variable to 'estimate',
+# or a (partially resolved) tree can be given in Newick format. The 
+# estimation step needs again additional computing time.
+SpeciesTreeForReconcilation := '((mouse,mouse2),human,dog);';
+#SpeciesTreeForReconcilation := 'estimate';
+
+# The cutoff of 'average reachability within two steps' defines up to
+# what point a cluster is split into sub-clusters.
+ReachabilityCutoff := 0.65;
 
 
 ###############################################################################

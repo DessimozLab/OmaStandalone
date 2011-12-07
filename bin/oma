@@ -44,7 +44,8 @@ fi
 
 cat $OMA_PATH/lib/splashscreen.txt
 echo "libdir := '$OMA_PATH/lib/': \
-e : traperror(eval(parse(ReadRawFile('$pfile')))): \
+e := traperror(eval(parse(ReadRawFile('$pfile')))): \
 if e=lasterror then print('$paramerror'): done: fi: \
+OMA_STANDALONE_VERSION := '[VERSIONNR]': \
 ReadProgram('$OMA_PATH/OMA.drw'): done:" | $OMA_PATH/bin/omadarwin -q 
 

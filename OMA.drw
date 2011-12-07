@@ -332,7 +332,7 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
         if sij=0 or sji=0 then
             t6+1;
             # relax in case of mitochondion genome or synthetic evolution
-            lprint('Warning: empty all-all for', genomes[g1], genomes[g2] ) 
+            warning('empty all-all for '.genomes[g1].' '. genomes[g2] ) 
         fi;
         for k to length(BestMatch[i,j]) do
             if BestMatch[i,j,k] <> [] then
@@ -364,6 +364,19 @@ else
     print('\n\n****\n\nIdentification of Stable-Pairs (Putative Orthologs)\n');
     Ort := OrthologousMatrix( op(params) ):
 
+    if ComputeHierarchicalGroups=true then
+        if SpeciesTreeForReconcilation='estimate' then
+            warning('SpeciesTree estimation not yet implemented. Using star tree');
+            speciesTree := NULL;
+        elif type(SpeciesTreeForReconcilation,string) then
+            speciesTree := ParseNewickTree(SpeciesTreeForReconcilation,
+                'defaultBranchLength'=1):
+            lprint(speciesTree);
+            warning('Partially unresolved species trees are not yet implemented');
+        fi:
+        # call hierarchical group procedure
+        HCL := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));
+    fi:
     # # Retrieve all IDs
     # # Create File MapSeqNum-ID:
     CallSystem('rm -rf Output; mkdir -p Output/PairwiseOrthologs');
@@ -462,6 +475,13 @@ else
         printf('\n');
     od;
     OpenWriting(previous);
+    WriteOrthoXML( Ort, 'Output/OrthologousGroups.orthoxml');
+
+
+    if ComputeHierarchicalGroups=true then
+        WriteOrthoXML( HCL, 'Output/HierarchicalGroups.orthoxml');
+    fi:
+
 fi:
 
 print('\n\n***\n\nDone!!\n\n');

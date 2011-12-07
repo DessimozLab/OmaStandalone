@@ -24,3 +24,5 @@ DistBounds := noeval(ReadLibrary(OrthologsLib.'IdentifyPosition.drw',
 DistBounds));
 
 WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));
+WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
+HierarchicalGroups := noeval(ReadLibrary(OrthologsLib.'HierarchicalGroups', HierarchicalGroups));
