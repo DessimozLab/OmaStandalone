@@ -78,19 +78,19 @@ end:
 
 
 
-BuildSpeciesTree := proc( M:matrix )
-external N, ns, Als;
+BuildSpeciesTree := proc( M_:matrix )
+external N, ns, Als, MinLen;
 
-printf( '# SpeciesTree Reconstruction started\n');
+printf( '\nSpeciesTree Reconstruction started ...\n');
 
 #################################
 # Set unassigned run parameters #
 #################################
-N := length(M[1]):
-lM := length(M):
+N := length(M_[1]):
+lM := length(M_):
 ns := [seq(GS[i,TotEntries],i=genomes)]:
 histog := CreateArray(1..N):
-for i to lM do j := sum( If(z=0,0,1), z=M[i] );  histog[j] := histog[j]+1 od:
+for i to lM do j := sum( If(z=0,0,1), z=M_[i] );  histog[j] := histog[j]+1 od:
 MinLen := 1.e-8:
 Filtering := BestDimless:
 Averaging := AveVarWeighted:
@@ -101,20 +101,20 @@ TopOGpercentage := max(1,min(100,200/lM)):
 ###################################################
 # Select at least the top 1% most complete groups #
 ###################################################
+M := []:
 for ToCompl to N
     while sum(histog[-ToCompl..-1]) < TopOGpercentage * sum(histog)/100 do od:
 printf( '# keeping the top %d largest orthologs groups with %a\n', ToCompl,
     histog[-ToCompl..-1] );
 for i to lM do
-    if sum(If(z=0,0,1), z=M[i]) <= N-ToCompl then
-	for j to N do M[i,j] := 0 od fi
+    if sum(If(z=0,0,1), z=M_[i]) > N-ToCompl then
+        M := append(M, M_[i]); 
+    fi:
 od:
-
+lM := length(M):
 
 Als := CreateArray(1..lM):
-for i to lM do if {op(M[i])} <> {0} then
-    Als[i] := CreateArray(1..N,1..N) 
-fi od:
+for i to lM do Als[i] := CreateArray(1..N,1..N) od:
 
 ####################################################################
 # Cross reference to find the Orthologs row where an entry appears #
@@ -154,8 +154,8 @@ for i to lM do
     fi od;
     if {op(M[i])} <> {0} then groups := append(groups,i) fi
 od:
-printf( '%d orthologous groups before Filtering=%s, %s, %s\n',
-	length(groups), Filtering, Averaging, Class );
+printf( '%d orthologous groups before Filtering=%s, %s\n',
+	length(groups), Filtering, Averaging );
 
 if member(Averaging,{Arithmetic,Weighted,LengthWeighted,ScoreWeighted}) then
 elif member(Averaging,{AveVarWeighted,AveLengthWeighted,AveScoreWeighted}) then
@@ -185,6 +185,8 @@ fi:
 #############################################
 # Do the actual orthologous group selection #
 #############################################
+curPrintLevel := printlevel:
+printlevel := 0;
 if length(groups) < 2 then
      error('too few groups to build species tree'); 
 
@@ -212,6 +214,7 @@ printf( '%d orthologous groups after Filtering=%s, %s, %s\n',
 CompleteBestTree := TreeFromGroups(groups):
 besttree := CompleteBestTree[3]:
 minbr := min(max(CompleteBestTree[4],0.05),2):
+printlevel := curPrintLevel;
 
 return( besttree ):
 end:
