@@ -1,0 +1,220 @@
+#        Make a species tree based on the distance of sequences
+#        generated from orthologous groups.
+#
+#	 Compute the average distance according to the Averaging
+#	 criteria.
+#
+#                                          Adrian Altenhoff 
+#                         based on TreeMaker by Gaston H. Gonnet 
+#
+
+module external BuildSpeciesTree;
+local Averaging, N, ns, Als;
+
+AlignSum := proc( Entry1:posint, Entry2:posint,
+        Score:positive, PamDistance:positive,
+        Range1:posint..posint, Range2:posint..posint,
+        PamVariance:positive, Gen1:posint, Gen2:posint,
+        Other:anything
+        ) option NoIndexing, polymorphic;
+if nargs < 9 or nargs > 10 then error('incorrect number of fields')
+else noeval(procname(args)) fi end:
+AlignSum_type := noeval({
+    AlignSum(posint, posint, positive, positive, posint..posint,
+        posint..posint, positive, posint, posint, anything),
+    AlignSum(posint, posint, positive, positive, posint..posint, 
+        posint..posint, positive, posint, posint)}):
+
+CompleteClass(AlignSum);
+
+
+AverageDistVar := proc( )
+if not type([args],list(AlignSum)) then error('invalid arguments')
+elif nargs=0 then [ 100, 1e10 ]
+elif nargs=1 then [args[1,PamDistance],args[1,PamVariance]]
+elif Averaging = 'Arithmetic' then
+     [ sum(z[PamDistance],z=[args]) / nargs,
+       sum(z[PamVariance],z=[args]) / nargs^2 ]
+
+elif Averaging = 'Weighted' then
+     w := sum(1/z[PamVariance],z=[args]);
+     [ sum(z[PamDistance]/z[PamVariance],z=[args]) / w, 1/w ]
+
+elif Averaging = 'LengthWeighted' then
+     w := [seq( z[Range1,2]-z[Range1,1]+z[Range2,2]-z[Range2,1]+2, z=[args] )];
+     sw := sum(w);
+     [ sum( args[i,PamDistance]*w[i], i=1..nargs ) / sw,
+       sum( args[i,PamVariance]*w[i]^2, i=1..nargs ) / sw^2 ]
+
+elif Averaging = 'ScoreWeighted' then
+     sw := sum(z[Score],z=[args]);
+     [ sum( z[PamDistance]*z[Score], z=[args] ) / sw,
+       sum( z[PamVariance]*z[Score]^2, z=[args] ) / sw^2 ]
+
+else 
+    for z in [args] do if not type(z['Other'],positive) then
+        error( 'Averaging mode:', Averaging,
+	    'and the field Other is not positive:', z['Other'] ) fi od;
+    sw := sum(z['Other'],z=[args]);
+    [ sum( z[PamDistance]*z['Other'], z=[args] ) / sw,
+      sum( z[PamVariance]*z['Other']^2, z=[args] ) / sw^2 ]
+fi
+end:
+
+###################################################
+# Select best Distance tree for Dist/Var matrices #
+###################################################
+TreeFromGroups := proc( gr:list(posint) )
+    Dist := CreateArray(1..N,1..N);
+    Var := CreateArray(1..N,1..N);
+    for i to N do for j from i+1 to N do
+	r := AverageDistVar( seq( If(Als[z,i,j]=0,NULL,Als[z,i,j]), z=gr ));
+	Dist[i,j] := Dist[j,i] := r[1];
+	Var[i,j] := Var[j,i] := r[2];
+    od od;
+    t := LeastSquaresTree( Dist, Var, genomes, Trials=30 );
+    [ MST_Qual, DimensionlessFit, t, Dist, Var ]
+end:
+
+
+
+BuildSpeciesTree := proc( M:matrix )
+external N, ns, Als;
+
+printf( '# SpeciesTree Reconstruction started\n');
+
+#################################
+# Set unassigned run parameters #
+#################################
+N := length(M[1]):
+lM := length(M):
+ns := [seq(GS[i,TotEntries],i=genomes)]:
+histog := CreateArray(1..N):
+for i to lM do j := sum( If(z=0,0,1), z=M[i] );  histog[j] := histog[j]+1 od:
+MinLen := 1.e-8:
+Filtering := BestDimless:
+Averaging := AveVarWeighted:
+TopOGpercentage := max(1,min(100,200/lM)):
+
+
+
+###################################################
+# Select at least the top 1% most complete groups #
+###################################################
+for ToCompl to N
+    while sum(histog[-ToCompl..-1]) < TopOGpercentage * sum(histog)/100 do od:
+printf( '# keeping the top %d largest orthologs groups with %a\n', ToCompl,
+    histog[-ToCompl..-1] );
+for i to lM do
+    if sum(If(z=0,0,1), z=M[i]) <= N-ToCompl then
+	for j to N do M[i,j] := 0 od fi
+od:
+
+
+Als := CreateArray(1..lM):
+for i to lM do if {op(M[i])} <> {0} then
+    Als[i] := CreateArray(1..N,1..N) 
+fi od:
+
+####################################################################
+# Cross reference to find the Orthologs row where an entry appears #
+####################################################################
+Row := CreateArray(1..N,[]):
+for i to N do
+    Row[i] := CreateArray(1..ns[i]);
+    for j to lM do if M[j,i] <> 0 then Row[i,M[j,i]] := j fi od
+od:
+
+for i to N do for j from i+1 to N do for k to ns[i] do 
+    if BestMatch[i,j,k]=[] then next fi:
+    r := Row[i,k];
+    if r > 0 then
+        for z in decompress(BestMatch[i,j,k]) do
+            if Row[j,z['Entry']]=r then 
+                Als[r,i,j] := Als[r,j,i] := AlignSum(k, z['Entry'], 
+                    z['Score100']/100, z['PamDist10000']/10000, 
+                    z['r1',1]..z['r1',2], z['r2',1]..z['r2',2], 
+                    z['PamVar100000']/100000, i, j, 0);
+            fi:
+        od:
+    fi:
+od od od:
+
+
+####################################################
+# Initial orthologous groups that will participate #
+####################################################
+groups := []:
+for i to lM do
+    for i1 to N do if M[i,i1] > 0 then
+	for i2 from i1+1 to N do
+	    if M[i,i2] > 0 and not type(Als[i,i1,i2],AlignSum) then
+		error(i,i1,i2,M[i],'missing alignment') fi
+	od
+    fi od;
+    if {op(M[i])} <> {0} then groups := append(groups,i) fi
+od:
+printf( '%d orthologous groups before Filtering=%s, %s, %s\n',
+	length(groups), Filtering, Averaging, Class );
+
+if member(Averaging,{Arithmetic,Weighted,LengthWeighted,ScoreWeighted}) then
+elif member(Averaging,{AveVarWeighted,AveLengthWeighted,AveScoreWeighted}) then
+     for ig in groups do
+	 Alsi := Als[ig];
+	 w1 := w0 := 0;
+	 for i1 to N do for i2 from i1+1 to N do if type(Alsi[i1,i2],AlignSum) then
+	     if Averaging=AveVarWeighted then
+	          w1 := w1 + Alsi[i1,i2,PamVariance];
+	     elif Averaging=AveLengthWeighted then
+		  r1 := Alsi[i1,i2,Range1];
+		  r2 := Alsi[i1,i2,Range2];
+	          w1 := w1 + r1[2]-r1[1]+r2[2]-r2[1]+2
+	     elif Averaging=AveScoreWeighted then
+	          w1 := w1 + Alsi[i1,i2,Score];
+	     else lprint('invalid Averaging mode:',Averaging);  done fi;
+	     w0 := w0+1
+	 fi od od;
+	 w1 := If( Averaging=AveVarWeighted, w0/w1, w1/w0 );
+	 for i1 to N do for i2 to N do if type(Alsi[i1,i2],AlignSum) then
+	     Alsi[i1,i2,Other] := w1
+	 fi od od;
+     od
+else lprint('invalid Averaging mode:',Averaging);  done
+fi:
+
+#############################################
+# Do the actual orthologous group selection #
+#############################################
+if length(groups) < 2 then
+     error('too few groups to build species tree'); 
+
+elif Filtering='BestSubset' then
+     printlevel := 4;
+     t := BestSubset( {op(groups)}, x -> TreeFromGroups([op(x)])[2],
+	MinSize=round(length(groups)/2) );
+     printlevel := 0;
+     groups := [op(t)];
+
+elif Filtering='BestDimless' then
+     # remove the bottom 20% of those groups which when removed
+     # improve the MST_Qual by the most (MST_Qual for a consistent
+     # set of data should be identical to the Dimensionless index)
+     RemoveOne := proc( i:posint )
+	TreeFromGroups( [op( {op(groups)} minus {i} )] )[2] end:
+     groups := sort( groups, RemoveOne );
+     groups := groups[ round(length(groups)/5)..-1 ];
+else error(Filtering,'is an invalid mode');  fi:
+
+printf( '%d orthologous groups after Filtering=%s, %s, %s\n',
+	length(groups), Filtering, Averaging, Class );
+
+
+CompleteBestTree := TreeFromGroups(groups):
+besttree := CompleteBestTree[3]:
+minbr := min(max(CompleteBestTree[4],0.05),2):
+
+return( besttree ):
+end:
+
+
+end: #module

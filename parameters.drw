@@ -59,8 +59,8 @@ ComputeHierarchicalGroups := true;
 # by setting the SpeciesTreeForReconcilation variable to 'estimate',
 # or a (partially resolved) tree can be given in Newick format. The 
 # estimation step needs again additional computing time.
-SpeciesTreeForReconcilation := '((mouse,mouse2),human,dog);';
-#SpeciesTreeForReconcilation := 'estimate';
+SpeciesTreeForReconcilation := 'estimate';
+#SpeciesTreeForReconcilation := '((mouse,mouse2),human,dog);';
 
 # The cutoff of 'average reachability within two steps' defines up to
 # what point a cluster is split into sub-clusters.

@@ -26,3 +26,4 @@ DistBounds));
 WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
 HierarchicalGroups := noeval(ReadLibrary(OrthologsLib.'HierarchicalGroups', HierarchicalGroups));
+BuildSpeciesTree := noeval(ReadLibrary(OrthologsLib.'TreeBuilding', BuildSpeciesTree));

@@ -366,8 +366,7 @@ else
 
     if ComputeHierarchicalGroups=true then
         if SpeciesTreeForReconcilation='estimate' then
-            warning('SpeciesTree estimation not yet implemented. Using star tree');
-            speciesTree := NULL;
+            speciesTree := BuildSpeciesTree( Ort );
         elif type(SpeciesTreeForReconcilation,string) then
             speciesTree := ParseNewickTree(SpeciesTreeForReconcilation,
                 'defaultBranchLength'=1):
@@ -480,6 +479,11 @@ else
 
     if ComputeHierarchicalGroups=true then
         WriteOrthoXML( HCL, 'Output/HierarchicalGroups.orthoxml');
+        if SpeciesTreeForReconcilation='estimate' then
+            OpenWriting('Output/EstimatedSpeciesTree.nwk');
+            printf('%A;\n', Tree_Newick(speciesTree));
+            OpenWriting(previous):
+        fi:
     fi:
 
 fi:
