@@ -1,0 +1,111 @@
+Set(quiet):
+
+Set(gc=5e7):  
+SetRandSeed():  
+Set(printgc=false);
+##############################################################################
+
+printlevel := 2;
+
+
+genomes := [BRAFL,DANRE,LOTGI,HELRO,CIOIN,CIOSA,CAPI1,NEMVE,DROME,CAEEL,HUMAN,
+            DICDI, LEIIN, MYCGR, TRIAD, APIME, MONBE,USTMA];
+N := length(genomes);
+
+wdir := '/home/darwin/Repositories/OMA/';
+allalldir := '/home/darwin/Orthologues/AllAll/';
+ReadProgram(wdir.'/lib/darwinit');
+
+##############################################################################
+# compute map 
+map := CreateArray(1..length(genomes)):
+ns := CreateArray(1..N):
+nsl := CreateArray(1..N):
+for g to N do
+
+    DB1 := ReadDb(GenomeFileName[genomes[g]]);
+    ns[g] := DB1[TotEntries];
+    DB2 := ReadDb('Cache/DB/'.genomes[g].'.db');
+    nsl[g] := DB2[TotEntries];
+
+    tmp := CreateArray(1..DB1[TotEntries]):
+    last := 1;
+    # the assumption is that the order is unchanged
+    for i to DB1[TotEntries] do
+        s := Sequence(Entry(i)):
+        DB := DB2;
+        res := SearchSeqDb(s);
+        r := op(res);
+        if r[1] = r[2] then
+            t := GetEntryNumber(Entry(res));
+            if t - last > 10 then
+                 lprint('Warning: more than 10 entries skipped between',    
+                         last, 'and', l[off+1]);
+            fi;
+            tmp[i] := last := t;
+        elif r[1] < r[2] then
+            l := sort([seq(GetEntryNumber(i),i=[Entry(res)])]);
+            off := SearchOrderedArray(last,l);
+            if off+1 <= length(l) then
+                if l[off+1] - last > 10 then
+                     lprint('Warning: more than 10 entries skipped between', 
+                             last, 'and', l[off+1]);
+                fi;
+                tmp[i] := last := l[off+1];
+            fi;
+        fi;
+        DB := DB1;
+    od;
+    map[g] := tmp;
+od:
+
+
+##############################################################################
+# read the AxA files, rewrite the 
+RefinedMatches := proc(ms)
+    global out;
+    tmp := [];
+    for i to length(ms) do
+        ms[i,1] := map[g1,ms[i,1]];
+        ms[i,2] := map[g2,ms[i,2]];
+        # we might switch order of IDs if the order of genomes has changed!
+        if switchOrder then 
+            t := ms[i,1]; ms[i,1] := ms[i,2]; ms[i,2] := t; 
+        fi;
+        if ms[i,1] <> 0 and ms[i,2] <> 0 then
+            tmp := append(tmp,ms[i]);
+        fi;
+        if length(tmp) > 100 then
+            out := append(out,sprintf('RefinedMatches(%A);\n',tmp));
+            tmp := [];
+        fi;
+    od;
+    out := append(out,sprintf('RefinedMatches(%A);\n',tmp));
+end:
+
+
+for i to length(genomes) do 
+    for j from i to length(genomes) do
+        if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+            g1 := i;  g2 := j else g2 := i;  g1 := j 
+        fi;
+        if nsl[i] < nsl[j] or nsl[i]=nsl[j] and genomes[i] < genomes[j] then
+            lg1 := i;  lg2 := j else lg2 := i;  lg1 := j 
+        fi;
+        #
+        fn := allalldir. '/'. genomes[g1] . '/' . genomes[g2];
+        if length(FileStat('Cache/AllAll/' 
+            . genomes[lg1].'/'.genomes[lg2].'.gz'))>0 then
+            next;
+        fi;
+        switchOrder := If(g1=lg1,false,true);
+        out := [];
+        ReadProgram(fn):
+        CallSystem('mkdir -p Cache/AllAll/' . genomes[lg1]);
+        OpenWriting('Cache/AllAll/' . genomes[lg1].'/'.genomes[lg2]);
+        prints(ConcatStrings(out));
+        OpenWriting(previous);
+        CallSystem('gzip -9f '.'Cache/AllAll/'.genomes[lg1].'/'.genomes[lg2]);
+    od;
+od:
+

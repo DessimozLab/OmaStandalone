@@ -1,0 +1,71 @@
+MINGENOMES := 10;
+
+
+tmp := TimedCallSystem('find Output/OrthologousGroupsFasta/ -name "*.afa"')[2];
+aF := SearchDelim('\n',tmp);
+
+index := table(0);
+out := [];
+emptyrow := [];
+for f in aF do
+    speciesSeen := CreateArray(1..length(out),false);
+    al := ReadFastaWithNames(f);
+    len := length(al[1,1]);
+    if length(al[1]) < MINGENOMES then next fi;
+    if len = 0 then
+        lprint('Warning: empty alignment in file',f);
+        next;
+    fi;
+    for i to length(al[1]) do
+        if length(al[1,i]) <> len then
+            error('Unequal sequence lengths in '.f);
+        fi;
+        ind := index[al[2,i]];
+        if ind <> 0 then
+           # this species exists!
+           speciesSeen[ind] := true;
+           out[ind] := append(out[ind],al[1,i]);
+        else
+           # we must add a new species to the matrix
+           out := append(out,CreateArray(1..0));
+           ind := index[al[2,i]] := length(out);
+           out[ind] := append(out[ind],op(emptyrow),al[1,i]);
+           speciesSeen := append(speciesSeen,true);
+        fi;
+    od;
+    # we need to add gaps for the sequences not seen:
+    for i to length(out) do
+        if not speciesSeen[i] then
+            out[i] := append(out[i], CreateString(len,'-'));
+        fi;
+    od;
+    emptyrow := append(emptyrow,CreateString(len,'-'));
+od:
+
+# sanity check -> all lengths are the same
+for i from 2 to length(out) do
+    if length(out[i]) <> length(out[i-1]) then
+        error('number of sequences appended do not match across species!!');
+    fi;
+od;
+lprint('The concatenated alignment contains',length(out[1]),'markers');
+lprint('The length of the concatenated alignment is',
+     length(ConcatStrings(out[1])), 'AA.');
+
+Set('printgc'=false);
+
+# Write concatinated alignment out!
+OpenWriting('Output/ConcatAlign.afa');
+for i in Indices(index) do
+    printf('>%s\n%s\n',i,ConcatStrings(out[index[i]]));
+od;
+OpenWriting(previous);
+
+
+
+OpenWriting('Output/ConcatAlign.phy');
+printf('%d %d\n',length(out),length(ConcatStrings(out[1])));
+for i in Indices(index) do
+    printf('%-40.40s %s\n',i,ConcatStrings(out[index[i]]));
+od;
+OpenWriting(previous);

@@ -1,0 +1,18 @@
+wdir := '/home/darwin/Repositories/OMA/';
+#listgenomes := [BRAFL,DANRE,LOTGI,HELRO,CIOIN,CIOSA,CAPI1,NEMVE,DROME,CAEEL,HUMAN];
+#listgenomes := [DICDI, LEIIN, MYCGR, TRIAD, APIME];
+#listgenomes := [TRIAD,MONBE,USTMA];
+listgenomes := [BRAFL,DANRE,LOTGI,HELRO,CIOIN,CIOSA,CAPI1,NEMVE,DROME,CAEEL,HUMAN,
+            DICDI, LEIIN, MYCGR, TRIAD, APIME, MONBE,USTMA];
+ReadProgram(wdir.'/lib/darwinit');
+Set(printgc=false);
+CallSystem('mkdir -p DB');
+for g in listgenomes do
+    ReadDb(GenomeFileName[g]):
+    lprint('Writing',g);
+    OpenWriting('DB/'.g.'.fa');
+    for i to DB[TotEntries] do
+        printf('>%d|%s\n%s\n',i,op(ID(Entry(i))),Sequence(Entry(i)));
+    od;
+    OpenWriting(previous);
+od:

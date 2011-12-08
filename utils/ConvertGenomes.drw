@@ -1,0 +1,14 @@
+wdir := '/home/darwin/Orthologues/';
+listgenomes := [BRAFL,DANRE,LOTGI,HELRO,CIOIN,CIOSA,CAPI1,NEMVE,DROME,CAEEL,HUMAN];
+ReadProgram(wdir.'/lib/darwinit');
+Set(printgc=false);
+CallSystem('mkdir -p DB');
+for g in listgenomes do
+    ReadDb(GenomeFileName[g]):
+    lprint('Writing',g);
+    OpenWriting('DB/'.g.'.fa');
+    for i to DB[TotEntries] do
+        printf('>%d|%s\n%s\n',i,op(ID(Entry(i))),Sequence(Entry(i)));
+    od;
+    OpenWriting(previous);
+od:
