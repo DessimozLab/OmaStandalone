@@ -6,8 +6,8 @@
 #
 #                     Adrian Altenhoff, Nov 2011
 
-#module external HierarchicalGroups;
-#local GenomeOffs;
+module external HierarchicalGroups;
+local GenomeOffs;
 
 GetOrthologyGraphFromVPsFile := proc(eNr:posint)
     NG := length(VPairs):
@@ -279,7 +279,8 @@ HierarchicalGroups := proc( ;(alpha=.65):positive,
         if protSeen[p]='1' then next fi:
         
         G := GetOrthologyGraphFromVPsFile(p):
-        for u in G[Nodes] do protSeen[u]:='1'; cnt := cnt+1; od:
+        nNodes := length(G['Nodes']);
+        for u in G['Nodes'] do protSeen[u]:='1'; cnt := cnt+1; od:
         topClusters := FindClusters( G, alpha ):
         for c in topClusters do
             if length(c[Nodes])=1 then next fi: # singletons will be left out
@@ -288,10 +289,11 @@ HierarchicalGroups := proc( ;(alpha=.65):positive,
             h := HierarchyR( c, th, topLevelNr, alpha ):
             HCL := append(HCL, h):
         od:
-        printf('Analysis of %d (CC of %d) done (%.2f%%)\n', cNr, 
-            length(G['Nodes']), 100*cnt/NP);
+        printf('CC of %d proteins done (%.2f%%)\n', nNodes, 100*cnt/NP);
     od:
+    printf('Hierarchical Group computation finished. \n');
+    printf('  Found %d toplevel groups\n\n', cNr);
     return( HCL ):
 end:
 
-#end: #module
+end: #module

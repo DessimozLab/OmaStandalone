@@ -365,6 +365,7 @@ else
     Ort := OrthologousMatrix( op(params) ):
 
     if ComputeHierarchicalGroups=true then
+        printlevel := 1:
         if SpeciesTreeForReconcilation='estimate' then
             speciesTree := BuildSpeciesTree( Ort );
         elif type(SpeciesTreeForReconcilation,string) then
