@@ -1,0 +1,20 @@
+db := 'DB/Smansoni.fa';
+dbout := db.'.clean';
+
+tmp := ReadFastaWithNames(db):
+c1 := Counter('sequence with 1 stop codon (char replaced)'):
+c2 := Counter('sequence with >1 stop codons (seq discarded)'):
+OpenWriting(dbout);
+for i to length(tmp[1]) do
+    l :=  length(SearchAllString('*',tmp[1,i]));
+    if l = 1 then
+        c1 := c1+1;
+        tmp[1,i] := ReplaceString('*','X',tmp[1,i]);
+    elif l > 1 then
+        c2 := c2+1;
+        next;
+    fi;
+    printf('>%s\n%s\n',tmp[2,i],tmp[1,i]);
+od:
+OpenWriting(previous);
+print(c1,c2);

@@ -203,6 +203,14 @@ for g1 to length(genomes) do
 
         # Phase 1
         CallSystem('mkdir -p Cache/AllAll/'.name1);
+        # skip if 1-chunk archive already present (import from OMA AxA)
+        fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
+        if length(FileStat(fn1chunk))>0 then 
+            printf('Pair %s/%s already computed (probably imported). Skipped.\n',
+                name1, name2 );
+            next;
+        fi;
+
         partLen := ceil( n1/NP ); 
         for part to NP do
             c1 := c1+1;
@@ -319,11 +327,17 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
         BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
         t3+1;
         Exclude1 := Exclude2 := {}:
-        for part to NP do 
-            fn := sprintf('Cache/AllAll/%s/%s_%d-%d', genomes[g1], genomes[g2],
-                part, NP);
-            ReadProgram( fn );
-        od:
+        # if there exist a 1-chunk archive, process it with higher priority
+        fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
+        if length(FileStat(fn1chunk)) > 0 then
+            ReadProgram(fn1chunk);
+        else
+            for part to NP do 
+                fn := sprintf('Cache/AllAll/%s/%s_%d-%d',genomes[g1],genomes[g2],
+                    part, NP);
+                ReadProgram( fn );
+            od:
+        fi;
         # no Pairs should be cut for being below the Scoretol, as those
         # may serve to break a stable pair
         sij := sum(length(BestMatch[i,j,k]), k=1..length(BestMatch[i,j]));
@@ -395,6 +409,7 @@ else
 
     ############################################################################
     # Store results
+    Set('printgc'=false);
     print('\n\n****\n\nStoring results\n');
 
     if lasterror <> 'lasterror' then
@@ -473,9 +488,26 @@ else
         printf('\n');
     od;
     OpenWriting(previous);
+    
+    # store orthologous groups in orthoxml format
     WriteOrthoXML( Ort, 'Output/OrthologousGroups.orthoxml');
 
-
+    # store all orthologous groups in fasta format
+    CallSystem('mkdir Output/OrthologousGroupsFasta');
+    for r to length(Ort) do
+        OpenWriting(sprintf('Output/OrthologousGroupsFasta/OG%d.fa',r));
+        for l to N do
+            if Ort[r,l] <> 0 then
+                DB := DBs[l];
+                e := Entry(Ort[r,l]);
+                printf('>%s\n%s\n',
+                    genomes[l], SearchTag('SEQ',Entry(e)) );
+            fi;
+        od;
+        OpenWriting(previous);
+    od:
+    
+    # store hierarchical groups if computed
     if ComputeHierarchicalGroups=true then
         WriteOrthoXML( HCL, 'Output/HierarchicalGroups.orthoxml');
         if SpeciesTreeForReconcilation='estimate' then
@@ -488,4 +520,3 @@ else
 fi:
 
 print('\n\n***\n\nDone!!\n\n');
-done;
