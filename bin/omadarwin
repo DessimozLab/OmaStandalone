@@ -1,11 +1,12 @@
 #!/bin/bash
 
 DARWIN_PATH=$(dirname $0)
-DARWIN_LIB="$DARWIN_PATH/../darwinlib"
-if [ -e $DARWIN_PATH/../darwinlib/darwinit ]
+# convert relative to absolute path
+if [ ${DARWIN_PATH:0:1} != "/" ]
 then
-    DARWIN_LIB="$DARWIN_PATH/../darwinlib"
+    DARWIN_PATH="$PWD/$DARWIN_PATH"
 fi
+DARWIN_LIB="$DARWIN_PATH/../darwinlib"
 
 machine=$(uname -m)
 os=$(uname -s)

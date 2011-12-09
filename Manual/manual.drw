@@ -193,11 +193,37 @@ OMA')),
         Paragraph(0, 'To get a first impression of ', TT('OMA'), ' you 
         could ', TT('cd'), ' into the ', TT('ToyExample'), ' directory, 
         have a look at ', TT('parameters.drw'), ' and run ', TT('OMA'),
-        ' to process our example files.')
+        ' to process our example files.'),
+        
+        Anchor(TextBlock('a', name='parallelization', 
+            SectionHeader(2, 'Parallelization'))
+        ),
+
+        Paragraph(0, 'The all-against-all phase of OMA is the most time-',
+        'consuming one, but it can be parallelized (unlike all other steps, ',
+        'which cannot run in parallel). The way it works is that the ',
+        'parameter "NP" and the ',
+        'total number of genomes (n) will determine into how many chunks the ',
+        'all-against-all phase is divided. If NP=1, there will be n*(n-1)/2 ',
+        'parts, if NP is higher, there will be more (shorter) jobs.'),
+        
+        Paragraph(0, 'Now, scheduling is straightforward: all compute processes ',
+        'need to start from the same directory, and will try to do all the ',
+        'chunks sequentially. However, before starting a new chunk, each ',
+        'process ensures that it has not yet been claimed/processed by another ',
+        'process (i.e. no result file yet exists).'),
+        
+        Paragraph(0, 'Therefore, there is not need to specify which parts are ',
+        'to be done by which process. One should only ensure that all processes ',
+        'start from a shared directory, such that each chunk gets ',
+        'computed by a single process only.'
+        )
+        
         ]:
 
 # INPUT FORMATS
-iformat := [ Anchor(TextBlock('a', name='iformat', 
+iformat := [ 
+            Anchor(TextBlock('a', name='iformat', 
                 SectionHeader(2, 'Input Files'))
             ),
             Paragraph(0, 'OMA uses two different input formats: FASTA files for 

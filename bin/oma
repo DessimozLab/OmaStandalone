@@ -3,6 +3,12 @@
 # $OMA_PATH points to the folder containing the current
 # version of OMA.
 OMA_PATH=$(dirname $0)/..
+# convert relative to absolute path
+if [ ${OMA_PATH:0:1} != "/" ]
+then
+    OMA_PATH="$PWD/$OMA_PATH"
+fi
+
 
 pfile="parameters.drw"
 wdir="./"
