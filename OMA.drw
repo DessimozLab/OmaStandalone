@@ -371,8 +371,6 @@ else
         elif type(SpeciesTreeForReconcilation,string) then
             speciesTree := ParseNewickTree(SpeciesTreeForReconcilation,
                 'defaultBranchLength'=1):
-            lprint(speciesTree);
-            warning('Partially unresolved species trees are not yet implemented');
         fi:
         # call hierarchical group procedure
         HCL := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));

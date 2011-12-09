@@ -142,28 +142,34 @@ TaxHierarchy := proc(Levs,Up,Down,Memb) option noindex;
     elif nargs=1 and type(args[1], Tree) then
         # local function to traverse tree and extract info. 
         # memb, up, down need to be defined and will be modified.
-        trav:=proc(t:Tree, memb,down,up ; (idx=1):posint)
+        trav:=proc(t:Tree, memb,down,up ; (idx=1):posint, h0:numeric)
             if type(t,Leaf) then 
                 memb[idx] := {SearchArray( t['Label'], genomes)}:
-                return( idx );
+                return( {idx} );
             else
-                deltaLH := t[Left,'Height']-t['Height'];
-                deltaRH := t[Right,'Height']-t['Height'];
-                lT := trav(t[Left], memb,down,up, idx);
-                rT := trav(t[Right],memb,down,up, lT+1);
-                i := rT+1;
-                memb[i] := union(memb[lT], memb[rT]):
-                down[i] := {lT,rT};
-                up[lT] := up[rT] := i;
-                return( i );
+                lT := trav(t[Left], memb,down,up, idx, t['Height']);
+                rT := trav(t[Right],memb,down,up, lT[-1]+1,t['Height']);
+                if not assigned(h0) or |t['Height']-h0| > 1e-10 then
+                    i := rT[-1]+1;
+                    down[i] := union(lT,rT);
+                    memb[i] := union(seq(memb[z],z=down[i]));
+                    for z in down[i] do up[z] := i od:
+                    return({i});
+                else 
+                    return(union(lT,rT))
+                fi:
             fi:
         end:
         Nnds := 2*length(genomes)-1;
         memb := CreateArray(1..Nnds,{}):
         up := CreateArray(1..Nnds):
         down := CreateArray(1..Nnds,{}):
+        iLUCA := trav( args[1], memb, down, up )[1]:
+        # shorten vectors to required length
+        Nnds := iLUCA; 
+        memb := memb[1..Nnds]; up := up[1..Nnds]; down:=down[1..Nnds];
+
         levs := CreateArray(1..Nnds):
-        iLUCA := trav( args[1], memb, down, up ):
         levs[iLUCA] := 'LUCA';
         for i to Nnds do if i<>iLUCA then 
             levs[i] := ConcatStrings([seq(genomes[z],z=memb[i])],'/');
