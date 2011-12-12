@@ -20,7 +20,7 @@ ReuseCachedResults := true;
 # number of parts into which a genome pair is split. This allows for 
 # shorter milestone steps (e.g. in case of computer crash) and allows 
 # to parallelize jobs with few but large genomes.
-NP := 64;
+NP := 4;
 
 # alignments which have a score lower than MinScore will not be considered.
 # The scores are in Gonnet PAM matrices units.
@@ -52,15 +52,15 @@ MinSeqLen := 50;
 # You can either set it to 'true', which will enable the computation or 
 # disable it by setting it to 'false'. Keep in mind that the current
 # implementation is not yet parallelized and hence needs quite some time.
-ComputeHierarchicalGroups := true;
+DoHierarchicalGroups := true;
 
 # The hierarchical groups need a hierarchy of the involved species in
 # from of a tree. This tree can either be estimated from the OMA Groups
-# by setting the SpeciesTreeForReconcilation variable to 'estimate',
-# or a (partially resolved) tree can be given in Newick format. The 
-# estimation step needs again additional computing time.
-SpeciesTreeForReconcilation := 'estimate';
-#SpeciesTreeForReconcilation := '((mouse,mouse2),human,dog);';
+# by setting the SpeciesTree variable to 'estimate', or a (partially 
+# resolved) tree can be given in Newick format. The estimation step needs 
+# again additional computing time.
+SpeciesTree := 'estimate';
+#SpeciesTree := '((mouse,mouse2),human,dog);';
 
 # The cutoff of 'average reachability within two steps' defines up to
 # what point a cluster is split into sub-clusters.

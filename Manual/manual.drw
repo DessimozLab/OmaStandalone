@@ -401,18 +401,38 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         away) then it is discarded.'),
                         TT('1.81')),
                     Row(TT('VerifiedPairTol'), 
-                        Paragraph(0, 'Length tolerance ratio. If the length of
-                        the effective alignment is less than ', TT('LengthTol'),
-                        ' * min( length(s1), length(s2) ), then the alignment is
-                        not considered.'),
+                        Paragraph(0, 'Tolerance parameter for the detection of 
+                        differential gene losses using a third genome. The larger 
+                        the tolerance, the liberaler the algorithm assigns 
+                        orthologous relations. A detailed description is provided ',
+                        Link(TextBlock('a', 
+                           href='http://nar.oxfordjournals.org/content/34/11/3309.full', 
+                           'here.'))),
                         TT('1.53')),
                     Row(TT('MinSeqLen'),
                         Paragraph(0, 'Any sequence which is less than ',
                         TT('MinSeqLen'), ' amino acids long in regular genomes
                         is not considered.'),
-                        TT('50'))
+                        TT('50')),
+                    Row(TT('DoHierarchicalGroups'),
+                       Paragraph(0, 'Enables/disables the computation of the 
+                       hierarchical groups. This steps requires substantial 
+                       computating power.'), 
+                       TT('true')),
+                    Row(TT('SpeciesTree'),
+                       Paragraph(0, 'The hierarchical groups require a (partially)
+                       resolved species phylogeny. With the parameter ',
+                       TT('SpeciesTree'), ' the user can specify 
+                       a phylogeny in Newick-format, or, by setting the variable 
+                       to ''estimate'', compute a species tree based on the OMA 
+                       Groups and use this one.'), 
+                       TT('estimate')),
+                    Row(TT('ReachabilityCutoff'),
+                       Paragraph(0,'The cutoff of ''average reachability within 
+                       two steps'' defines up to what point a cluster is split 
+                       into sub-clusters.'), 
+                       TT('0.65'))
                 ),
-                
                 Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
                     title = 'Table 4: ESPRIT parameters',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
@@ -518,6 +538,8 @@ formats := [ Anchor(TextBlock('a', name='fileformats',
 
 # LaTeX output
 OpenWriting('Manual/manual.tex'):
+    prints('% Do not modify this file. It has been automatically ');
+    prints('% created from manual.drw');
     prints( LaTeXC(DocEl('documentclass', 'scrartcl') ) ):
     prints( LaTeXC(DocEl('usepackage', 'hyperref') ) ):
     prints( LaTeXC(DocEl('hypersetup', 'colorlinks,

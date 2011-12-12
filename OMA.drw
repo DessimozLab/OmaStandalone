@@ -378,12 +378,12 @@ else
     print('\n\n****\n\nIdentification of Stable-Pairs (Putative Orthologs)\n');
     Ort := OrthologousMatrix( op(params) ):
 
-    if ComputeHierarchicalGroups=true then
+    if DoHierarchicalGroups=true then
         printlevel := 1:
-        if SpeciesTreeForReconcilation='estimate' then
+        if SpeciesTree='estimate' then
             speciesTree := BuildSpeciesTree( Ort );
-        elif type(SpeciesTreeForReconcilation,string) then
-            speciesTree := ParseNewickTree(SpeciesTreeForReconcilation,
+        elif type(SpeciesTree,string) then
+            speciesTree := ParseNewickTree(SpeciesTree,
                 'defaultBranchLength'=1):
         fi:
         # call hierarchical group procedure
@@ -508,7 +508,7 @@ else
     od:
     
     # store hierarchical groups if computed
-    if ComputeHierarchicalGroups=true then
+    if DoHierarchicalGroups=true then
         WriteOrthoXML( HCL, 'Output/HierarchicalGroups.orthoxml');
         if SpeciesTreeForReconcilation='estimate' then
             OpenWriting('Output/EstimatedSpeciesTree.nwk');
