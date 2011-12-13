@@ -273,9 +273,14 @@ for g1 to length(genomes) do
             OpenAppending(previous);
             # Compress file
             CallSystem('gzip -9f '.fn);
-            printf('Finished %s vs %s (Part %d of %d)\n'.
-                '  %.1f%% of AllAll done, estimated remaining time: %.1fh\n\n',
-                name1,name2,part,NP, 100*c1/tot, drt*sum(totAls[c1..tot])/c2/3600);
+            if c2 > 0 then
+                printf('Finished %s vs %s (Part %d of %d)\n'.
+                '  %.1f%% of AllAll done, estimated remaining time:'
+                .' %.1fh\n\n', name1,name2,part,NP, 
+                100*c1/tot, drt*sum(totAls[c1..tot])/c2/3600);
+            else
+                printf('Finished %s vs %s (Part %d of %d)\n',
+                    name1,name2,part,NP);
         od: 
     od; 
 od:
