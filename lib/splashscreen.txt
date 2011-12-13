@@ -25,6 +25,14 @@
       first achievements", RECOMB-CG 2005, LNCS 3678, Springer, 2005
 
       Roth et al., "Algorithm of OMA for large-scale ortholgoy inference", BMC
-      Bioinformatics, 2008
+      Bioinformatics, 2008, 9:518
+
+
+      If you use ESPRIT, please cite:
+
+      Dessimoz et al., Comparative genomics approach to detecting split-coding 
+      regions in a low-coverage genome: lessons from the chimaera 
+      Callorhinchus milii (Holocephali, Chondrichthyes). Brief Bioinform, 
+      2011, 12:5
 
 

@@ -82,12 +82,19 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             addition ESPRIT. The software can be installed on Linux (x86, 
             both 64bit and 32bit) and MacOSX (x86, both 32bit and 64bit).'),
             
-            Paragraph(0, 'For more information about OMA and ESPRIT in general, 
-            please have a look at the OMA browser page:'), 
+            Paragraph(0, 'For background info on OMA, 
+            please refer to the OMA browser page:'), 
             
             Paragraph(0, Link(TextBlock('a', 
                 href='http://omabrowser.org/Algorithm.html',
                 'http://omabrowser.org/Algorithm.html'))),
+                
+            Paragraph(0, 'For background info on ESPRIT, 
+            please refer to this article:'), 
+            
+            Paragraph(0, Link(TextBlock('a', 
+                href='http://dx.doi.org/10.1093/bib/bbr038',
+                'http://dx.doi.org/10.1093/bib/bbr038'))),
             
             Paragraph(0, 'If you have specific questions about the installation 
             or the usage of OMA, please contact 
@@ -288,15 +295,11 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
             
             Paragraph(0, 'The output of OMA gets written to files stored in 
             a folder ', TT('Output'), ' in your working directory. There are 
-            three text files plus an additional folder ', 
-            TT('PairwiseOrthologs'), ' that contains one file for each pair of
-            your genome sets.'),
-            
-            Paragraph(0,'The textfiles are organized as described in Table 1.'),
+            text files and folders organized as described in Table 1.'),
             
             Table( hastitlerow, ColAlign('l', 'p{10cm}'),
                     title = 'Table 1: Contents of the OMA output files',
-                    Row(Bold('Filename'), Bold('Contents')),
+                    Row(Bold('Filename or Directory'), Bold('Contents')),
                     Rule,
                     Row(TT('Map-SeqNum-ID.txt'), 
                         Paragraph(0, 'Lists all genes of all datasets  
@@ -312,7 +315,26 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     TT('OrthologousGroups.txt'), '. The groups of orthologs
                     are given as matrix with group per row and one genome
                     per tab-separated column. Numbers refer to entry number as
-                    listed in the file ', TT('Map-SeqNum-ID.txt'), '.'))
+                    listed in the file ', TT('Map-SeqNum-ID.txt'), '.')),
+                    Row(TT('PairwiseOrthologs/'), 
+                    Paragraph(0, 'Each OMA group is provided as a separate
+                    Fasta file, with the species name as identifer. This
+                    format is particularly suitable as starting point for
+                    a phylogenetic reconstruction.')),
+                    Row(TT('OrthologousGroupsFasta/'), 
+                    Paragraph(0, 'Each OMA group is provided as a separate
+                    Fasta file, with the species name as identifer. This
+                    format is particularly suitable as starting point for
+                    a phylogenetic reconstruction.')),
+                    Row(TT('HierarchicalGroups.orthoxml'), 
+                    Paragraph(0, 'The hierarchical groups of orthologs
+                    in OrthoXML format. A detailed description of how
+                    these groups are computed is forthcoming.')),
+                    Row(TT('EstimatedSpeciesTree.nwk'), 
+                    Paragraph(0, 'The inferred species tree on which 
+                    the hierarchical groups inference procedure is based,
+                    in Newick format.'))
+
             ) ,
             
             Paragraph(0, 'The textfiles in ', TT('Output/PairwiseOrthologs'), 
