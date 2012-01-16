@@ -42,6 +42,8 @@ else
     ReadProgram('lib/darwinit'):
 fi:
 
+ReadProgram('utils/BBH.drw');
+
 # Convert FASTA databases to darwin databases
 print('Starting database conversion and checks...');
 
@@ -281,6 +283,7 @@ for g1 to length(genomes) do
             else
                 printf('Finished %s vs %s (Part %d of %d)\n',
                     name1,name2,part,NP);
+            fi:
         od: 
     od; 
 od:
