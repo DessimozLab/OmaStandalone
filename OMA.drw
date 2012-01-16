@@ -42,8 +42,6 @@ else
     ReadProgram('lib/darwinit'):
 fi:
 
-ReadProgram('utils/BBH.drw');
-
 # Convert FASTA databases to darwin databases
 print('Starting database conversion and checks...');
 
