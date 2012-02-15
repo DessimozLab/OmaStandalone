@@ -46,7 +46,7 @@ fi:
 print('Starting database conversion and checks...');
 
 if not assigned(Datasets) then
-    G := TimedCallSystem('find DB -name "*.fa" -print')[2];
+    G := TimedCallSystem('find -L DB -name "*.fa" -print')[2];
     G := SearchDelim('\n',G);
 else
     G := Datasets;

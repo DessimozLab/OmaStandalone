@@ -1,0 +1,131 @@
+if not assigned(meth) then meth := 'BBH'; fi:
+ReadProgram('parameters.drw');
+ReadProgram('lib/darwinit'):
+CallSystem('mkdir -p '.meth.'-Out/PairwiseOrthologs');
+
+RefinedMatches := proc(
+            ms:list( [posint,posint,numeric,numeric,posint..posint,posint..posint, positive]) )
+    global BestMatch1, BestMatch2, g1, g2;
+    if g1=g2 then return() fi;
+
+    for z in ms do
+        if member(z[1],Exclude1) or member(z[2],Exclude2) or z[3] < MinScore
+        then next fi;
+
+        if Lengths[g1,z[1]] < MinSeqLen then
+            next fi;
+        if Lengths[g2,z[2]] < MinSeqLen then
+            next fi;
+
+        # if we need to enforce a length tolerance (we don't with contigs
+        # this is the minimum length (avoids partial matches):
+        maxl := max(Lengths[g1,z[1]],Lengths[g2,z[2]]);
+        
+        if meth='BBH' then score := z[3];
+        elif meth='RSD' then score := -z[4];
+        else error('unknown method: '.meth.' (in utils/BBH.drw'); 
+        fi:
+        
+        r5 := [op(z[5])];
+        r6 := [op(z[6])];
+        z[5]:= z[5,2]-z[5,1]+1;
+        z[6]:= z[6,2]-z[6,1]+1;
+        sumlengths := z[5]+z[6];
+        if doLenC = true then
+            if min(z[5],z[6]) < LengthTol*maxl then next fi;
+        fi:
+        
+        if (BestMatch1[z[1]]=[] or BestMatch1[z[1],1] < score) and  
+           (BestMatch2[z[2]]=[] or BestMatch2[z[2],1] < score) 
+            then
+        
+            BestMatch1[z[1]] := [score,z[2]];
+            BestMatch2[z[2]] := [score,z[1]];
+        fi:
+    od:
+end:
+
+
+G := TimedCallSystem('find -L DB -name "*.fa" -print')[2];
+G := SearchDelim('\n',G);
+genomes := DBs := [];
+GS := table():
+
+for g in G do 
+    off := SearchAllString('/', g);
+    gname := g[off[-1]+1..-1];
+    off := SearchString('.',gname);
+    gname := gname[1..off];
+    genomes := append(genomes,gname);
+    # test if cached:
+    if length(FileStat('Cache/DB/'.gname.'.db')) > 0 then
+        DB := ReadDb('Cache/DB/'.gname.'.db');
+        if type(DB,database) then
+            GS[gname] := GenomeSummary(DB);
+            DBs := append(DBs,DB);
+            next;
+        fi;
+        lprint('first need to run proper OMA standalone');
+        exit(1);
+    fi;
+od:
+
+N := length(genomes):
+ns := CreateArray(1..N):
+Lengths := CreateArray(1..N):
+for i to N do
+    if GS[genomes[i]]='unassigned' then
+        lprint(genomes[i],'missing GenomeSummary information');  quit fi;
+    t := GS[genomes[i],EntryLengths];
+    ns[i] := length(t);
+    Lengths[i] := t
+od:
+
+if not type(NP,posint) then NP := 1 fi:
+f := parse(TimedCallSystem('find Cache/AllAll -type f | grep -c ".gz"')[2]):
+if f < NP*N*(N-1)/2 then 
+    lprint('not all all-allfiles finished');
+    exit(1);
+fi:
+
+
+IDtable := CreateArray(1..N);
+for i to N do
+    DB := DBs[i];
+    tmp := CreateArray(1..ns[i]);
+    for j to DB[TotEntries] do
+        tmp[j] := SearchTag('ID',Entry(j));
+    od;
+    IDtable[i] := tmp;
+od:
+
+BestMatch := CreateArray(1..N,1..N):
+for i to N do for j from i to N do
+    BestMatch[i,j] := CreateArray(1..ns[i],[]);
+    if j>i then BestMatch[j,i] := CreateArray(1..ns[j],[]) fi;
+    if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+        g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+    BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
+    Exclude1 := Exclude2 := {}:
+    # if there exist a 1-chunk archive, process it with higher priority
+    fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
+    if length(FileStat(fn1chunk)) > 0 then
+        ReadProgram(fn1chunk);
+    else
+        for part to NP do
+            fn := sprintf('Cache/AllAll/%s/%s_%d-%d',genomes[g1],genomes[g2],
+                part, NP);
+            ReadProgram( fn );
+        od:
+    fi;
+    OpenWriting(meth.'-Out/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2].'.txt');
+    for k to ns[g1] do 
+        if (BestMatch1[k]<>[] and BestMatch2[BestMatch1[k,2],2]=k) then
+           printf('%d\t%d\t%s\t%s\t1:1\t\n', k, BestMatch1[k,2], IDtable[g1,k],
+               IDtable[g2,BestMatch1[k,2]]);
+        fi:
+    od:
+    OpenWriting(previous);
+od od:
+
+
