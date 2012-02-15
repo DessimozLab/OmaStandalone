@@ -30,7 +30,7 @@ directory that holds the genome data in fasta format (filename ending with
 fasta file should be called {YourGenome}.contig.fa .
 Then, simply call
 
-  OMA
+  oma
 
 from your working directory to run OMA and/or ESPRIT.
 
@@ -38,7 +38,7 @@ If you have not installed OMA yet, use the complete path to 'bin/oma' in the
 installer folder to start OMA.
 
 To get a first impression of OMA, you could cd into the 'ToyExample' directory,
-have a look at 'parameters.drw' and run 'OMA' to process our example files.
+have a look at 'parameters.drw' and run 'oma' to process our example files.
 
 For more information about OMA and ESPRIT, please have a look at 
 http://omabrowser.org/Algorithm.html .
