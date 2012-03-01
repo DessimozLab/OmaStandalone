@@ -516,7 +516,7 @@ else
     # store hierarchical groups if computed
     if DoHierarchicalGroups=true then
         WriteOrthoXML( HCL, 'Output/HierarchicalGroups.orthoxml');
-        if SpeciesTreeForReconcilation='estimate' then
+        if SpeciesTree='estimate' then
             OpenWriting('Output/EstimatedSpeciesTree.nwk');
             printf('%A;\n', Tree_Newick(speciesTree));
             OpenWriting(previous):
