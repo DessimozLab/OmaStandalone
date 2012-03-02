@@ -518,7 +518,7 @@ else
         WriteOrthoXML( HCL, 'Output/HierarchicalGroups.orthoxml');
         if SpeciesTree='estimate' then
             OpenWriting('Output/EstimatedSpeciesTree.nwk');
-            printf('%A;\n', Tree_Newick(speciesTree));
+            prints( Tree_Newick(speciesTree) .';' );
             OpenWriting(previous):
         fi:
     fi:
