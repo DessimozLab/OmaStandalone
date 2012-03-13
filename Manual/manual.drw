@@ -242,6 +242,19 @@ oma')),
 
         Paragraph(0, 'which starts 100 processes in parallel, with at 
             least one second delay between each of them.'),
+
+        Anchor(TextBlock('a', name='Adding/Updating new genomes', 
+            SectionHeader(2, 'Adding/Updating new genomes'))
+        ),
+        Paragraph(0, 'It is possible to add new genomes without recomputing 
+        the all-against-all phase for pre-existing genomes. To do so, simply
+        add the new fasta databases in the DB/ directory and re-run OMA.
+        Likewise, it is possible to update a genome by deleting the old genome
+        from the DB/ directory, and adding a new file. ', Bold('Important: '), 
+        'to avoid clashes with previously computed results, the updated genome 
+        must use a different filename than the any previously computed 
+        result.') 
+        ,
         
         NULL]:
 
@@ -294,8 +307,8 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
             )),
             
             Paragraph(0, 'The output of OMA gets written to files stored in 
-            a folder ', TT('Output'), ' in your working directory. There are 
-            text files and folders organized as described in Table 1.'),
+            a directory ', TT('Output'), ' in your working directory. There are 
+            text files and directories organized as described in Table 1.'),
             
             Table( hastitlerow, ColAlign('l', 'p{10cm}'),
                     title = 'Table 1: Contents of the OMA output files',
@@ -351,7 +364,7 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                 SectionHeader(3, 'ESPRIT Output')
             )),
             
-            Paragraph(0, 'ESPRIT stores its output files in a folder',
+            Paragraph(0, 'ESPRIT stores its output files in a directory called',
             TT('EspritOutput'), ' in your working directory. The output
             consists of three text files and one tarball. In the tarball,
             FASTA files with the MSAs of the hits ESPRIT found are stored.
