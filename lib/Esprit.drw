@@ -172,13 +172,7 @@ ParseContigHits := proc(arr)
     global DB;
     hits := []: 
     # first, get labels and seq-data of found hits
-    limitcount := 0;
     for i to length(arr) do
-        isPositive := false:
-        if length(arr[i]) > 4 and arr[i,5] = 'isPositive' then
-                isPositive := true:
-        fi:
-        if limitcount > 50 and (not isPositive) then next fi:
         seqs := []:
         labels := []:
         stdfacs := []:
@@ -215,8 +209,7 @@ ParseContigHits := proc(arr)
             DB := DBs[arr[1,1,1]];
             s3set := append(s3set, SearchDelim(';', SearchTag('ID', Entry(e)))[1]);
         od:
-        if not isPositive then limitcount := limitcount + 1 fi:
-        hits := append(hits, [seqs, labels, stdfacs, species, gaps, corder, s3set, isPositive]):
+        hits := append(hits, [seqs, labels, stdfacs, species, gaps, corder, s3set ]):
     od:
 
     # do some polishing on the labels    
@@ -256,7 +249,9 @@ WriteEspritResults := proc()
 
     printf('Write results: params.txt\n');
     OpenWriting(outFolder.'params.txt'):
-        printf('MinSeqLenContig := %a;\nMinProbContig := %a;\nMaxContigOverlap := %a;\nMinBestScore := %a;\nDistConfLevel := %a;\nAllowMultipleHits := %a;\nDatasets := %a;\nStablePairTol := %a;\n\n',
+    printf('MinSeqLenContig := %a;\nMinProbContig := %a;\nMaxContigOverlap := %a;\n'
+        .'MinBestScore := %a;\nDistConfLevel := %a;\nAllowMultipleHits := %a;\n'
+        .'Datasets := %a;\nStablePairTol := %a;\n\n',
                 MinSeqLenContig, MinProbContig,
                 MaxContigOverlap, MinBestScore, DistConfLevel, 
                 AllowMultipleHits, G, StablePairTol);
@@ -271,7 +266,7 @@ WriteEspritResults := proc()
     else
         inconPerc := 100*inconclusive/totalHits:
     fi:
-    printf('%a hits in total; %a (%2.2f%%) are not conclusive.\n\n',
+    printf('%a hits in total; %a (%2.2f%%) are not conclusive ("dubious").\n\n',
             totalHits, inconclusive, inconPerc);
     OpenWriting(previous):
     
@@ -281,17 +276,13 @@ WriteEspritResults := proc()
         printf('# contigs are ordered according to their position relative to the putative ortholog\n');
         printf('# see for fasta files in folder "fasta/%a"\n', fastafolder):
         printf('## fragment-pair\tfirst fragment\tsecond fragment\tcorresponding full gene\tspecies\tdistance difference between fragments\t# positions between fragments\ts3 IDs\n');
-        limit := min(length(hits), 500):
-        limitcount := 0;
         for k to length(hits) do
-            if limitcount = 50 and (not i[8]) then next fi:
             i := hits[k];
             for j to (length(i[2])-2) do
                 printf('%a\t%a\t%a\t%a\t%a\t%a\t%a\t%a',
                     k, i[2,1], i[2,2], i[2,2+j], i[4,j], i[3,j], i[5,j], i[7]);
                 printf('\n');
             od:
-            if not i[8] then limitcount := limitcount + 1 fi:
         od:
         OpenWriting(previous);
     end:
