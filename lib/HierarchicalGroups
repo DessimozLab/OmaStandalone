@@ -79,7 +79,7 @@ FindClusters := proc( G:Graph ;
             length(gr[Edges])):
         fi:
         if AvgReachability( gr )<avgReachCutoff then
-            mc := MinCut(gr, .7):
+            mc := Minimumcut(gr, 20):
             Nmc := length(mc):
             for i from 2 to Nmc do 
                 g := gr minus Nodes( seq(If(j<>i,op(mc[j]),NULL),j=2..Nmc) );
