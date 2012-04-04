@@ -9,6 +9,16 @@
 module external HierarchicalGroups;
 local GenomeOffs;
 
+EdgeScore := proc(g1,n1,g2,n2)
+    m := decompress( BestMatch[g1,g2,n1]);
+    for i to length(m) while m[i,Entry]<>n2 do od:
+
+    if i>length(m) then return( 50 );
+    else return( m[i,Score100]/100 );
+    fi:
+end:
+
+    
 GetOrthologyGraphFromVPsFile := proc(eNr:posint)
     NG := length(VPairs):
     assert( NG = length(GenomeOffs)-1 ):
@@ -32,17 +42,17 @@ GetOrthologyGraphFromVPsFile := proc(eNr:posint)
         fi od:
     od:
 
-    nds := {op(res)}:
+    nds := Nodes(op({op(res)})):
     edg := []:
     for v in nds do 
         gV := SearchOrderedArray(v-1, GenomeOffs); nrV := v-GenomeOffs[gV];
         for gW from gV+1 to NG do 
-            edg := append(edg, seq({v, GenomeOffs[gW]+z}, 
+            edg := append(edg, seq( Edge( EdgeScore(gV,nrV, gW, z), v, GenomeOffs[gW]+z), 
                 z=decompress(VPairs[gV,gW,nrV])));
         od:
     od:
 
-    edg := {op(edg)}:
+    edg := Edges( op({op(edg)}) ):
     return( Graph(edg,nds) ):
 end:
    
@@ -74,18 +84,26 @@ FindClusters := proc( G:Graph ;
     grs := [G]; clst := [];
     while length(grs)>0 do
         gr := grs[1]; grs := grs[2..-1];
-        if printlevel>1 then 
-            printf('Analyse Graph with %d/%d nodes/edges\n', length(gr[Nodes]),
-            length(gr[Edges])):
-        fi:
-        if AvgReachability( gr )<avgReachCutoff then
-            mc := Minimumcut(gr, 20):
-            Nmc := length(mc):
-            for i from 2 to Nmc do 
-                g := gr minus Nodes( seq(If(j<>i,op(mc[j]),NULL),j=2..Nmc) );
-                grs := append(grs, g);
-            od:
-        else clst := append(clst, gr); 
+        cc := FindConnectedComponents(gr);
+        if length(cc)>1 then grs := append(grs, op(cc) );
+        else
+            if printlevel>1 then 
+                printf('Analyse Graph with %d/%d nodes/edges\n', length(gr[Nodes]),
+                length(gr[Edges])):
+            fi:
+            if AvgReachability( gr )<avgReachCutoff then
+                if length(gr[Edges])>0 then
+                    mc := MinimumCut(gr, 20):
+                    Nmc := length(mc):
+                    for i from 2 to Nmc do 
+                        g := gr minus Nodes( seq(If(j<>i,op(mc[j]),NULL),j=2..Nmc) );
+                        grs := append(grs, g);
+                    od:
+                else 
+                    clst := append(clst, seq(Graph(Edges(),Nodes(z)), z=[op(gr[Nodes])]) );
+                fi:
+            else clst := append(clst, gr); 
+            fi:
         fi:
     od:
     return( clst );
@@ -238,11 +256,13 @@ SubTaxGraph := proc(G:Graph, nextLevs:list(set(posint)) )
             ), i=1..lNL)] );
 end:
 
-HierarchyR := proc( G, th, levInd, alpha )
+HierarchyR := proc( G, th, levInd, alpha ; (lev=-1):integer )
     N := length(G[Nodes]); M := length(G[Edges]):
     if N=1 then return( G[Nodes,1] );
     elif M=0 then return( ParalogousCluster(op(G[Nodes])) ):
     fi:
+    # in case of early abort
+    if lev=0 then return( OrthologousCluster(op(G[Nodes])) ) fi:
 
     orgNrs  := {seq( SearchOrderedArray(u-1, GenomeOffs), u=[op(G[Nodes])])}:
     nextLev := NextDeeperTaxLevs( th, levInd, orgNrs );
@@ -253,8 +273,8 @@ HierarchyR := proc( G, th, levInd, alpha )
         subCluster := FindClusters( subGraphs[i], alpha ):
         if length(subCluster)>1 then
            h := append(h, ParalogousCluster( 
-              seq(HierarchyR( z, th, nextLev[i], alpha ), z=subCluster)) );
-        else h := append(h, HierarchyR(subCluster[1], th, nextLev[i], alpha) );
+              seq(HierarchyR( z, th, nextLev[i], alpha, lev-1 ), z=subCluster)) );
+        else h := append(h, HierarchyR(subCluster[1], th, nextLev[i], alpha, lev-1) );
         fi:
     fi od:
     if length(h)>1 then return( OrthologousCluster(th['Levs',levInd], op(h)) ):
