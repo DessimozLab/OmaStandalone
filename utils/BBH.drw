@@ -1,7 +1,12 @@
 if not assigned(meth) then meth := 'BBH'; fi:
-ReadProgram('parameters.drw');
-ReadProgram('lib/darwinit'):
-CallSystem('mkdir -p '.meth.'-Out/PairwiseOrthologs');
+if not assigned(wdir) then wdir := '.'; fi:
+if not assigned(pdir) then pdir := wdir; fi:
+if not assigned(odir) then odir := '.'; fi:
+if not assigned(libdir) then libdir := odir.'/lib/'; fi:
+
+ReadProgram(pdir.'/parameters.drw');
+ReadProgram(libdir.'/darwinit'):
+CallSystem('mkdir -p '.wdir.'/'.meth.'-Out/PairwiseOrthologs');
 
 RefinedMatches := proc(
             ms:list( [posint,posint,numeric,numeric,posint..posint,posint..posint, positive]) )
@@ -46,7 +51,7 @@ RefinedMatches := proc(
 end:
 
 
-G := TimedCallSystem('find -L DB -name "*.fa" -print')[2];
+G := TimedCallSystem('find -L '.wdir.'/DB -name "*.fa" -print')[2];
 G := SearchDelim('\n',G);
 genomes := DBs := [];
 GS := table():
@@ -58,8 +63,8 @@ for g in G do
     gname := gname[1..off];
     genomes := append(genomes,gname);
     # test if cached:
-    if length(FileStat('Cache/DB/'.gname.'.db')) > 0 then
-        DB := ReadDb('Cache/DB/'.gname.'.db');
+    if length(FileStat(wdir.'/Cache/DB/'.gname.'.db')) > 0 then
+        DB := ReadDb(wdir.'/Cache/DB/'.gname.'.db');
         if type(DB,database) then
             GS[gname] := GenomeSummary(DB);
             DBs := append(DBs,DB);
@@ -82,7 +87,7 @@ for i to N do
 od:
 
 if not type(NP,posint) then NP := 1 fi:
-f := parse(TimedCallSystem('find Cache/AllAll -type f | grep -c ".gz"')[2]):
+f := parse(TimedCallSystem('find '.wdir.'/Cache/AllAll -type f | grep -c ".gz"')[2]):
 if f < NP*N*(N-1)/2 then 
     lprint('not all all-allfiles finished');
     exit(1);
@@ -108,17 +113,17 @@ for i to N do for j from i to N do
     BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
     Exclude1 := Exclude2 := {}:
     # if there exist a 1-chunk archive, process it with higher priority
-    fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
+    fn1chunk := sprintf('%s/Cache/AllAll/%s/%s.gz',wdir,genomes[g1],genomes[g2]);
     if length(FileStat(fn1chunk)) > 0 then
         ReadProgram(fn1chunk);
     else
         for part to NP do
-            fn := sprintf('Cache/AllAll/%s/%s_%d-%d',genomes[g1],genomes[g2],
+            fn := sprintf('%s/Cache/AllAll/%s/%s_%d-%d',wdir,genomes[g1],genomes[g2],
                 part, NP);
             ReadProgram( fn );
         od:
     fi;
-    OpenWriting(meth.'-Out/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2].'.txt');
+    OpenWriting(wdir.'/'.meth.'-Out/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2].'.txt');
     for k to ns[g1] do 
         if (BestMatch1[k]<>[] and BestMatch2[BestMatch1[k,2],2]=k) then
            printf('%d\t%d\t%s\t%s\t1:1\t\n', k, BestMatch1[k,2], IDtable[g1,k],
