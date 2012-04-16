@@ -1,0 +1,126 @@
+#
+# this is experimental code to merge fragemented OMA Groups:
+#  
+#  We merge OMA Groups if they are 
+#   1) non-overlapping, i.e. they do not cover the same species
+#   2) they have at least a fraction of alpha verified pairs among them,
+#      i.e. if  2*VPs(g1,g2) / (|g1|*|g2|) > alpha we can potentially 
+#      merge them. (VPs(g1,g2) := nr of vps between group g1 and g2, 
+#      and |g1|, |g2| are the sizes of group g1 and g2)
+#
+#  The algorithm goes like follows:
+#   We define a graph where nodes are initial OMA Groups and edges represent
+#   possible merges according to the above definition. 
+#   We then look for maximum edge weight cliques in that graph, where the
+#   edge weights correspond to the number of VPs among the groups.
+#
+#  The algrotihm produces afterwards again an Orthologous Matrix.
+#
+#                                          Adrian Altenhoff, Apr 2012
+
+module external MergeOMAGroups;
+local GrpSizes, NG, N, GenomeOffs, M:
+
+NonOverlappingMerge := proc()
+   taken := copy( M[args[1]] ):
+   for i from 2 to nargs do
+       curG := M[ args[i] ];
+       for g to N do if curG[g]<>0 then
+           if taken[g]=0 then taken[g] := curG[g];
+           else return(-1)
+           fi:
+       fi od:
+   od:
+   return( taken );
+end:
+
+
+AreNonOverlapping := proc(g1, g2)
+    return( evalb(M[g1] * M[g2] = 0));
+end:
+
+
+BuildGraph := proc(VPairs, P2G, alpha:nonnegative );
+    edges := table(0):
+    for X to N do 
+        for Y from X+1 to N do for x1 to length(VPairs[X,Y]) do 
+            for y1 in VPairs[X,Y,x1] do
+                # test if in same group
+                g1 := P2G[ GenomeOffs[X]+x1 ]; 
+                g2 := P2G[ GenomeOffs[Y]+y1 ];
+                if g1>g2 then t := g1; g1 := g2; g2 := t fi:
+                if g1=g2 or g1=0 or not AreNonOverlapping(g1,g2) then next fi:
+
+                edges[[g1,g2]] := edges[[g1,g2]] + 1;
+            od:
+        od od:
+        printf('%d/%d done\n', X,N); 
+    od:
+
+    GrpSizes := CreateArray(1..NG):
+    for i to length(P2G) do if P2G[i]>0 then
+        GrpSizes[P2G[i]] := GrpSizes[P2G[i]] + 1;
+    fi od:
+
+    edg := []:
+    for z in Indices(edges) do
+        if 2*edges[z]/(GrpSizes[z[1]]*GrpSizes[z[2]])>alpha then
+            edg := append(edg, Edge(edges[z], z[1], z[2])):
+        fi:
+    od:
+    return( Graph(Edges(op(edg)), Nodes(seq(i,i=1..NG))) ):
+end:
+
+
+FindCliques := proc(G:Graph)
+    cli := []:
+    CC := FindConnectedComponents(G):
+    for c in CC do
+        g := c:
+        while length(g[Nodes])>0 do
+            cl := MaxEdgeWeightClique( g ):
+            cli := append(cli, cl):
+            g2 := minus(g, Nodes(op(cl)));
+            assert( length(g2[Nodes])<length(g[Nodes]));
+            g := g2:
+        od:
+    od:
+    return(cli);
+end:
+
+
+MergeOMAGroups := proc(M_, VPairs ; (alpha=.5):positive)
+    external NG, N, M;
+    M := M_;
+    NG := length(M);
+    N := length(M[1]);
+
+    # entry number offset for genomes
+    GenomeOffs := CreateArray(1..N+1):
+    for i to N do 
+        GenomeOffs[i+1] := GenomeOffs[i] + GS[genomes[i],TotEntries]:
+    od:
+    NP := GenomeOffs[N+1]:
+    
+    # protein to group lookup
+    P2G := CreateArray(1..NP):
+    for i to NG do for g to N do if M[i,g]>0 then 
+        P2G[GenomeOffs[g]+M[i,g]] := i
+    fi od od:
+
+    G := BuildGraph(VPairs, P2G, alpha);
+    lprint('Graph with',length(G[Nodes]),'Nodes and', 
+        length(G[Edges]),'Edges extracted');
+    cliques := FindCliques(G):
+    lprint('Merged',NG,'groups into',length(cliques));
+
+    M2 := []:
+    for cli in cliques do M2 := append(M2, NonOverlappingMerge(op(cli))) od:
+    assert(type(M2,matrix)):
+
+    return( M2 ):
+end:
+
+
+
+end: #module
