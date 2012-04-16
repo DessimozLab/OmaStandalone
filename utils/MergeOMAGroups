@@ -44,7 +44,7 @@ BuildGraph := proc(VPairs, P2G, alpha:nonnegative );
     edges := table(0):
     for X to N do 
         for Y from X+1 to N do for x1 to length(VPairs[X,Y]) do 
-            for y1 in VPairs[X,Y,x1] do
+            for y1 in decompress(VPairs[X,Y,x1]) do
                 # test if in same group
                 g1 := P2G[ GenomeOffs[X]+x1 ]; 
                 g2 := P2G[ GenomeOffs[Y]+y1 ];
@@ -90,7 +90,7 @@ end:
 
 
 MergeOMAGroups := proc(M_, VPairs ; (alpha=.5):positive)
-    external NG, N, M;
+    external NG, N, M, GenomeOffs;
     M := M_;
     NG := length(M);
     N := length(M[1]);

@@ -49,14 +49,16 @@ cp Manual/manual.html $instpath/Manual/
 # copy toy example to $1/OMA$versionnr
 cp -r ToyExample $instpath/ToyExample
 
-# adjust for version number
+# adjust for version number, remove devolopping functions
 if [ $os = "Darwin" ]
 then
     sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
  $instpath/install.sh $instpath/README.oma $instpath/bin/oma
+    sed -i '' "/utildir/d" $instpath/lib/darwinit
 else
     sed -i -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
  $instpath/install.sh $instpath/README.oma $instpath/bin/oma
+    sed -i "/utildir/d" $instpath/lib/darwinit
 fi
 
 # create tarball

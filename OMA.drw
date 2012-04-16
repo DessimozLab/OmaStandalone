@@ -468,41 +468,16 @@ else
     od;od:
 
     # Store the groups of orthologs
-    OpenWriting('Output/OrthologousMatrix.txt');
-    print('\# The groups of orthologs are given as matrix with group per row', 
-         '\# and one genome per tab-separated column. Numbers refer to',
-         '\# entry number as listed in the file "Map-SeqNum-id.map.',
-         '\# Alternatively, use the OrthologousGroup.txt representation.');
-    print(ConcatStrings(genomes,'\t'));
-    for r to length(Ort) do
-        print(ConcatStrings(zip(string(Ort[r])),'\t'));
-    od;
-    OpenWriting(previous);
-
-    OpenWriting('Output/OrthologousGroups.txt');
-    print('\# The groups of orthologs are given as one per row, starting',
-          '\# with a group identifier, followed by all group members, all',
-          '\# separated by tabs. For a more compact representation, use the',
-          '\# OrthologousMatrix.txt representation.');
-    for r to length(Ort) do
-        printf('OMA%05d',r);
-        for l to N do
-            if Ort[r,l] <> 0 then
-                printf('\t%s:%s',genomes[l],IDtable[l,Ort[r,l]]);
-            fi;
-        od;
-        printf('\n');
-    od;
-    OpenWriting(previous);
-    
+    WriteMatrix(Ort,'Output/OrthologousMatrix.txt');
+    WriteGroups(Ort,'Output/OrthologousGroups.txt');
     # store orthologous groups in orthoxml format
     WriteOrthoXML( Ort, 'Output/OrthologousGroups.orthoxml');
     
     # developpment code
-    if length(FileStat('utils/MergeOMAGroups'))>0 then
-        ReadProgram('utils/MergeOMAGroups'):
-        MergedOMAGroups := MergeOMAGroups(Ort, VPairs);
-        WriteOrthoXML( MergedOMAGroups, 'Output/MergedOMAGroups.orthoxml');
+    if type(MergeOMAGroups, procedure) then
+        mergedOMAGroups := MergeOMAGroups(Ort, VPairs);
+        WriteOrthoXML( mergedOMAGroups, 'Output/MergedOMAGroups.orthoxml');
+        WriteMatrix( mergedOMAGroups, 'Output/MergedOMAGroups.txt');
     fi:
 
     # store all orthologous groups in fasta format

@@ -4,6 +4,10 @@ else
     OrthologsLib := TimedCallSystem('pwd')[2,1..-2].'/lib/':
 fi:
 
+# everything containing 'utildir' will not be part of distributed tarball
+utildir := libdir.'/../utils/';
+MergeOMAGroups := noeval(ReadLibrary(utildir.'MergeOMAGroups',MergeOMAGroups)):
+
 OrthologousMatrix := noeval(ReadLibrary( OrthologsLib.'OrthologousMatrix',
 	OrthologousMatrix)):
 GenomeSummary := noeval(ReadLibrary( OrthologsLib.'GenomeSummary',
@@ -23,7 +27,10 @@ IdentifyPosition));
 DistBounds := noeval(ReadLibrary(OrthologsLib.'IdentifyPosition.drw',
 DistBounds));
 
+
 WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
+WriteMatrix := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteMatrix));
+WriteGroups := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteGroups));
 HierarchicalGroups := noeval(ReadLibrary(OrthologsLib.'HierarchicalGroups', HierarchicalGroups));
 BuildSpeciesTree := noeval(ReadLibrary(OrthologsLib.'TreeBuilding', BuildSpeciesTree));
