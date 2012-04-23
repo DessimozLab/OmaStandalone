@@ -477,7 +477,8 @@ else
     if type(MergeOMAGroups, procedure) then
         mergedOMAGroups := MergeOMAGroups(Ort, VPairs);
         WriteOrthoXML( mergedOMAGroups, 'Output/MergedOMAGroups.orthoxml');
-        WriteMatrix( mergedOMAGroups, 'Output/MergedOMAGroups.txt');
+        WriteMatrix( mergedOMAGroups, 'Output/MergedOMAMatrix.txt');
+        WriteGroups( mergedOMAGroups, 'Output/MergedOMAGroups.txt');
     fi:
 
     # store all orthologous groups in fasta format
