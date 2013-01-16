@@ -58,7 +58,7 @@ OrthologousMatrix := proc( MinScore:positive, LengthTol:positive,
     StablePairTol:positive, VerifiedPairTol:positive, UseEsprit:boolean)
 global CliqueIterFactor, histog, triangle_analysis, StablePairs, VPairs, 
        BreakingStatsG,witnesses, PossContigHits, DefContigHits, ContigHits,
-       DB, ParamSet, cli;
+       DB, ParamSet;
 
 # Boundary scores for stable pairs
 starttime := time();
