@@ -299,7 +299,7 @@ HierarchicalGroups := proc( ;(alpha=.65):positive,
     
     protSeen := CreateString(NP,'0'):
     prot2Group := CreateArray(1..NP):
-    HCL := [];
+    HOG := [];
     cNr := cnt := 0; 
     for p to NP do 
         if protSeen[p]='1' then next fi:
@@ -313,13 +313,13 @@ HierarchicalGroups := proc( ;(alpha=.65):positive,
             cNr := cNr+1;
             for u in c[Nodes] do prot2Group[u] := cNr od:
             h := HierarchyR( c, th, topLevelNr, alpha ):
-            HCL := append(HCL, h):
+            HOG := append(HOG, h):
         od:
         printf('CC of %d proteins done (%.2f%%)\n', nNodes, 100*cnt/NP);
     od:
     printf('Hierarchical Group computation finished. \n');
     printf('  Found %d toplevel groups\n\n', cNr);
-    return( HCL ):
+    return( HOG ):
 end:
 
 end: #module

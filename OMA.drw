@@ -393,7 +393,7 @@ else
                 'defaultBranchLength'=1):
         fi:
         # call hierarchical group procedure
-        HCL := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));
+        HOG := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));
     fi:
     # # Retrieve all IDs
     # # Create File MapSeqNum-ID:
@@ -498,7 +498,7 @@ else
     
     # store hierarchical groups if computed
     if DoHierarchicalGroups=true then
-        WriteOrthoXML( HCL, 'Output/HierarchicalGroups.orthoxml');
+        WriteOrthoXML( HOG, 'Output/HierarchicalGroups.orthoxml');
         if SpeciesTree='estimate' then
             OpenWriting('Output/EstimatedSpeciesTree.nwk');
             prints( Tree_Newick(speciesTree) .';' );
