@@ -58,7 +58,7 @@ OrthologousMatrix := proc( MinScore:positive, LengthTol:positive,
     StablePairTol:positive, VerifiedPairTol:positive, UseEsprit:boolean)
 global CliqueIterFactor, histog, triangle_analysis, StablePairs, VPairs, 
        BreakingStatsG,witnesses, PossContigHits, DefContigHits, ContigHits,
-       DB, ParamSet;
+       DB, ParamSet, cli;
 
 # Boundary scores for stable pairs
 starttime := time();
@@ -354,7 +354,7 @@ ExtractBestMatchesSubgroupAsEdges := proc( X, Y, p1, p2, off1, off2 ;
                x1+off1, y2+off2) );
         fi:
     od od:
-    return( edges ):
+    return( {op(edges)} ):
 end:
 
 ConsistentPairs := CreateArray(1..N,1..N):
@@ -385,7 +385,7 @@ for X to N do for Y from X+1 to N do
             if CC[c1]<=ns[X] then pX := append(pX, CC[c1]);
             else pY := append(pY, CC[c1]-ns[X]) fi:
         od:
-        pX := {op(pX)}; pY := {op(pY)};
+        pX := {op(pX)}; pY := {op(pY)}; 
         # if more than a pair and missing edges to form compl bipartite graph, fix
         if c1-c0 > 1 then grps := grps + 1 fi:
         if c1-c0 > 1 and length(pX)*length(pY) > 
