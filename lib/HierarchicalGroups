@@ -266,6 +266,7 @@ HierarchyR := proc( G, th, levInd, alpha ; (lev=-1):integer )
 
     orgNrs  := {seq( SearchOrderedArray(u-1, GenomeOffs), u=[op(G[Nodes])])}:
     nextLev := NextDeeperTaxLevs( th, levInd, orgNrs );
+    labelLev := th['Levs', th['Up',nextLev[1]]];
     
     subGraphs := SubTaxGraph(G, [seq(th['Memb',z], z=nextLev)] );
     h := [];
@@ -277,7 +278,7 @@ HierarchyR := proc( G, th, levInd, alpha ; (lev=-1):integer )
         else h := append(h, HierarchyR(subCluster[1], th, nextLev[i], alpha, lev-1) );
         fi:
     fi od:
-    if length(h)>1 then return( OrthologousCluster(th['Levs',levInd], op(h)) ):
+    if length(h)>1 then return( OrthologousCluster(labelLev, op(h)) ):
     else return( op(h) ):
     fi:
 end:
