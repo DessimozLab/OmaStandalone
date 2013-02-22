@@ -388,6 +388,8 @@ else
         printlevel := 1:
         if SpeciesTree='estimate' then
             speciesTree := BuildSpeciesTree( Ort );
+        elif SpeciesTree='lineage' then
+            speciesTree := NULL:
         elif type(SpeciesTree,string) then
             speciesTree := ParseNewickTree(SpeciesTree,
                 'defaultBranchLength'=1):
