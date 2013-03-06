@@ -79,19 +79,24 @@ AvgReachability := proc( G:Graph ; (steps=2):posint )
    return( sum(reached)/(N*nrSamp) );
 end:
 
-FindClusters := proc( G:Graph ;
+FindClusters := proc( G:Graph, th:TaxHierarchy, curLev:integer;
     (avgReachCutoff=0.7):positive)
-    grs := [G]; clst := [];
+    grs := [G]: clst := []; 
+    tStart := time(): 
+    timeLimit := 3600;
     while length(grs)>0 do
+        if time()-tStart > timeLimit then break fi:
+
         gr := grs[1]; grs := grs[2..-1];
         cc := FindConnectedComponents(gr);
         if length(cc)>1 then grs := append(grs, op(cc) );
         else
+            avgReach := AvgReachability(gr);
             if printlevel>1 then 
-                printf('Analyse Graph with %d/%d nodes/edges\n', length(gr[Nodes]),
-                length(gr[Edges])):
+                printf('Analyse Graph with %d/%d nodes/edges, %.3f reachable\n', 
+                length(gr[Nodes]), length(gr[Edges]), avgReach):
             fi:
-            if AvgReachability( gr )<avgReachCutoff then
+            if avgReach<avgReachCutoff then
                 if length(gr[Edges])>0 then
                     mc := MinimumCut(gr, 20):
                     Nmc := length(mc):
@@ -106,6 +111,22 @@ FindClusters := proc( G:Graph ;
             fi:
         fi:
     od:
+    if length(grs)>0 then
+        warning( sprintf('took too long (>%d sec) to find clusters for |G|=(%d,%d) on '.
+            '%s level. Going on on lower levels', timeLimit, length(G['Nodes']), 
+            length(G['Edges']), th['Levs',curLev]));
+
+        nextLev := NextDeeperTaxLevs( th, curLev );
+        for gr in grs do
+            if length(gr['Nodes'])>500 and AvgReachability(gr)<.5*avgReachCutoff then
+                subGraphs := SubTaxGraph(gr, [seq(th['Memb',z], z=nextLev)] );
+                clst := append(clst, seq( op(procname(subGraphs[i], th, nextLev[i], avgReachCutoff)), 
+                    i=1..length(subGraphs)) );
+            else
+                clst := append(clst, op(procname(gr, th, curLev, avgReachCutoff)) ):
+            fi:
+        od:
+    fi:
     return( clst );
 end: 
 
@@ -271,7 +292,7 @@ HierarchyR := proc( G, th, levInd, alpha ; (lev=-1):integer )
     subGraphs := SubTaxGraph(G, [seq(th['Memb',z], z=nextLev)] );
     h := [];
     for i to length(subGraphs) do if subGraphs[i]<>0 then
-        subCluster := FindClusters( subGraphs[i], alpha ):
+        subCluster := FindClusters( subGraphs[i], th, nextLev[i], alpha ):
         if length(subCluster)>1 then
            h := append(h, ParalogousCluster( 
               seq(HierarchyR( z, th, nextLev[i], alpha, lev-1 ), z=subCluster)) );
@@ -308,7 +329,7 @@ HierarchicalGroups := proc( ;(alpha=.65):positive,
         G := GetOrthologyGraphFromVPsFile(p):
         nNodes := length(G['Nodes']);
         for u in G['Nodes'] do protSeen[u]:='1'; cnt := cnt+1; od:
-        topClusters := FindClusters( G, alpha ):
+        topClusters := FindClusters( G, th, topLevelNr, alpha ):
         for c in topClusters do
             if length(c[Nodes])=1 then next fi: # singletons will be left out
             cNr := cNr+1;
