@@ -59,7 +59,7 @@ end:
 
 AvgReachability := proc( G:Graph ; (steps=2):posint )
    N := length(G['Nodes']): 
-   nrSamp := min(N, max( 20, round(3*sqrt(N)) ) ):
+   nrSamp := min(N, 200, max( 20, round(3*sqrt(N)) ) ):
    reached := CreateArray(1..N):
    adj := G['Adjacencies']:
    for samp to nrSamp do 
@@ -83,7 +83,7 @@ FindClusters := proc( G:Graph, th:TaxHierarchy, curLev:integer;
     (avgReachCutoff=0.7):positive)
     grs := [G]: clst := []; 
     tStart := time(): 
-    timeLimit := 3600;
+    timeLimit := 600;
     while length(grs)>0 do
         if time()-tStart > timeLimit then break fi:
 
@@ -120,8 +120,10 @@ FindClusters := proc( G:Graph, th:TaxHierarchy, curLev:integer;
         for gr in grs do
             if length(gr['Nodes'])>500 and AvgReachability(gr)<.5*avgReachCutoff then
                 subGraphs := SubTaxGraph(gr, [seq(th['Memb',z], z=nextLev)] );
-                clst := append(clst, seq( op(procname(subGraphs[i], th, nextLev[i], avgReachCutoff)), 
-                    i=1..length(subGraphs)) );
+                for i to length(subGraphs) do if subGraphs[i]<>0 then
+                    clst := append(clst, op(procname(subGraphs[i], th, 
+                        nextLev[i], avgReachCutoff)));
+                fi od:
             else
                 clst := append(clst, op(procname(gr, th, curLev, avgReachCutoff)) ):
             fi:
