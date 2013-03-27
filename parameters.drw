@@ -54,8 +54,8 @@ MinSeqLen := 50;
 # implementation is not yet parallelized and hence needs quite some time.
 DoHierarchicalGroups := true;
 
-# Define maximum umount of time (in sec) spent by the program for the 
-# breaking the a connected component of the orthology graph at its 
+# Define maximum umount of time (in sec) spent by the program for  
+# breaking every connected component of the orthology graph at its 
 # weakest link on a given taxonomic level. If set to a negative value,
 # no timelimit is enforced.
 MaxTimePerLevel := 1200; # 20min

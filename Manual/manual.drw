@@ -471,6 +471,12 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        hierarchical groups. This steps requires substantial 
                        computating power.'), 
                        TT('true')),
+                    Row(TT('MaxTimePerLevel'),
+                       Paragraph(0, 'Define maximum umount of time (in sec) spent by 
+                       the program for breaking every connected component of the 
+                       orthology graph at its weakest link on a given taxonomic level. 
+                       If set to a negative value, no timelimit is enforced.'),
+                       TT('1200')),
                     Row(TT('SpeciesTree'),
                        Paragraph(0, 'The hierarchical groups require a (partially)
                        resolved species phylogeny. With the parameter ',
