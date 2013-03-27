@@ -83,7 +83,7 @@ FindClusters := proc( G:Graph, th:TaxHierarchy, curLev:integer;
     (avgReachCutoff=0.7):positive)
     grs := [G]: clst := []; 
     tStart := time(): 
-    timeLimit := 600;
+    timeLimit := If(MaxTimePerLevel<0, DBL_MAX, MaxTimePerLevel);
     while length(grs)>0 do
         if time()-tStart > timeLimit then break fi:
 
