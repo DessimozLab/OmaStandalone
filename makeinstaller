@@ -36,7 +36,7 @@ cp /home/darwin/v2/source/macintel64/darwin $instpath/bin/omadarwin.mac64
 cp -r lib $instpath/
 
 # copy OMA files to $1/OMA$versionnr
-cp OMA.drw parameters.drw install.sh README.oma $instpath/
+cp OMA.drw parameters.drw install.sh README.oma LICENSE $instpath/
 cp bin/oma bin/omadarwin $instpath/bin/
 
 # create manual and copy files to $instpath
@@ -65,6 +65,6 @@ fi
 $(cd `dirname $instpath`; tar -cvzf `basename $instpath`.tgz `basename $instpath`)
 
 # deploy webpage (html, css and tarball)
-scp $(dirname $instpath)/$(basename $instpath).tgz darwin@${webpath}
-scp $(dirname $0)/Manual/manual.css darwin@${webpath}
-scp $(dirname $0)/Manual/manual.html darwin@${webpath}/index.html
+scp $(dirname $instpath)/$(basename $instpath).tgz ${webpath}
+scp $(dirname $0)/Manual/manual.css ${webpath}
+scp $(dirname $0)/Manual/manual.html ${webpath}/index.html
