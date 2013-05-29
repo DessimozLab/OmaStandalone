@@ -108,7 +108,7 @@ for g in G do
     genomes := append(genomes,gname);
 
     # test if cached:
-    if length(FileStat('Cache/DB/'.gname.'.db')) > 0 then
+    if FileExists('Cache/DB/'.gname.'.db') then
         DB := ReadDb('Cache/DB/'.gname.'.db');
         if type(DB,database) then
             GS[gname] := GenomeSummary(DB);
@@ -172,7 +172,7 @@ fi;
 
 # check whether we find AllAll-files which have been computed using a 
 # different NP. In that case, warn the user and/or stop
-if length(FileStat('Cache/AllAll'))>0 then
+if FileExists('Cache/AllAll') then
 t := TimedCallSystem('find Cache/AllAll -type f')[2];
 files := [seq(f[1..-2], f=SplitLines(t))]:
 for file in files do
@@ -234,7 +234,7 @@ for g1 to length(genomes) do
         CallSystem('mkdir -p Cache/AllAll/'.name1);
         # skip if 1-chunk archive already present (import from OMA AxA)
         fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
-        if length(FileStat(fn1chunk))>0 then 
+        if FileExists(fn1chunk) then 
             printf('Pair %s/%s already computed (probably imported). Skipped.\n',
                 name1, name2 );
             next;
@@ -245,7 +245,7 @@ for g1 to length(genomes) do
             c1 := c1+1;
             # skip if cached or already computed
             fn := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, NP);
-            if length(FileStat(fn))>0 or length(FileStat(fn.'.gz'))>0 then
+            if FileExists(fn) or FileExists(fn.'.gz') then
                 printf('Pair %s/%s part %d of %d already computed. Skipped.\n',
                     name1, name2, part, NP);
                 next;
@@ -364,7 +364,7 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
         Exclude1 := Exclude2 := {}:
         # if there exist a 1-chunk archive, process it with higher priority
         fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
-        if length(FileStat(fn1chunk)) > 0 then
+        if FileExists(fn1chunk) then
             ReadProgram(fn1chunk);
         else
             for part to NP do 
@@ -410,8 +410,22 @@ if UseEsprit then
             true, MaxContigOverlap]):
     WriteEspritResults();
 else
-    print('\n\n****\n\nIdentification of Stable-Pairs (Putative Orthologs)\n');
-    Ort := OrthologousMatrix( op(params) ):
+    # check whether orthologs have already been computed
+    orthoCacheFile := 'Cache/ortholog_milestone.drw.gz':
+    needComp := true;
+    if FileExists(orthoCacheFile) then
+        err := traperror(ReadProgram(orthoCacheFile));
+        if err=lasterror then 
+            CallSystem('rm -f '.orthoCacheFile); 
+        else needComp := false;
+        fi:
+    fi:
+
+    if needComp then 
+        print('\n\n****\n\nIdentification of Stable-Pairs (Putative Orthologs)\n');
+        Ort := OrthologousMatrix( op(params) ):
+        StoreOrthologMilestone( orthoCacheFile );
+    fi:
 
     if DoHierarchicalGroups=true then
         printlevel := 1:
@@ -497,6 +511,8 @@ else
         od:
         OpenWriting(previous);
     od;od:
+    # store the pairwise orthologs in orthoxml format
+    WriteOrthoXML( VPairs, 'Output/OrthologousPairs.orthoxml');
 
     # Store the groups of orthologs
     WriteMatrix(Ort,'Output/OrthologousMatrix.txt');

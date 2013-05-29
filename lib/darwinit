@@ -34,7 +34,7 @@ else
 fi:
 
 # everything containing 'utildir' will not be part of distributed tarball
-utildir := libdir.'/../utils/';
+utildir := OrthologsLib.'/../utils/';
 MergeOMAGroups := noeval(ReadLibrary(utildir.'MergeOMAGroups',MergeOMAGroups)):
 
 OrthologousMatrix := noeval(ReadLibrary( OrthologsLib.'OrthologousMatrix',
@@ -52,10 +52,13 @@ Esprit := noeval(ReadLibrary( OrthologsLib.'Esprit.drw', Esprit));
 ObjScaffold := noeval(ReadLibrary( OrthologsLib.'ScaffoldVerification.drw', ObjScaffold));
 
 IdentifyPosition := noeval(ReadLibrary (OrthologsLib.'IdentifyPosition.drw',
-IdentifyPosition));
+    IdentifyPosition));
 DistBounds := noeval(ReadLibrary(OrthologsLib.'IdentifyPosition.drw',
-DistBounds));
+    DistBounds));
 
+FileExists := noeval(ReadLibrary(OrthologsLib.'FileExists',FileExists));
+StoreOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
+    StoreOrthologMilestone));
 
 WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));

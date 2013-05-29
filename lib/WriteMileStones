@@ -1,0 +1,12 @@
+StoreOrthologMilestone := proc(fn_)
+    fn := If(fn_[-3..-1]='.gz', fn_[1..-4], fn_);
+    OpenWriting(fn):
+    for var in ['Ort', 'VPairs', 'StablePairs'] do
+        printf('%s := %A:\n', var, eval(symbol(var))):
+    od:
+    printf('# Milestone created on %s on %s\n', date(), hostname());
+    OpenWriting(previous);
+    if fn_<>fn then
+        CallSystem('gzip -f9 '.fn);
+    fi:
+end:
