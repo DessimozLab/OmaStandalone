@@ -66,3 +66,5 @@ WriteMatrix := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteMatrix));
 WriteGroups := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteGroups));
 HierarchicalGroups := noeval(ReadLibrary(OrthologsLib.'HierarchicalGroups', HierarchicalGroups));
 BuildSpeciesTree := noeval(ReadLibrary(OrthologsLib.'TreeBuilding', BuildSpeciesTree));
+
+GenerateStableIDs := noeval(ReadLibrary(OrthologsLib.'StableIdentifiers', GenerateStableIDs)):

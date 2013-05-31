@@ -1,0 +1,125 @@
+# Methods to find a sequence that identifies a group
+module external GenerateStableIDs;
+local IDLEN, GenomeOffs, NG;
+
+IDLEN := 7:
+NG := length(genomes):
+assert(NG>=2);
+GenomeOffs := CreateArray(1..NG+1):
+for i to NG do GenomeOffs[i+1] := GenomeOffs[i]+GS[genomes[i],TotEntries] od:
+
+MakeSeqDb := proc(;(fn='Cache/DB/Seqs.db'):string)
+    global DB:
+    curDB := DB:
+    OpenWriting(fn):
+    for i to NG do 
+        DB := DBs[i]:
+        for j to DB[TotEntries] do
+            printf('<E><OS>%s</OS><NR>%d</NR><SEQ>%s</SEQ></E>\n', 
+                genomes[i], j, SearchTag('SEQ',Entry(j)));
+        od:
+    od:
+    OpenWriting(previous):
+end:
+
+IdentifyID := proc( grpmembers:set(posint) )
+    
+    # create a list of pat ranges for all possible
+    # IDs in this group
+    plist := []:
+    seqs := [seq(Sequence(Entry(z)),z=grpmembers)];
+    t0 := time();
+    for s in seqs do
+        for p to length(s)-IDLEN+1 do
+            ss := s[p..p+IDLEN-1];
+            pss := SearchSeqDb(ss);
+            plist := append(plist,op(pss));
+        od:
+    od:
+    plist := sort(plist);
+
+    # find those pattern that appear only in this group
+    p2 := []:
+    lp := length(plist);
+    for i to lp do
+        z := plist[i];
+        n := z[2]-z[1]+1;
+        if i+n>lp+1 then next fi;
+        if plist[i+n-1]=z and (i+n=lp+1 or plist[i+n]<>z) then 
+            p2 := append(p2,z) 
+        fi;
+    od;
+    
+    # take only those spanning the most sequences
+    p2 := sort(p2,x->x[1]-x[2]);
+    if p2<>[] then
+        n1 := p2[1,2]-p2[1,1];
+        for i to length(p2) do
+            if p2[i,2]-p2[i,1]<>n1 then break fi;
+        od:
+        p2 := p2[1..i-1];
+    fi:
+    
+
+    return( {seq(DB[string,DB[Pat,z[1]]+1..DB[Pat,z[1]]+IDLEN],z=p2)}, n1+1 );
+end:
+
+GroupMembersFromMatrix := proc(M)
+    memb := CreateArray(1..length(M)):
+    for i to length(M) do
+        memb[i] := {seq( If(M[i,j]<>0,M[i,j]+GenomeOffs[j],NULL),j=1..NG)};
+    od:
+    return(memb);
+end:
+
+GroupMembersFromHOGs := proc(grps)
+    memb := CreateArray(1..length(grps)):
+    for i to length(grps) do
+        memb[i] := indets( grps[i], posint):
+    od:
+    return(memb);
+end:
+
+GenerateStableIDs := proc(groups)
+    global DB:
+    curDB := DB:
+    if type(groups,matrix(integer)) then
+        grpmembers := GroupMembersFromMatrix(groups):
+        prefix := 'OMA:';
+    elif type(groups, list(structure(anything,OrthologousCluster))) then
+        grpmembers := GroupMembersFromHOGs(groups):
+        prefix := 'HOG:';
+    fi:
+
+    seqdbfn := 'Cache/DB/Seqs.db':
+    if not FileExists(seqdbfn) then
+        MakeSeqDb(seqdbfn):
+    fi:
+    DB := ReadDb(seqdbfn);
+ 
+    nrGrps := length(grpmembers):
+    ids := CreateArray(1..nrGrps):
+    for gr to length(grpmembers) do 
+        memb := grpmembers[gr];
+        allPosIds, span := IdentifyID(memb):
+        if length(allPosIds)>0 then 
+            printf('Group %d :  %d ids  (%d/%d)\n',
+                gr,length(allPosIds),span,length(memb));
+            if length(allPosIds)=1 then
+                ids[gr] := prefix.allPosIds[1];
+            else 
+                # if severals, choose best sounding one.
+                ids[gr] := traperror(sort(allPosIds,x->-(Readability(x,English)+Readability(x,VowCon)))[1]);
+                if ids[gr]=lasterror then ids[gr] := 'n/a' else ids[gr] := prefix.ids[gr] fi;
+            fi:
+        else 
+            printf('Group %d : no IDs found\n',gr);
+            ids[gr] := 'n/a';
+        fi:
+    od:
+    DB := curDB:
+
+    return( ids );
+end:
+
+end: #module
