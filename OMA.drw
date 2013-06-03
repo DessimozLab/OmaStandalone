@@ -518,12 +518,14 @@ else
     WriteMatrix(Ort,'Output/OrthologousMatrix.txt');
     WriteGroups(Ort,'Output/OrthologousGroups.txt');
     # store orthologous groups in orthoxml format
-    WriteOrthoXML( Ort, 'Output/OrthologousGroups.orthoxml');
+    WriteOrthoXML( Ort, 'Output/OrthologousGroups.orthoxml',
+        GenerateStableIdentifiersForGroups=true);
     
     # developpment code
     if type(MergeOMAGroups, procedure) then
         mergedOMAGroups := MergeOMAGroups(Ort, VPairs);
-        WriteOrthoXML( mergedOMAGroups, 'Output/MergedOMAGroups.orthoxml');
+        WriteOrthoXML( mergedOMAGroups, 'Output/MergedOMAGroups.orthoxml',
+            GenerateStableIdentifiersForGroups=true);
         WriteMatrix( mergedOMAGroups, 'Output/MergedOMAMatrix.txt');
         WriteGroups( mergedOMAGroups, 'Output/MergedOMAGroups.txt');
     fi:
@@ -545,7 +547,8 @@ else
     
     # store hierarchical groups if computed
     if DoHierarchicalGroups=true then
-        WriteOrthoXML( HOG, 'Output/HierarchicalGroups.orthoxml');
+        WriteOrthoXML( HOG, 'Output/HierarchicalGroups.orthoxml',
+            GenerateStableIdentifiersForGroups=true);
         if SpeciesTree='estimate' then
             OpenWriting('Output/EstimatedSpeciesTree.nwk');
             prints( Tree_Newick(speciesTree) .';' );

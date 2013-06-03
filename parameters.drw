@@ -44,6 +44,16 @@ VerifiedPairTol := 1.53;
 # regular genomes is not considered.
 MinSeqLen := 50;
 
+##############################################################
+# Output parameters
+##############################################################
+# Enables/disables the generation of stable identifiers for OMA groups (and
+# Hierarchical Groups if their computation enabled). The identifier consists of a
+# prefix to determine the type of the group ('OMA' or 'HOG'), and a
+# subsequence of the amino acid sequence uniquely present in this group. The
+# computation of these ids might require a substantial amount of time. The ids
+# are stored in the OrthoXML files only.
+GenerateStableIdentifiersForGroups := true;
 
 ##############################################################
 # Hierarchical Orthologous Groups
