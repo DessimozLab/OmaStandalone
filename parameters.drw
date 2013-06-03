@@ -53,7 +53,7 @@ MinSeqLen := 50;
 # subsequence of the amino acid sequence uniquely present in this group. The
 # computation of these ids might require a substantial amount of time. The ids
 # are stored in the OrthoXML files only.
-GenerateStableIdentifiersForGroups := true;
+StableIdsForGroups := false;
 
 ##############################################################
 # Hierarchical Orthologous Groups
