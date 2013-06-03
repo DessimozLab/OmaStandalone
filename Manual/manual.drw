@@ -466,6 +466,14 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         TT('MinSeqLen'), ' amino acids long in regular genomes
                         is not considered.'),
                         TT('50')),
+                    Row(TT('GenerateStableIdentifiersForGroups'),
+                        Paragraph(0, 'Enables/disables the generation of stable identifiers for OMA groups 
+                        (and Hierarchical Groups if their computation enabled). The identifier consists of 
+                        a prefix to determine the type of the group (''OMA'' or ''HOG''), and a subsequence
+                        of the amino acid sequence uniquely present in this group. The computation of these 
+                        ids might require a substantial amount of time. The ids are stored in the OrthoXML
+                        files only.'),
+                        TT('false')),
                     Row(TT('DoHierarchicalGroups'),
                        Paragraph(0, 'Enables/disables the computation of the 
                        hierarchical groups. This steps requires substantial 
@@ -489,7 +497,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        Paragraph(0,'The cutoff of "average reachability within 
                        two steps" defines up to what point a cluster is split 
                        into sub-clusters.'), 
-                       TT('0.65'))
+                       TT('0.65')),
                 ),
                 Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
                     title = 'Table 4: ESPRIT parameters',

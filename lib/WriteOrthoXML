@@ -28,6 +28,9 @@
 #
 # ***** END LICENSE BLOCK *****
 module external WriteOrthoXML;
+local Grp2Id;
+
+Grp2Id:=0;
 
 WriteXMLHeader := proc(release:string ; notes:string)
     printf('<?xml version="1.0" encoding="UTF-8"?>\n');
@@ -88,7 +91,7 @@ end:
 WriteOMAGroups := proc(M:matrix, Goff:list(integer) )
     ns := length(M[1]):
     for i to length(M) do
-        printf('  <orthologGroup id="%d">\n', i);
+        printf('  <orthologGroup id="%s">\n', IdForGroup(i));
         for j to ns do if M[i,j]<>0 then
             printf('   <geneRef id="%d" />\n', Goff[j]+M[i,j]);
         fi od:
@@ -121,21 +124,46 @@ WriteXMLEnd := proc()
     printf(' </groups>\n</orthoXML>\n');
 end:
 
-WriteOrthoXML := proc(data, fn:string)
+InitStableIDs := proc(data) 
+    external Grp2Id;
+    Grp2Id := traperror(GenerateStableIDs(data));
+    if Grp2Id=lasterror then
+        warning('could not generateStableIDs for groups:\n '.lasterror);
+        Grp2Id := 0;
+    fi:
+end:
+
+IdForGroup := proc(i:posint)
+    external Grp2Id;
+    return( string(If(Grp2Id=0,i,Grp2Id[i])) );
+end:
+
+getParamsAsNotes := proc()
+    params := []:
+    for p in ['MinScore','LengthTol','StablePairTol','VerifiedPairTol',
+        'MinSeqLen',If(DoHierarchicalGroups=true,'ReachabilityCutoff',NULL)] do
+        params := append(params, sprintf('%s=%a',p,eval(symbol(p))));
+    od:
+    return(ConcatStrings(params, '; '));
+end:
+
+WriteOrthoXML := proc(data, fn:string ; (stableGroupIDs=false):boolean )
     
     NS := length(genomes):
     Goff := CreateArray(1..NS+1):
     for i to NS do Goff[i+1] := Goff[i] + GS[genomes[i],TotEntries] od:
+
+    if stableGroupIDs then InitStableIDs(data) fi:
     
     verb := Set(printgc=false);
     OpenWriting(fn);
-    WriteXMLHeader(OMA_STANDALONE_VERSION);
+    WriteXMLHeader(OMA_STANDALONE_VERSION, getParamsAsNotes());
     WriteGeneRefs();
     if type(data,matrix(integer)) then 
         WriteOMAGroups(data,Goff);
     elif type(data, list(structure(anything,OrthologousCluster))) then
         for i to length(data) do
-            WriteOMAHClusterR( data[i], string(i) );
+            WriteOMAHClusterR( data[i], IdForGroup(i) );
         od:
     else 
         WriteOMAPairs(data,Goff); 
