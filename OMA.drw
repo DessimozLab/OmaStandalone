@@ -333,10 +333,10 @@ fi:
 
 print('\n\n****\n\nReading the all-against-all files...\n');
 
-N := length(genomes):
-ns := CreateArray(1..N):
-Lengths := CreateArray(1..N):
-for i to N do
+NG := length(genomes):
+ns := CreateArray(1..NG):
+Lengths := CreateArray(1..NG):
+for i to NG do
     if GS[genomes[i]]='unassigned' then
         lprint(genomes[i],'missing GenomeSummary information');  quit fi;
     t := GS[genomes[i],EntryLengths];
@@ -353,8 +353,8 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
 
 # Read the BestMatch from all x all files #
 
-    BestMatch := CreateArray(1..N,1..N):
-    for i to N do for j from i to N do
+    BestMatch := CreateArray(1..NG,1..NG):
+    for i to NG do for j from i to NG do
         BestMatch[i,j] := CreateArray(1..ns[i],[]);
         if j>i then BestMatch[j,i] := CreateArray(1..ns[j],[]) fi;
         if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
@@ -443,10 +443,10 @@ else
     # # Retrieve all IDs
     # # Create File MapSeqNum-ID:
     CallSystem('rm -rf Output; mkdir -p Output/PairwiseOrthologs');
-    IDtable := CreateArray(1..N);
+    IDtable := CreateArray(1..NG);
     OpenWriting('Output/Map-SeqNum-ID.txt');
     print('\#Format: genome<tab>sequence number<tab>id');
-    for i to N do
+    for i to NG do
         DB := DBs[i];
         tmp := CreateArray(1..ns[i]);
         for j to DB[TotEntries] do
@@ -468,10 +468,10 @@ else
         # quit;
     fi:
 
-    OGtable := CreateArray(1..N):
-    for i to N do OGtable[i] := CreateArray(1..ns[i]); od:
+    OGtable := CreateArray(1..NG):
+    for i to NG do OGtable[i] := CreateArray(1..ns[i]); od:
     for r to length(Ort) do
-        for k to N do
+        for k to NG do
             t := Ort[r,k];
             if t <> 0 then 
                 OGtable[k,t] := r;
@@ -480,7 +480,7 @@ else
     od:
 
     # Store the pairwise orthologs
-    for i to N do for j from i+1 to N do
+    for i to NG do for j from i+1 to NG do
         if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
             g1 := i;  g2 := j else g2 := i;  g1 := j fi;
             OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
@@ -534,7 +534,7 @@ else
     CallSystem('mkdir Output/OrthologousGroupsFasta');
     for r to length(Ort) do
         OpenWriting(sprintf('Output/OrthologousGroupsFasta/OG%d.fa',r));
-        for l to N do
+        for l to NG do
             if Ort[r,l] <> 0 then
                 DB := DBs[l];
                 e := Entry(Ort[r,l]);

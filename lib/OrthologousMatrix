@@ -93,8 +93,8 @@ global CliqueIterFactor, histog, triangle_analysis, StablePairs, VPairs,
 starttime := time();
 
     totpairs := rempairs := 0;
-    StablePairs := CreateArray(1..N,1..N):
-    for X to N do for Y to N do if X <> Y then
+    StablePairs := CreateArray(1..NG,1..NG):
+    for X to NG do for Y to NG do if X <> Y then
         if assigned(ContigStablePairTol) and (isContig[X] or isContig[Y]) then
             Tol := ContigStablePairTol;
         else
@@ -148,7 +148,7 @@ starttime := time();
 # Thinning of StablePairs #
 ###########################
 thnt := thnr := 0;
-for X to N do for Y to N do if X <> Y then
+for X to NG do for Y to NG do if X <> Y then
     for x1 to ns[X] do
         thnt := thnt + length(decompress(StablePairs[X,Y,x1]));
         for y2 in decompress(StablePairs[X,Y,x1]) do
@@ -244,14 +244,14 @@ fi;
 
 
 # witness must exit in at least 10% of 5 different genomes
-WitnessCrit:=min(ceil((N-2)*0.1),5);
+WitnessCrit:=min(ceil((NG-2)*0.1),5);
 # SP will not be broken if length of alignment is not sufficient
 SumLengthsTol := 0.9;
-NumAllBreak:=CreateArray(1..N^2);
-NumAllGenom:=CreateArray(1..N);
-VPairs := CreateArray(1..N,1..N):
+NumAllBreak:=CreateArray(1..NG^2);
+NumAllGenom:=CreateArray(1..NG);
+VPairs := CreateArray(1..NG,1..NG):
 idone := 0;  st := time();
-for X to N do for Y from X+1 to N do
+for X to NG do for Y from X+1 to NG do
     idone := idone+1;
     VPairs[X,Y] := CreateArray(1..ns[X],[]);
     VPairs[Y,X] := CreateArray(1..ns[Y],[]);
@@ -264,7 +264,7 @@ for X to N do for Y from X+1 to N do
               Row('Stable',genomes[X],a1[Score100]/100,SpanPrevious,genomes[Y]), 
               Row('Pair',x1,a1[PamDist10000]/10000,SpanPrevious,y2), Rule);
             totalbreakings:=genomesbreaking:=0;
-            for Z to N while not bad 
+            for Z to NG while not bad 
               or (UseSeveralWitnesses=true and GetStats=true) do
               if Z <> X and Z <> Y then
                 for a3 in decompress(BestMatch[X,Z,x1]) while not bad 
@@ -344,7 +344,7 @@ for X to N do for Y from X+1 to N do
     printf( '%s-%s, %d verified of %d stable pairs, %.3f%% done, %.2f hrs left\n',
         genomes[X], genomes[Y], sum(length(decompress(z)),z=VPairs[X,Y]),
         sum(length(decompress(z)),z=StablePairs[X,Y]),
-        200*idone/(N*(N-1)), (N*(N-1)/2-idone)*(time()-st)/idone/3600 );
+        200*idone/(NG*(NG-1)), (NG*(NG-1)/2-idone)*(time()-st)/idone/3600 );
 od od:
 
 BreakingStatsG:=[NumAllBreak,NumAllGenom];
@@ -386,9 +386,9 @@ ExtractBestMatchesSubgroupAsEdges := proc( X, Y, p1, p2, off1, off2 ;
     return( {op(edges)} ):
 end:
 
-ConsistentPairs := CreateArray(1..N,1..N):
+ConsistentPairs := CreateArray(1..NG,1..NG):
 idone := totVPadded := totVPremoved := 0; 
-for X to N do for Y from X+1 to N do
+for X to NG do for Y from X+1 to NG do
     ConsistentPairs[X,Y] := CreateArray(1..ns[X],{}):
     ConsistentPairs[Y,X] := CreateArray(1..ns[Y],{}):
     CCpnt := CreateArray(1..ns[X]+ns[Y]):
@@ -461,7 +461,7 @@ for X to N do for Y from X+1 to N do
     idone := idone + 1;
     printf('%s/%s (%d/%d) made consistent. %d/%d CC affected; pairs +%d, -%d; %.2f%% done\n', 
         genomes[X], genomes[Y], X, Y, grpsEdited, grps, VPadded, VPremoved,
-        200*idone/(N*(N-1)) );
+        200*idone/(NG*(NG-1)) );
 od od:
 printf('MakeVPsConsistent Summary: Adding %d, removing %d VPs\n', totVPadded, totVPremoved);
 VPairs := ConsistentPairs: ConsistentPairs := 0;
@@ -477,13 +477,13 @@ VPairs := ConsistentPairs: ConsistentPairs := 0;
 
 # find the cliques of Verified Pairs which become the Orthologous groups
 Orthologous := []:
-Used := CreateArray(1..N):
-for i to N do Used[i] := CreateArray(1..ns[i],false) od:
+Used := CreateArray(1..NG):
+for i to NG do Used[i] := CreateArray(1..ns[i],false) od:
 
 do
   VerifiedPairs := [];
   ls := 0;
-  for X to N do for Y from X+1 to N do
+  for X to NG do for Y from X+1 to NG do
     for x1 to ns[X] do if not Used[X,x1] then
         for a1 in decompress(BestMatch[X,Y,x1]) do if a1[Score100] > ls then
             y2 := a1[Entry];
@@ -515,7 +515,7 @@ do
 
     # the nodes of the graph are pairs of [genome,entry]
     cli := [ [g1,i1], [g2,i2] ];
-    for g3 to N do if g3 <> g1 and g3 <> g2 then
+    for g3 to NG do if g3 <> g1 and g3 <> g2 then
         cli := append( cli, seq( If(Used[g3,w],NULL,[g3,w]),
                 w = decompress(VPairs[g1,g3,i1]) intersect
 		    decompress(VPairs[g2,g3,i2]) ) )
@@ -542,7 +542,7 @@ do
 
     if length(cli) < 2 then next fi;
 
-    row := CreateArray(1..N);
+    row := CreateArray(1..NG);
     for z in cli do
         row[z[1]] := z[2];
         Used[z[1],z[2]] := true;
@@ -556,7 +556,7 @@ do
 # If still needed, it has to be recovered from p4 and
 # adjusted to the new factors in the Pair structure.
 
-histog := CreateArray(1..N);
+histog := CreateArray(1..NG);
 for z in Orthologous do
     t := sum( If( w=0, 0, 1 ), w=z );  histog[t] := histog[t]+1 od;
 printf( '%d orthologous groups, histog=%a\n', length(Orthologous), histog );
