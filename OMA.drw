@@ -192,19 +192,17 @@ DM := DayMatrix(224):
 NumberFormat := '%.10g':
 JustScoreBound := MinScore;
 
-NumberOfAlignments := proc(g1_:{posint,string},g2_:{posint,string})
-    g1 := If(type(g1_,posint),genomes[g1_], g1_);
-    g2 := If(type(g2_,posint),genomes[g2_], g2_);
-    if g1=g2 then
-        nrAlignments := GS[g1,TotEntries]*(GS[g1,TotEntries]-1)/2;
+NumberOfAlignments := proc(name1:string,name2:string)
+    if name1=name2 then
+        nrAlignments := GS[name1,TotEntries]*(GS[name1,TotEntries]-1)/2;
     else
-        nrAlignments := GS[g1,TotEntries]*GS[g2,TotEntries];
+        nrAlignments := GS[name1,TotEntries]*GS[name2,TotEntries];
     fi:
     return(nrAlignments);
 end:
 
-NumberOfJunks := proc(g1,g2)
-    return(ceil(NumberOfAlignments(g1,g2)/AlignBatchSize));
+NumberOfJunks := proc(name1, name2)
+    return(ceil(NumberOfAlignments(name1, name2)/AlignBatchSize));
 end:
 
 UpperTriangInd2Tuple := proc(index, N)
@@ -217,40 +215,38 @@ UpperTriangInd2Tuple := proc(index, N)
 end:
 
 FullInd2Tuple := proc(index, N)
-    m := floor(index/N);
+    m := floor((index-1)/N);
     c := index - m*N;
     return([m+1,c]);
 end:
 
 RangeOfJunk_iterator := proc(x)
-    g1 := x[1]; g2 := x[2]; junk:= x[3];
-    totJunks := NumberOfJunks(g1,g2):
+    name1 := x[1]; name2 := x[2]; junk:= x[3];
+    totJunks := NumberOfJunks(name1, name2);
     if not type(junk,posint) or junk>totJunks then
         error('invalid junk number: '.junk)
     fi:
-    all := NumberOfAlignments(g1,g2);
+    all := NumberOfAlignments(name1, name2);
     first := floor((junk-1)*all/totJunks)+1;
     last := floor(junk*all/totJunks);
-    if g1=g2 then 
-        if type(g1,posint) then g1 := genomes[g1] fi:
+    if name1=name2 then 
         for index from first to last do
-            iterate( UpperTriangInd2Tuple(index, GS[g1,TotEntries]));
+            iterate( UpperTriangInd2Tuple(index, GS[name1,TotEntries]));
         od:
     else
-        if type(g2,posint) then g2 := genomes[g2] fi:
         for index from first to last do
-            iterate( FullInd2Tuple(index, GS[g2,TotEntries]));
+            iterate( FullInd2Tuple(index, GS[name2,TotEntries]));
         od:
     fi:
 end:
 RangeOfJunk := noeval(RangeOfJunk):
 
-IsMyJob := proc(g1,g2,junk)
-    return( evalb(mod( hash([g1,g2,junk]), NrParallelProc ) = ProcNr-1) ); 
+IsMyJob := proc(name1, name2, junk)
+    return( evalb(mod( hash([name1,name2,junk]), NrParallelProc ) = ProcNr-1) ); 
 end:
 
 
-tot := sum([seq(seq(NumberOfJunks(g1,g2),g2=g1..NG), g1=1..NG)]); 
+tot := [seq(seq(NumberOfJunks(genomes[g1],genomes[g2]),g2=g1..NG), g1=1..NG)]; 
 c1 := 0:
 for g1 to NG do 
     for g2 from g1 to NG do
@@ -283,10 +279,10 @@ for g1 to NG do
             next;
         fi;
 
-        nrJunks := NumberOfJunks(g1,g2);
+        nrJunks := NumberOfJunks(name1, name2);
         for part to nrJunks do
             c1 := c1+1;
-            if not IsMyJob(g1,g2,part) then next fi:
+            if not IsMyJob(name1,name2,part) then next fi:
 
             # skip if cached or already computed
             fn := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, nrJunks);
@@ -306,8 +302,10 @@ for g1 to NG do
             t0 := UTCTime():
             res := []:
             c2 := 0;
+            algnInRange := min(AlignBatchSize,NumberOfAlignments(name1,name2));
+            
             # iterate over all the protein pairs in this junk and compute alignment
-            for proteinPair in RangeOfJunk(g1,g2,part) do
+            for proteinPair in RangeOfJunk(name1, name2, part) do
                 i1 := proteinPair[1]; 
                 i2 := proteinPair[2];
                 
@@ -317,8 +315,8 @@ for g1 to NG do
                 if mod(c2,50000)=0 then
                     printf('   [pid %6d]: %.2f%% complete, time left for this '.
                         'part=%.1fh, %.1f%% of AllAll done\n',
-                        getpid(),100*c2/AlignBatchSize,AlignBatchSize/c2*(UTCTime()-t0)/3600,
-                        100*( (c1-1+c2/AlignBatchSize)/tot ));
+                        getpid(),100*c2/algnInRange,algnInRange/c2*(UTCTime()-t0)/3600,
+                        100*( (c1-1+c2/algnInRange)/tot ));
                 fi:
                 dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
                 if dps[1] >= .75*MinScore then
@@ -351,7 +349,7 @@ for g1 to NG do
                 printf('Finished %s vs %s (Part %d of %d)\n'.
                 '  %.1f%% of AllAll done, estimated remaining time:'
                 .' %.1fh\n\n', name1,name2,part,nrJunks, 
-                100*c1/tot, drt*AlignBatchSize*sum(tot[c1..-1])/c2/3600);
+                100*c1/sum(tot), algnInRange * drt * sum(tot[c1..-1])/c2/3600);
             else
                 printf('Finished %s vs %s (Part %d of %d)\n',
                     name1,name2,part,nrJunks);
@@ -411,9 +409,10 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
         if FileExists(fn1chunk) then
             ReadProgram(fn1chunk);
         else
-            for part to NP do 
+            nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
+            for part to nrJunks do 
                 fn := sprintf('Cache/AllAll/%s/%s_%d-%d',genomes[g1],genomes[g2],
-                    part, NP);
+                    part, nrJunks);
                 ReadProgram( fn );
             od:
         fi;
