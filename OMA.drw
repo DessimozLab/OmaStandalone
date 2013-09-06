@@ -192,22 +192,28 @@ DM := DayMatrix(224):
 NumberFormat := '%.10g':
 JustScoreBound := MinScore;
 
-NumberOfJunks := proc(g1,g2)
+NumberOfAlignments := proc(g1_:{posint,string},g2_:{posint,string})
+    g1 := If(type(g1_,posint),genomes[g1_], g1_);
+    g2 := If(type(g2_,posint),genomes[g2_], g2_);
     if g1=g2 then
-        nrAlignments := GS[g1,TotEntries]*(GS[g1,TotEntries]+1)/2;
+        nrAlignments := GS[g1,TotEntries]*(GS[g1,TotEntries]-1)/2;
     else
         nrAlignments := GS[g1,TotEntries]*GS[g2,TotEntries];
     fi:
-    return(ceil(nrAlignments/AlignBatchSize));
+    return(nrAlignments);
+end:
+
+NumberOfJunks := proc(g1,g2)
+    return(ceil(NumberOfAlignments(g1,g2)/AlignBatchSize));
 end:
 
 UpperTriangInd2Tuple := proc(index, N)
     c := index; m := 1;
-    while c-N+m-1 > 0 do
-        c := c-N+m-1;
+    while c-N+m > 0 do
+        c := c-N+m;
         m := m+1;
     od:
-    return([m, c+m-1]);
+    return([m, c+m]);
 end:
 
 FullInd2Tuple := proc(index, N)
@@ -222,17 +228,16 @@ RangeOfJunk_iterator := proc(x)
     if not type(junk,posint) or junk>totJunks then
         error('invalid junk number: '.junk)
     fi:
-    if g1=g2 then
-        all := GS[g1,TotEntries]*(GS[g1,TotEntries]+1)/2;
-        first := floor((junk-1)*all/totJunks)+1;
-        last := floor(junk*all/totJunks);
+    all := NumberOfAlignments(g1,g2);
+    first := floor((junk-1)*all/totJunks)+1;
+    last := floor(junk*all/totJunks);
+    if g1=g2 then 
+        if type(g1,posint) then g1 := genomes[g1] fi:
         for index from first to last do
             iterate( UpperTriangInd2Tuple(index, GS[g1,TotEntries]));
         od:
     else
-        all := GS[g1,TotEntries]*GS[g2,TotEntries];
-        first := floor((junk-1)*all/totJunks)+1;
-        last := floor(junk*all/totJunks);
+        if type(g2,posint) then g2 := genomes[g2] fi:
         for index from first to last do
             iterate( FullInd2Tuple(index, GS[g2,TotEntries]));
         od:
@@ -241,12 +246,11 @@ end:
 RangeOfJunk := noeval(RangeOfJunk):
 
 IsMyJob := proc(g1,g2,junk)
-    return( evalb(mod( hash([g1,g2,junk]), NrParallelProc ) = ProcNr) ); 
+    return( evalb(mod( hash([g1,g2,junk]), NrParallelProc ) = ProcNr-1) ); 
 end:
 
 
 tot := sum([seq(seq(NumberOfJunks(g1,g2),g2=g1..NG), g1=1..NG)]); 
-totAls := [seq( seq( seq( DBs[g1,TotEntries]/NP*DBs[g2,TotEntries], NP), g2=g1..NG), g1=1..NG)];
 c1 := 0:
 for g1 to NG do 
     for g2 from g1 to NG do
