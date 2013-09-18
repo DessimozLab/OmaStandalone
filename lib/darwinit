@@ -68,3 +68,4 @@ HierarchicalGroups := noeval(ReadLibrary(OrthologsLib.'HierarchicalGroups', Hier
 BuildSpeciesTree := noeval(ReadLibrary(OrthologsLib.'TreeBuilding', BuildSpeciesTree));
 
 GenerateStableIDs := noeval(ReadLibrary(OrthologsLib.'StableIdentifiers', GenerateStableIDs)):
+ParallelInfo := noeval(ReadLibrary(OrthologsLib.'Platforms'));

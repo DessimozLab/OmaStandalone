@@ -82,21 +82,34 @@ else
 fi:
 
 # get nr of total parallel process and number of this job.
-NrParallelProc := getenv('OMA_NR_PARALLEL_JOBS');
-ProcNr := getenv('LSB_JOBINDEX');
-if NrParallelProc='' then NrParallelProc := 1; 
-else NrParallelProc := parse(NrParallelProc) fi:
-if ProcNr='' then ProcNr := 1 else ProcNr := parse(ProcNr) fi:
-printf('I''m job nr %A of %A\n', ProcNr, NrParallelProc);
+pinf := DetectParallelInfo():
+print(pinf);
 
 # if not job nr 1, wait until conversion of DBs are done.
-for k while ProcNr>1 and not FileExists('Cache/conversion.done') do 
-    sleep(min(20, ceil(Rand()*2^k))) 
-od:
+convDone := proc() 
+    filename := 'Cache/conversion.done';
+    if nargs=0 then 
+        return(FileExists(filename));
+    elif nargs=1 and args[1] then
+        OpenWriting(filename); 
+        printf('# finished at %s on %s (pid %d), time %f\n', date(), hostname(), 
+            getpid(), time());
+        OpenWriting(previous);
+    fi:
+end:
+if pinf['ProcNr']>1 then
+    for k to 5*length(G) while not convDone() do 
+        sleep(min(20, ceil(Rand()*2^k))) 
+    od:
+    if not convDone() then 
+        printf('job %d [pid %d]: waiting for too long. abort.\n', pinf['ProcNr'], getpid());
+        exit(1);
+    fi:
+fi:
 
 GS := table();
 DBs := genomes := isContig := [];
-if ProcNr=1 and not ReuseCachedResults then
+if pinf['ProcNr']=1 and not ReuseCachedResults then
     CallSystem('rm -rf Cache'); 
 fi;
 CallSystem('mkdir -p Cache/DB');
@@ -173,7 +186,7 @@ for g in G do
     GS[gname] := GenomeSummary(DB);
     DBs := append(DBs,DB); 
 od:
-OpenWriting('Cache/conversion.done'); OpenWriting(previous);
+convDone(true); # signal other processes to start.
 NG := length(genomes):
 if NG < 2 then
     printf('\n\n'
@@ -242,7 +255,8 @@ end:
 RangeOfJunk := noeval(RangeOfJunk):
 
 IsMyJob := proc(name1, name2, junk)
-    return( evalb(mod( hash([name1,name2,junk]), NrParallelProc ) = ProcNr-1) ); 
+    return( evalb(mod( hash([name1,name2,junk]), 
+            pinf['NrParallelProc'] ) = pinf['ProcNr']-1) ); 
 end:
 
 
