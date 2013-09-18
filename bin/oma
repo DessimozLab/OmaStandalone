@@ -10,8 +10,29 @@ then
 fi
 
 
-pfile="parameters.drw"
-wdir="./"
+usage(){
+cat << EOF
+$0 - runs OMA standalone
+
+$0 [options] [paramfile]
+
+The all-against-all Smith-Waterman alignment step of OMA requires 
+a lot of CPU time. OMA standalone can therefore be run in parallel.
+If you intend to use OMA standalone on a HPC cluster with a LSF 
+or SunGridEngine scheduler, you should use the jobarray option,
+e.g. bsub -J "oma[1-500]" $0 (on LSF).
+In case you run OMA on a single computer with several cores, use 
+the -n option.
+
+options:
+  -n <number>   number of parallel jobs to be started on this computer
+  -v            version
+  -d <level>    increase debug info to <level>. By default level is set to 1.
+  -h/?          this help
+
+paramfile       path to the parameter file. it defaults to ./parameters.drw
+EOF
+
 paramerror="
 
 I found an error in your parameter file.
@@ -19,27 +40,38 @@ Most probably, you missed a semicolon at the end of a line.
 
 Please fix it and try again."
 
-if [ $# -gt 0 ]
-then
-    if [ $1 = "--help" -o $1 = "-h" -o $1 = "-?" ]
-    then
-        echo "Usage: OMA [<parameter file>]"
-        exit 0;
-    fi
-    if [ $1 = "--version" -o $1 = "-v" ]
-    then
-        echo "OMA version [VERSIONNR]"
-        exit 0;
-    fi
-fi
+pfile="./parameters.drw"
+wdir="./"
+dbglevel="1"
+NProc="1"
+localParallel="0"
 
-if [ $# -eq 1 ]
-then
-    pfile=$1
-elif [ $# -gt 1 ]
-then
-    echo "Too many parameters!"
-    exit 1
+while getopts "h?n:vd:" opt ; do
+    case $opt in 
+    h|?) usage
+         exit 0
+         ;;
+    n)   NProc="OPTARG" 
+         if [[ ! $NProc =~ "^[0-9]*$" ]] ; then
+             echo "-n requires positive integer as argument" >&2
+             usage
+             exit 1
+         fi
+         localParallel=1
+         ;;
+    d)   dbglevel="OPTARG" ;;
+    v)   echo "OMA version [VERSIONNR]"
+         exit 0
+         ;;
+    *)   echo "invalid option" >&2
+         usage
+         exit 1
+    esac
+done
+shift $((OPTIND-1))
+
+if [ -n "$1" ] ; then 
+    pfile="$1"
 fi
 
 if [ ! -e $pfile ]
@@ -48,10 +80,19 @@ then
     exit 1
 fi
 
+inBg=""
+for pNr in $(seq 1 $NProc) ; do
+    if [ "$localParallel" -gt 0 ] ; then
+        OneMachineParallelInfo="NR_PROCESSES := $NProc; THIS_PROC_NR := $pNr;"
+        inBg="&"
+    fi
+
 cat $OMA_PATH/lib/splashscreen.txt
 echo "libdir := '$OMA_PATH/lib/': \
 e := traperror(eval(parse(ReadRawFile('$pfile')))): \
 if e=lasterror then print('$paramerror'): done: fi: \
+printlevel := $dbglevel: ${OneMachineParallelInfo} \
 OMA_STANDALONE_VERSION := '[VERSIONNR]': \
-ReadProgram('$OMA_PATH/OMA.drw'): done:" | $OMA_PATH/bin/omadarwin -q 
+ReadProgram('$OMA_PATH/OMA.drw'): done:" | $OMA_PATH/bin/omadarwin -q $inBg
 
+done
