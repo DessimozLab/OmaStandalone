@@ -51,7 +51,7 @@ Esprit := proc(params)
     thresh1 := MinProbContig*length(SearchAllArray(false,isContig)):
     thresh2 := (1-MinProbContig)*length(SearchAllArray(false,isContig)):
     ContigHits := []:
-    for i to N do
+    for i to NG do
         if isContig[i] then
             DB := DBs[i];
             for s1 to ns[i] do
@@ -59,7 +59,7 @@ Esprit := proc(params)
                 t := table(0):
                 tpairs := table([],[]):
                 c := 0;
-                for j to N do
+                for j to NG do
                     if isContig[j] then next fi;
                     lists2 := decompress(BestMatch[i,j,s1]):
                     if (AllowMultipleHits and length(lists2) >= 1)

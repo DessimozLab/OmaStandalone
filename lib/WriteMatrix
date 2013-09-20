@@ -52,7 +52,7 @@ WriteGroups := proc(Ort, fname)
           '\# OrthologousMatrix.txt representation.');
     for r to length(Ort) do
         printf('OMA%05d',r);
-        for l to N do
+        for l to NG do
             if Ort[r,l] <> 0 then
                 printf('\t%s:%s',genomes[l],IDtable[l,Ort[r,l]]);
             fi;
