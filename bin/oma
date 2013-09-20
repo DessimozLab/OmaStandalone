@@ -21,6 +21,7 @@ a lot of CPU time. OMA standalone can therefore be run in parallel.
 If you intend to use OMA standalone on a HPC cluster with a LSF 
 or SunGridEngine scheduler, you should use the jobarray option,
 e.g. bsub -J "oma[1-500]" $0 (on LSF).
+     qsub -t 1-500 $0 (on SunGridEngine)
 In case you run OMA on a single computer with several cores, use 
 the -n option.
 
