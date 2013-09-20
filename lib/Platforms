@@ -22,8 +22,13 @@ LSF_Platform := proc()
         if jobsum[1]<>0 then 
             error('cannot call ''bjobs'' command successfully'); 
         fi:
-        jobsumTab := [seq(SearchDelim('\t',trim(l)), l=jobsum[2])];
-        NrParallelProc := parse(jobsumTab[2,4]);
+        sndLine := SplitLines(jobsum[2])[2];
+        re := MatchRegex('^[[:digit:]]\+[[:blank:]]\+[^[:blank:]]\+[[:blank:]]\+[^[:blank:]]\+[[:blank:]]\+([[:digit:]])\+', sndLine);
+        if length(re)<2 then error('cannot extract total number of jobs'); fi:
+        NrParallelProc := parse(re[2]);
+    fi:
+    if jobidx > NrParallelProc then
+        error('require range from 1-x of jobarray.');
     fi:
     return(ParallelInfo(NrParallelProc, jobidx));
 end:
@@ -38,13 +43,21 @@ SunGrid_Platform := proc()
     else
         jobidx := parse(jobidx);
         # TODO: find out how to compute NrOfParallelJobs
-        NrParallelProc := -1;
+        NrParallelProc := getenv('SGE_TASK_LAST');
+        if NrParallelProc<>'' then
+            NrParallelProc := parse(NrParallelProc);
+        else
+            NrParallelProc := 1;
+        fi:
+    fi:
+    if jobidx > NrParallelProc then
+        error('require range from 1-x of jobarray.');
     fi:
     return(ParallelInfo(NrParallelProc, jobidx));
 end:
 
 DetectParallelInfo := proc()
-    if getenv('LSF_JOBID')<>'' then
+    if getenv('LSB_JOBID')<>'' then
         return(LSF_Platform());
     elif getenv('SGE_ROOT')<>'' then
         return(SunGrid_Platform());

@@ -82,7 +82,11 @@ else
 fi:
 
 # get nr of total parallel process and number of this job.
-pinf := DetectParallelInfo():
+pinf := traperror(DetectParallelInfo()):
+if pinf=lasterror then
+    printf('ERROR: %a\n', pinf);
+    exit(1);
+fi:
 print(pinf);
 
 # if not job nr 1, wait until conversion of DBs are done.
