@@ -195,7 +195,7 @@ cp /your/install/prefix/OMA/'.folderName.'/parameters.drw ./
 # adjust parameters
 vim parameters.drw
 # run OMA
-oma')),
+OMA')),
         
         Paragraph(0, 'To get a first impression of ', TT('OMA'), ' you 
         could ', TT('cd'), ' into the ', TT('ToyExample'), ' directory, 
@@ -209,18 +209,24 @@ oma')),
         Paragraph(0, 'The all-against-all phase of OMA is the most time-',
         'consuming one, but it can be parallelized (unlike all other steps, ',
         'which cannot run in parallel). The way it works is that the ',
-        'parameter "NP" and the ',
+        'parameter "AlignBatchSize" and the ',
         'total number of genomes (n) will determine into how many chunks the ',
-        'all-against-all phase is divided. If NP=1, there will be n*(n-1)/2 ',
-        'parts, if NP is higher, there will be more (shorter) jobs.'),
+        'all-against-all phase is divided. AlignBatchSize will split the n*(n-1)/2 ',
+        'genome pairs further into junks of at most "AlignBatchSize" alignments. ',
+        'The larger AlignBatchSize is, the more and smaller jobs will be executed.'),
         
-        Paragraph(0, 'Now, scheduling is straightforward: all compute 
+        Paragraph(0, 'Scheduling is quite straightforward: all compute 
         processes ',
-        'need to start from the same directory, and will try to do all the ',
+        'need to start from the same directory, and each one will try to do an equal 
+        amount of ',
         'chunks sequentially. However, before starting a new chunk, each ',
-        'process ensures that it has not yet been claimed/processed by another 
-        ',
+        'process ensures that it has not yet already been processed by another ',
         'process (i.e. no result file yet exists).'),
+        Paragraph(0, 'On a single computer with multiple processors and/or cores, ',
+        'it is recomended to start "N" parallel processes with the "-n" option, i.e.',
+        Code('OMA -n 5'), 
+        ' will start 5 parallel jobs. Note that on HPC with schedulers there is a ',
+        'better way described ', Link(TextBlock('a', href='LSF', 'below'))),
         
         Paragraph(0, 'Therefore, there is not need to specify which parts are 
         to be done by which process. One should only ensure that all processes 
@@ -229,19 +235,21 @@ oma')),
         ),
 
         Anchor(TextBlock('a', name='LSF', 
-            SectionHeader(3, 'Parallelization with LSF'))
+            SectionHeader(3, 'Parallelization with LSF or SunGridEngine'))
         ),
-        Paragraph(0, 'With LSF, running parallel jobs is particularly easy,
-        as the parallel jobs can be start using as a job array. To minimize
-        the risk of collision, we recommend adding a small, variable delay
-        before starting each job, e.g.'),
+        Paragraph(0, 'With LSF or SGE, running parallel jobs is particularly easy,
+        as the parallel jobs can be start using as a job array. OMA will 
+        automatically spread the work for the all-against-all among all processes.
+        Do not start OMA with the -n option for that:'),
 
         Paragraph(0, 
-            Code('bsub -J "OMA[1-100]" -o "out.%I" "sleep \$LSB_JOBINDEX && oma"')
+            Code('bsub -J "OMA[1-100]" -o "out.%I" "OMA"'),' or'
+            ),
+        Paragraph(0, 
+            Code('qsub -t 1-100 "OMA"'),
             ),
 
-        Paragraph(0, 'which starts 100 processes in parallel, with at 
-            least one second delay between each of them.'),
+        Paragraph(0, 'respectively, which starts 100 processes in parallel.'),
 
         Anchor(TextBlock('a', name='Adding/Updating new genomes', 
             SectionHeader(2, 'Adding/Updating new genomes'))
@@ -428,13 +436,15 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         scratch everytime the script is run, set this to ',
                         TT('false'), '.'),
                         TT('true')),
-                    Row(TT('NP'),
+                    Row(TT('AlignBatchSize'),
                         Paragraph(0, 'In the all-against-all phase, each genome
-                        pair is split in ',TT('NP'), 'parts. This allows for 
-                        shorter milestone steps (e.g. in case of computer 
-                        crash) and allows to parallelize jobs with few but 
-                        large genomes.'),
-                        TT(4)),
+                        pair is split in smaller junks of ',TT('AlignBatchSize'), 
+                        'protein comparisons. The larger this number, the longer 
+                        each unit runs, and the fewer files get produced. This 
+                        allows to adjust the frequency of milestone steps 
+                        (e.g. in case of computer crash) or to process few but 
+                        large genomes with many CPUs efficently.'),
+                        TT(1000*1000)),
                     Row(TT('MinScore'), 
                         Paragraph(0, 'Alignments which have a score lower than ',
                         TT('MinScore'), ' will not be considered. The scores
