@@ -96,8 +96,6 @@ cat $OMA_PATH/lib/splashscreen.txt
 for pNr in $(seq 1 $NProc) ; do
     if [ "$localParallel" -gt 0 ] ; then
         OneMachineParallelInfo="NR_PROCESSES := $NProc; THIS_PROC_NR := $pNr;"
-        inBg="&"
-    else inBg=""
     fi
 
 echo "libdir := '$OMA_PATH/lib/': \
@@ -105,6 +103,7 @@ e := traperror(eval(parse(ReadRawFile('$pfile')))): \
 if e=lasterror then print('$paramerror'): done: fi: \
 printlevel := $dbglevel: ${OneMachineParallelInfo} \
 OMA_STANDALONE_VERSION := '[VERSIONNR]': \
-ReadProgram('$OMA_PATH/OMA.drw'): done:" | $OMA_PATH/bin/omadarwin -q $inBg
-
+ReadProgram('$OMA_PATH/OMA.drw'): done:" |  $OMA_PATH/bin/omadarwin -q &
 done
+
+wait
