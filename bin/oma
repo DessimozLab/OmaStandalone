@@ -32,6 +32,7 @@ options:
 
 paramfile       path to the parameter file. it defaults to ./parameters.drw
 EOF
+}
 
 paramerror="
 
@@ -46,48 +47,59 @@ dbglevel="1"
 NProc="1"
 localParallel="0"
 
-while getopts "h?n:vd:" opt ; do
+while getopts "hn:vd:" opt ; do
     case $opt in 
-    h|?) usage
+    h) usage
          exit 0
          ;;
-    n)   NProc="OPTARG" 
-         if [[ ! $NProc =~ "^[0-9]*$" ]] ; then
-             echo "-n requires positive integer as argument" >&2
+    n)   NProc="$OPTARG"
+         if ! echo $NProc |  grep -P "^[0-9]+$" >/dev/null ; then
+             echo "-$opt requires positive integer as argument" >&2
              usage
              exit 1
          fi
          localParallel=1
          ;;
-    d)   dbglevel="OPTARG" ;;
+    d)   dbglevel="$OPTARG"
+         if ! echo $dbglevel |  grep -P "^[0-9]+$" >/dev/null ; then
+             echo "-$opt requires positive integer as argument" >&2
+             usage
+             exit 1
+         fi
+         ;;
     v)   echo "OMA version [VERSIONNR]"
          exit 0
          ;;
-    *)   echo "invalid option" >&2
+    \?)  echo "invalid option" >&2
          usage
          exit 1
+         ;;
+    :)   echo "option -$OPTARG requires an argument" >&2
+         usage
+         exit 1
+         ;;
     esac
 done
 shift $((OPTIND-1))
+echo $@
 
 if [ -n "$1" ] ; then 
     pfile="$1"
 fi
 
-if [ ! -e $pfile ]
-then
-    echo "Could not find parameter file!"
+if [ ! -e $pfile ] ; then
+    echo "Could not find parameter file!" >&2
     exit 1
 fi
 
-inBg=""
+cat $OMA_PATH/lib/splashscreen.txt
 for pNr in $(seq 1 $NProc) ; do
     if [ "$localParallel" -gt 0 ] ; then
         OneMachineParallelInfo="NR_PROCESSES := $NProc; THIS_PROC_NR := $pNr;"
         inBg="&"
+    else inBg=""
     fi
 
-cat $OMA_PATH/lib/splashscreen.txt
 echo "libdir := '$OMA_PATH/lib/': \
 e := traperror(eval(parse(ReadRawFile('$pfile')))): \
 if e=lasterror then print('$paramerror'): done: fi: \
