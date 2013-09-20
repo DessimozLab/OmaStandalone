@@ -17,14 +17,14 @@
 # is run, set the following parameter to false.
 ReuseCachedResults := true;
 
-# number of parts into which a genome pair is split. This allows for 
-# shorter milestone steps (e.g. in case of computer crash) and allows 
-# to parallelize jobs with few but large genomes.
-NP := 1;
+# number of pairwise protein alignments done in one unit. The larger this number,
+# the longer each unit runs, and the fewer files get produced. This allows to
+# adjust the frequency of milestone steps (e.g. in case of computer crash)
+AlignBatchSize := 1000^2;
 
 # alignments which have a score lower than MinScore will not be considered.
 # The scores are in Gonnet PAM matrices units.
-MinScore := 181; 
+MinScore := 181;
 
 # Length tolerance ratio.  If the length of the effective alignement
 # is less than LengthTol*min(length(s1),length(s2)) then the alignment
@@ -44,6 +44,16 @@ VerifiedPairTol := 1.53;
 # regular genomes is not considered.
 MinSeqLen := 50;
 
+##############################################################
+# Output parameters
+##############################################################
+# Enables/disables the generation of stable identifiers for OMA groups (and
+# Hierarchical Groups if their computation enabled). The identifier consists of a
+# prefix to determine the type of the group ('OMA' or 'HOG'), and a
+# subsequence of the amino acid sequence uniquely present in this group. The
+# computation of these ids might require a substantial amount of time. The ids
+# are stored in the OrthoXML files only.
+StableIdsForGroups := false;
 
 ##############################################################
 # Hierarchical Orthologous Groups
@@ -52,7 +62,13 @@ MinSeqLen := 50;
 # You can either set it to 'true', which will enable the computation or 
 # disable it by setting it to 'false'. Keep in mind that the current
 # implementation is not yet parallelized and hence needs quite some time.
-DoHierarchicalGroups := false;
+DoHierarchicalGroups := true;
+
+# Define maximum umount of time (in sec) spent by the program for  
+# breaking every connected component of the orthology graph at its 
+# weakest link on a given taxonomic level. If set to a negative value,
+# no timelimit is enforced.
+MaxTimePerLevel := 1200; # 20min
 
 # The hierarchical groups need a hierarchy of the involved species in
 # from of a tree. This tree can either be estimated from the OMA Groups
@@ -65,7 +81,6 @@ SpeciesTree := 'estimate';
 # The cutoff of 'average reachability within two steps' defines up to
 # what point a cluster is split into sub-clusters.
 ReachabilityCutoff := 0.65;
-
 
 
 ###############################################################################
@@ -92,7 +107,7 @@ DistConfLevel := 2;
 # to consider that we might be dealing with fragments of the same gene
 # (this is the parameter "MinRefGenomes" described in the paper,
 # normalized by the total number of reference genomes)
-MinProbContig := 0.2;
+MinProbContig := 0.4;
 
 # Maximum overlap between fragmnents of same gene from different contigs
 MaxContigOverlap := 5;
