@@ -337,7 +337,7 @@ for g1 to NG do
                     printf('   [pid %6d]: %.2f%% complete, time left for this '.
                         'part=%.1fh, %.1f%% of AllAll done\n',
                         getpid(),100*c2/algnInRange,algnInRange/c2*(UTCTime()-t0)/3600,
-                        100*( (c1-1+c2/algnInRange)/tot ));
+                        100*( (c1-1+c2/algnInRange)/sum(tot) ));
                 fi:
                 dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
                 if dps[1] >= .75*MinScore then
