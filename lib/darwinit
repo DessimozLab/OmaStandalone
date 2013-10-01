@@ -64,7 +64,10 @@ WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
 WriteMatrix := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteMatrix));
 WriteGroups := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteGroups));
+WriteFastaGroups := noeval(ReadLibrary(OrthologsLib.'WriteFastaGroups', WriteFastaGroups));
 HierarchicalGroups := noeval(ReadLibrary(OrthologsLib.'HierarchicalGroups', HierarchicalGroups));
 BuildSpeciesTree := noeval(ReadLibrary(OrthologsLib.'TreeBuilding', BuildSpeciesTree));
 
 GenerateStableIDs := noeval(ReadLibrary(OrthologsLib.'StableIdentifiers', GenerateStableIDs)):
+ParallelInfo := noeval(ReadLibrary(OrthologsLib.'Platforms', ParallelInfo));
+DetectParallelInfo := noeval(ReadLibrary(OrthologsLib.'Platforms', DetectParallelInfo));

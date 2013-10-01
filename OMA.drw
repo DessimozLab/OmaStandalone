@@ -80,11 +80,40 @@ if not assigned(Datasets) then
 else
     G := Datasets;
 fi:
-if not type(NP,posint) then NP := 1 fi;
+
+# get nr of total parallel process and number of this job.
+pinf := traperror(DetectParallelInfo()):
+if pinf=lasterror then
+    printf('ERROR: %a\n', pinf);
+    exit(1);
+fi:
+print(pinf);
+
+# if not job nr 1, wait until conversion of DBs are done.
+convDone := proc() 
+    filename := 'Cache/conversion.done';
+    if nargs=0 then 
+        return(FileExists(filename));
+    elif nargs=1 and args[1] then
+        OpenWriting(filename); 
+        printf('# finished at %s on %s (pid %d), time %f\n', date(), hostname(), 
+            getpid(), time());
+        OpenWriting(previous);
+    fi:
+end:
+if pinf['ProcNr']>1 then
+    for k to 5*length(G) while not convDone() do 
+        sleep(min(20, ceil(Rand()*2^k))) 
+    od:
+    if not convDone() then 
+        printf('job %d [pid %d]: waiting for too long. abort.\n', pinf['ProcNr'], getpid());
+        exit(1);
+    fi:
+fi:
 
 GS := table();
 DBs := genomes := isContig := [];
-if not ReuseCachedResults then
+if pinf['ProcNr']=1 and not ReuseCachedResults then
     CallSystem('rm -rf Cache'); 
 fi;
 CallSystem('mkdir -p Cache/DB');
@@ -135,24 +164,27 @@ for g in G do
         s := uppercase(input[1,i]):
         # minimal check of sequences
         if length(s) < ML then
-            OpenWriting(previous);
-            printf( 
-            'Warning: Sequence %s (%s) is less than MinSeqLen(Contig)=%d AA '
-            .'long. Ignored. \n',
-                input[2,i], gname, ML
-            );
-            OpenAppending('Cache/DB/'.gname.'.db');
+            warning( sprintf( 
+                'Sequence %s (%s) is less than MinSeqLen(Contig)=%d AA'.
+                'long. Ignored. \n',
+                input[2,i], gname, ML));
             next;
         fi;
+        c_toX := 0;
         for j to length(s) do
             aa := AToInt(s[j]);
             if aa < 1 or aa > 21 then
-                OpenWriting(previous);
-                error(printf('Unknown character: %s (in %s, %s)', 
-                    s[j], input[2,i], gname));
-                quit;
+                warning(sprintf('Unknown character: %s (in %s, %s pos %d) --> X', 
+                    s[j], input[2,i], gname, j));
+                s[j] := 'X';
+                c_toX := c_toX+1;
             fi;
         od;
+        if c_toX>=5 and c_toX>.05*length(s) then
+            warning('Too many unknwon chars in %s, %s. skipping.',
+                input[2,i],gname);
+            next;
+        fi:
         printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n',
             ReplaceString('\t','',input[2,i]) , s);
     od:
@@ -161,56 +193,84 @@ for g in G do
     GS[gname] := GenomeSummary(DB);
     DBs := append(DBs,DB); 
 od:
-if length(genomes) < 2 then
+convDone(true); # signal other processes to start.
+NG := length(genomes):
+if NG < 2 then
     printf('\n\n'
           .'%d genome found... make sure that your genomes (in fasta format)\n'
           .'are located in a directory called "DB", itself located in\n'
-          .'the present directory.\n\n'
-         , length(genomes));
+          .'the present directory.\n\n', NG);
     quit;
 fi;
-
-# check whether we find AllAll-files which have been computed using a 
-# different NP. In that case, warn the user and/or stop
-if FileExists('Cache/AllAll') then
-t := TimedCallSystem('find Cache/AllAll -type f')[2];
-files := [seq(f[1..-2], f=SplitLines(t))]:
-for file in files do
-    b := SearchAllString('-', file);
-    if b = [] then next fi:
-    b := b[-1]:
-    e := If(file[-3..-1]='.gz', -4, -1);
-    if parse(file[b+1..e])<>NP then
-        printf('\n\n'
-            .'WARNING: found allall-files which have not the same value '
-            .'for ''NP''.\n'
-            .'  If you continue, the previous results will be not be used.\n');
-        sleep(5);
-        break;
-    fi:
-od:
-fi:
-    
-if NP>1 then sleep( Rand(1..10) ) fi:
+ 
 
 ##############################################################################
 # All-against-all
 #   assign name1, name2, db1, db2
-
-print('\n\n****\n\nStarting the all-against-all phase...\n');
-print('Note, if you want to parallelize this process, you may start ',
-    'several instances of OMA from the same directory now.\n');
-
 CreateDayMatrices();
 DM := DayMatrix(224):
 NumberFormat := '%.10g':
 JustScoreBound := MinScore;
 
-tot := length(genomes)*(length(genomes)+1)/2*NP;
-totAls := [seq( seq( seq( DBs[g1,TotEntries]/NP*DBs[g2,TotEntries], NP), g2=g1..length(genomes)), g1=1..length(genomes))];
+NumberOfAlignments := proc(name1:string,name2:string)
+    if name1=name2 then
+        nrAlignments := GS[name1,TotEntries]*(GS[name1,TotEntries]-1)/2;
+    else
+        nrAlignments := GS[name1,TotEntries]*GS[name2,TotEntries];
+    fi:
+    return(nrAlignments);
+end:
+
+NumberOfJunks := proc(name1, name2)
+    return(ceil(NumberOfAlignments(name1, name2)/AlignBatchSize));
+end:
+
+UpperTriangInd2Tuple := proc(index, N)
+    c := index; m := 1;
+    while c-N+m > 0 do
+        c := c-N+m;
+        m := m+1;
+    od:
+    return([m, c+m]);
+end:
+
+FullInd2Tuple := proc(index, N)
+    m := floor((index-1)/N);
+    c := index - m*N;
+    return([m+1,c]);
+end:
+
+RangeOfJunk_iterator := proc(x)
+    name1 := x[1]; name2 := x[2]; junk:= x[3];
+    totJunks := NumberOfJunks(name1, name2);
+    if not type(junk,posint) or junk>totJunks then
+        error('invalid junk number: '.junk)
+    fi:
+    all := NumberOfAlignments(name1, name2);
+    first := floor((junk-1)*all/totJunks)+1;
+    last := floor(junk*all/totJunks);
+    if name1=name2 then 
+        for index from first to last do
+            iterate( UpperTriangInd2Tuple(index, GS[name1,TotEntries]));
+        od:
+    else
+        for index from first to last do
+            iterate( FullInd2Tuple(index, GS[name2,TotEntries]));
+        od:
+    fi:
+end:
+RangeOfJunk := noeval(RangeOfJunk):
+
+IsMyJob := proc(name1, name2, junk)
+    return( evalb(mod( hash([name1,name2,junk]), 
+            pinf['NrParallelProc'] ) = pinf['ProcNr']-1) ); 
+end:
+
+
+tot := [seq(seq(NumberOfJunks(genomes[g1],genomes[g2]),g2=g1..NG), g1=1..NG)]; 
 c1 := 0:
-for g1 to length(genomes) do 
-    for g2 from g1 to length(genomes) do
+for g1 to NG do 
+    for g2 from g1 to NG do
         # Phase 0
         db1 := DBs[g1];
         db2 := DBs[g2]; 
@@ -240,57 +300,61 @@ for g1 to length(genomes) do
             next;
         fi;
 
-        partLen := ceil( n1/NP ); 
-        for part to NP do
+        nrJunks := NumberOfJunks(name1, name2);
+        for part to nrJunks do
             c1 := c1+1;
+            if not IsMyJob(name1,name2,part) then next fi:
+
             # skip if cached or already computed
-            fn := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, NP);
+            fn := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, nrJunks);
             if FileExists(fn) or FileExists(fn.'.gz') then
                 printf('Pair %s/%s part %d of %d already computed. Skipped.\n',
-                    name1, name2, part, NP);
+                    name1, name2, part, nrJunks);
                 next;
             fi:
 
             printf('[pid %6d]: Computing %s vs %s (Part %d of %d)\n', 
-                getpid(), name1, name2, part, NP);
+                getpid(), name1, name2, part, nrJunks);
             OpenWriting(fn);
-            printf( '# AllAll of %s vs %s (Part %d of %d)\n',
-                name1,name2,part,NP );
+            printf( '# AllAll of %s vs %s (Part %d of %d); pid %d; %s\n',
+                name1, name2, part, nrJunks, getpid(), hostname() );
             OpenWriting(previous);
     
             t0 := UTCTime():
             res := []:
             c2 := 0;
-            tot2 := partLen*n2;
-            for i1 from (part-1)*partLen+1 to min(n1, part*partLen) do 
-
+            algnInRange := min(AlignBatchSize,NumberOfAlignments(name1,name2));
+            
+            # iterate over all the protein pairs in this junk and compute alignment
+            for proteinPair in RangeOfJunk(name1, name2, part) do
+                i1 := proteinPair[1]; 
+                i2 := proteinPair[2];
+                
                 len1 := length(Seqs1[i1]);
-                for i2 from If( name1=name2, i1+1, 1 ) to n2 do
-                    c2 := c2+1;
-                    if mod(c2,50000)=0 then
-                        printf('   [pid %6d]: %.2f%% complete, time left for this '.
-                            'part=%.1fh, %.1f%% of AllAll done\n',
-                            getpid(),100*c2/tot2,tot2/c2*(UTCTime()-t0)/3600,
-                            100*( (c1-1+c2/tot2)/tot ));
-                    fi:
-                    len2 := length(Seqs2[i2]);
-                    dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
-                    if dps[1] >= .75*MinScore then
-                        a := Align(Seqs1[i1],Seqs2[i2],DMS);
-                        if a[Score] < MinScore or min(a[Length1],a[Length2]) <
-                                    max(30,0.3*min(len1,len2)) then next fi;
-                        i := GetOffset(a[Seq1])-GetOffset(Seqs1[i1]);
-                        ran1 := i+1 .. i+a[Length1];
-                        i := GetOffset(a[Seq2])-GetOffset(Seqs2[i2]);
-                        ran2 := i+1 .. i+a[Length2];
-                        res := append(res,[i1,i2,a[Score],a[PamDistance],
-                                    ran1,ran2,a[PamVariance]] );
-                    fi;
-                    if length(res)>1e5 then 
-                        WriteMatches(fn, res);
-                        res := []:
-                    fi:
-                od;
+                len2 := length(Seqs2[i2]);
+                c2 := c2+1;
+                if mod(c2,50000)=0 then
+                    printf('   [pid %6d]: %.2f%% complete, time left for this '.
+                        'part=%.1fh, %.1f%% of AllAll done\n',
+                        getpid(),100*c2/algnInRange,algnInRange/c2*(UTCTime()-t0)/3600,
+                        100*( (c1-1+c2/algnInRange)/sum(tot) ));
+                fi:
+                dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
+                if dps[1] >= .75*MinScore then
+                    a := Align(Seqs1[i1],Seqs2[i2],DMS);
+                    if a[Score] < MinScore or min(a[Length1],a[Length2]) <
+                                max(30,0.3*min(len1,len2)) then next fi;
+                    i := GetOffset(a[Seq1])-GetOffset(Seqs1[i1]);
+                    ran1 := i+1 .. i+a[Length1];
+                    i := GetOffset(a[Seq2])-GetOffset(Seqs2[i2]);
+                    ran2 := i+1 .. i+a[Length2];
+                    res := append(res,[i1,i2,a[Score],a[PamDistance],
+                                ran1,ran2,a[PamVariance]] );
+                fi;
+                if length(res)>1e5 then 
+                    WriteMatches(fn, res);
+                    res := []:
+                fi:
             od:
             WriteMatches(fn,res):
 
@@ -305,11 +369,11 @@ for g1 to length(genomes) do
             if c2 > 0 then
                 printf('Finished %s vs %s (Part %d of %d)\n'.
                 '  %.1f%% of AllAll done, estimated remaining time:'
-                .' %.1fh\n\n', name1,name2,part,NP, 
-                100*c1/tot, drt*sum(totAls[c1..tot])/c2/3600);
+                .' %.1fh\n\n', name1,name2,part,nrJunks, 
+                100*c1/sum(tot), algnInRange * drt * sum(tot[c1..-1])/c2/3600);
             else
                 printf('Finished %s vs %s (Part %d of %d)\n',
-                    name1,name2,part,NP);
+                    name1,name2,part,nrJunks);
             fi;
         od: 
     od; 
@@ -333,10 +397,9 @@ fi:
 
 print('\n\n****\n\nReading the all-against-all files...\n');
 
-N := length(genomes):
-ns := CreateArray(1..N):
-Lengths := CreateArray(1..N):
-for i to N do
+ns := CreateArray(1..NG):
+Lengths := CreateArray(1..NG):
+for i to NG do
     if GS[genomes[i]]='unassigned' then
         lprint(genomes[i],'missing GenomeSummary information');  quit fi;
     t := GS[genomes[i],EntryLengths];
@@ -353,8 +416,8 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
 
 # Read the BestMatch from all x all files #
 
-    BestMatch := CreateArray(1..N,1..N):
-    for i to N do for j from i to N do
+    BestMatch := CreateArray(1..NG,1..NG):
+    for i to NG do for j from i to NG do
         BestMatch[i,j] := CreateArray(1..ns[i],[]);
         if j>i then BestMatch[j,i] := CreateArray(1..ns[j],[]) fi;
         if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
@@ -367,9 +430,10 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
         if FileExists(fn1chunk) then
             ReadProgram(fn1chunk);
         else
-            for part to NP do 
+            nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
+            for part to nrJunks do 
                 fn := sprintf('Cache/AllAll/%s/%s_%d-%d',genomes[g1],genomes[g2],
-                    part, NP);
+                    part, nrJunks);
                 ReadProgram( fn );
             od:
         fi;
@@ -443,10 +507,10 @@ else
     # # Retrieve all IDs
     # # Create File MapSeqNum-ID:
     CallSystem('rm -rf Output; mkdir -p Output/PairwiseOrthologs');
-    IDtable := CreateArray(1..N);
+    IDtable := CreateArray(1..NG);
     OpenWriting('Output/Map-SeqNum-ID.txt');
     print('\#Format: genome<tab>sequence number<tab>id');
-    for i to N do
+    for i to NG do
         DB := DBs[i];
         tmp := CreateArray(1..ns[i]);
         for j to DB[TotEntries] do
@@ -468,10 +532,10 @@ else
         # quit;
     fi:
 
-    OGtable := CreateArray(1..N):
-    for i to N do OGtable[i] := CreateArray(1..ns[i]); od:
+    OGtable := CreateArray(1..NG):
+    for i to NG do OGtable[i] := CreateArray(1..ns[i]); od:
     for r to length(Ort) do
-        for k to N do
+        for k to NG do
             t := Ort[r,k];
             if t <> 0 then 
                 OGtable[k,t] := r;
@@ -480,7 +544,7 @@ else
     od:
 
     # Store the pairwise orthologs
-    for i to N do for j from i+1 to N do
+    for i to NG do for j from i+1 to NG do
         if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
             g1 := i;  g2 := j else g2 := i;  g1 := j fi;
             OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
@@ -531,24 +595,13 @@ else
     fi:
 
     # store all orthologous groups in fasta format
-    CallSystem('mkdir Output/OrthologousGroupsFasta');
-    for r to length(Ort) do
-        OpenWriting(sprintf('Output/OrthologousGroupsFasta/OG%d.fa',r));
-        for l to N do
-            if Ort[r,l] <> 0 then
-                DB := DBs[l];
-                e := Entry(Ort[r,l]);
-                printf('>%s\n%s\n',
-                    genomes[l], SearchTag('SEQ',Entry(e)) );
-            fi;
-        od;
-        OpenWriting(previous);
-    od:
-    
+    WriteFastaGroups('Output/OrthologousGroupsFasta', Ort):
+
     # store hierarchical groups if computed
     if DoHierarchicalGroups=true then
         WriteOrthoXML( HOG, 'Output/HierarchicalGroups.orthoxml',
             StableIdsForGroups=true);
+        WriteFastaGroups('Output/HOGFasta', HOG);
         if SpeciesTree='estimate' then
             OpenWriting('Output/EstimatedSpeciesTree.nwk');
             prints( Tree_Newick(speciesTree) .';' );
