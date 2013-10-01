@@ -1,0 +1,102 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 2.0
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 2.0 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/2.0/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is OMA standalone.
+#
+# The Initial Developer of the Original Code is CBRG Research Group; 
+# ETH Zurich; Switzerland.
+# Portions created by the Initial Developer are Copyright (C) 2005-2013
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#   Christophe Dessimoz <cdessimoz@inf.ethz.ch>
+#   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
+#   Stefan Zoller <stefan.zoller@inf.ethz.ch>
+#   Adrian Schneider <adrian.schneider@inf.ethz.ch>
+#   Alexander Roth <alexander.roth@inf.ethz.ch>
+#   Gaston Gonnet <gonnet@inf.ethz.ch>
+#
+# ***** END LICENSE BLOCK *****
+
+module external WriteFastaGroups;
+
+FormatFasta := proc(e, genome)
+    s := SearchTag('SEQ',e): 
+    sLen := length(s):
+    res := [];
+    res := append(res, sprintf('>%s [%s]', SearchTag('ID',e), genome));
+    for k to sLen by 80 do
+        res := append(res, sprintf('%s', s[k..min(k+79,sLen)]));
+    od:
+    return(ConcatStrings(res, '\n')):
+end:
+
+WriteOMAGroupsFasta := proc(dir, Ort)
+    global DB;
+    curDB := DB;
+    for r to length(Ort) do
+        fn := sprintf('%s/OG%d.fa',dir, r);
+        OpenWriting(fn);
+        for gNr to NG do
+            if Ort[r,gNr] <> 0 then
+                DB := DBs[gNr];
+                e := Entry(Ort[r,gNr]);
+                printf('%s\n\n', FormatFasta(e, genomes[gNr]));
+            fi;
+        od;
+        OpenWriting(previous);
+    od:
+    DB := curDB;
+end:
+
+WriteHOGFasta := proc(dir, data)
+    global DB;
+    curDB := DB;
+    Goff := CreateArray(1..NG+1):
+    for i to NG do Goff[i+1] := Goff[i] + GS[genomes[i],TotEntries] od:
+    for c to length(data) do
+        fn := sprintf('%s/HOG%d.fa',dir, c);
+        OpenWriting(fn):
+        members := indets(data[c], posint):
+        for memb in members do
+            g := SearchOrderedArray(memb-1,Goff):
+            DB := DBs[g];
+            e := Entry(memb - Goff[g]);
+            printf('%s\n\n', FormatFasta(e, genomes[g])):
+        od:
+        OpenWriting(previous);
+    od:
+    OpenWriting(dir.'/README');
+    printf('This directory contains for each hierarchical orthologous group\n'.
+        'a fasta formatted file with all the proteins emerging from the\n'.
+        'earliest speciation event, i.e. the topmost taxonomic level.\n\n'.
+        'For a more detailed structure of the later evolution, please use\n'.
+        'the orthoxml output file.\n');
+    OpenWriting(previous);
+    DB := curDB;
+end:
+
+WriteFastaGroups := proc(dir, data):
+    CallSystem('mkdir -p '.dir):
+    verb := Set(printgc=false):
+    if type(data, matrix(integer)) then
+        WriteOMAGroupsFasta(args)
+    elif type(data, list(structure(anything, OrthologousCluster))) then
+        WriteHOGFasta(args);
+    else
+        error('Unknown type of data for writing fasta group file');
+    fi:
+    Set(printgc=verb):
+end:
+
+end: #module

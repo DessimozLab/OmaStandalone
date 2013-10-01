@@ -595,24 +595,13 @@ else
     fi:
 
     # store all orthologous groups in fasta format
-    CallSystem('mkdir Output/OrthologousGroupsFasta');
-    for r to length(Ort) do
-        OpenWriting(sprintf('Output/OrthologousGroupsFasta/OG%d.fa',r));
-        for l to NG do
-            if Ort[r,l] <> 0 then
-                DB := DBs[l];
-                e := Entry(Ort[r,l]);
-                printf('>%s\n%s\n',
-                    genomes[l], SearchTag('SEQ',Entry(e)) );
-            fi;
-        od;
-        OpenWriting(previous);
-    od:
-    
+    WriteFastaGroups('Output/OrthologousGroupsFasta', Ort):
+
     # store hierarchical groups if computed
     if DoHierarchicalGroups=true then
         WriteOrthoXML( HOG, 'Output/HierarchicalGroups.orthoxml',
             StableIdsForGroups=true);
+        WriteFastaGroups('Output/HOGFasta', HOG);
         if SpeciesTree='estimate' then
             OpenWriting('Output/EstimatedSpeciesTree.nwk');
             prints( Tree_Newick(speciesTree) .';' );
