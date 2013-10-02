@@ -23,7 +23,7 @@ LSF_Platform := proc()
             error('cannot call ''bjobs'' command successfully'); 
         fi:
         sndLine := SplitLines(jobsum[2])[2];
-        re := MatchRegex('^[[:digit:]]\+[[:blank:]]\+[^[:blank:]]\+[[:blank:]]\+[^[:blank:]]\+[[:blank:]]\+([[:digit:]])\+', sndLine);
+        re := MatchRegex('^[[:digit:]]\+[[:blank:]]\+[^[:blank:]]\+[[:blank:]]\+[^[:blank:]]\+[[:blank:]]\+([[:digit:]]\+)', sndLine);
         if length(re)<2 then error('cannot extract total number of jobs'); fi:
         NrParallelProc := parse(re[2]);
     fi:
