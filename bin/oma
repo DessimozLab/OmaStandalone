@@ -93,18 +93,27 @@ if [ ! -e $pfile ] ; then
     exit 1
 fi
 
+set -o monitor
+trap cleanup EXIT
+
+cleanup() {
+    kill $(jobs -lp)
+}
+
 cat $OMA_PATH/lib/splashscreen.txt
 for pNr in $(seq 1 $NProc) ; do
     if [ "$localParallel" -gt 0 ] ; then
         OneMachineParallelInfo="NR_PROCESSES := $NProc; THIS_PROC_NR := $pNr;"
     fi
-
-echo "libdir := '$OMA_PATH/lib/': \
-e := traperror(eval(parse(ReadRawFile('$pfile')))): \
-if e=lasterror then print('$paramerror'): done: fi: \
-printlevel := $dbglevel: ${OneMachineParallelInfo} \
-OMA_STANDALONE_VERSION := '[VERSIONNR]': \
-ReadProgram('$OMA_PATH/OMA.drw'): done:" |  $OMA_PATH/bin/omadarwin -q &
+$OMA_PATH/bin/omadarwin -q  << EOF & 
+libdir := '$OMA_PATH/lib/': 
+e := traperror(eval(parse(ReadRawFile('$pfile')))): 
+if e=lasterror then print('$paramerror'): exit(1): fi: 
+printlevel := $dbglevel: ${OneMachineParallelInfo} 
+OMA_STANDALONE_VERSION := '[VERSIONNR]': 
+ReadProgram('$OMA_PATH/OMA.drw'): 
+done:
+EOF
 done
 
 wait
