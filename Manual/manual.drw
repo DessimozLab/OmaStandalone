@@ -243,10 +243,8 @@ OMA')),
         Do not start OMA with the -n option for that:'),
 
         Paragraph(0, 
-            Code('bsub -J "OMA[1-100]" -o "out.%I" "OMA"'),' or'
-            ),
-        Paragraph(0, 
-            Code('qsub -t 1-100 "OMA"'),
+            Code('bsub -J "OMA[1-100]" -o "out.%I" "OMA"'),' or',
+            Code('qsub -t 1-100 "OMA"')
             ),
 
         Paragraph(0, 'respectively, which starts 100 processes in parallel.'),
