@@ -54,7 +54,7 @@ while getopts "hn:vd:" opt ; do
          exit 0
          ;;
     n)   NProc="$OPTARG"
-         if ! echo $NProc |  grep -P "^[0-9]+$" >/dev/null ; then
+         if ! [[ $NProc =~  ^[1-9]+$ ]] ; then
              echo "-$opt requires positive integer as argument" >&2
              usage
              exit 1
@@ -62,7 +62,7 @@ while getopts "hn:vd:" opt ; do
          localParallel=1
          ;;
     d)   dbglevel="$OPTARG"
-         if ! echo $dbglevel |  grep -P "^[0-9]+$" >/dev/null ; then
+         if ! [[ $dbglevel =~  ^[1-9]+$ ]] ; then
              echo "-$opt requires positive integer as argument" >&2
              usage
              exit 1
