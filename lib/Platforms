@@ -11,7 +11,7 @@ CompleteClass(ParallelInfo):
 LSF_Platform := proc()
     jobidx := getenv('LSB_JOBINDEX');
     # if not a jobarray, assume single process and warn user.
-    if jobidx='' then 
+    if jobidx='' or jobidx='0' then 
         jobidx:=1;
         NrParallelProc := 1;
         warning('not run as job-array. Will assume it is a single process.');
