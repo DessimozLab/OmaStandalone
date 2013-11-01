@@ -97,7 +97,10 @@ set -o monitor
 trap cleanup EXIT
 
 cleanup() {
-    kill $(jobs -lp)
+    children=$(jobs -lp)
+    if [ -n "$children" ];then
+        kill $children
+    fi
 }
 
 cat $OMA_PATH/lib/splashscreen.txt

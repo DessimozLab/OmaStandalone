@@ -33,5 +33,5 @@ else
     echo "Operating system not supported!"
 fi
 
-$DARWIN_BINARY -l $DARWIN_LIB $@
+exec $DARWIN_BINARY -l $DARWIN_LIB $@
 
