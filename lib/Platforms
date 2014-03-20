@@ -4,7 +4,8 @@ ParallelInfo := proc(NrParallelProc:posint, ProcNr:posint)
     return(noeval(procname(args))):
 end:
 ParallelInfo_print := proc(pinf) option internal;
-    printf('I am job nr %d of %d\n', pinf['ProcNr'], pinf['NrParallelProc']);
+    printf('Process %d on %s: job nr %d of %d\n', getpid(), hostname(), 
+        pinf['ProcNr'], pinf['NrParallelProc']);
 end:
 CompleteClass(ParallelInfo):
 

@@ -48,7 +48,7 @@ EdgeScore := proc(g1,n1,g2,n2)
 end:
 
     
-GetOrthologyGraphFromVPsFile := proc(eNr:posint)
+GetOrthologyGraphFromVPairs := proc(eNr:posint)
     NG := length(VPairs):
     assert( NG = length(GenomeOffs)-1 ):
     assert( eNr <= GenomeOffs[-1] ): 
@@ -357,7 +357,7 @@ HierarchicalGroups := proc( ;(alpha=.65):positive,
     for p to NP do 
         if protSeen[p]='1' then next fi:
         
-        G := GetOrthologyGraphFromVPsFile(p):
+        G := GetOrthologyGraphFromVPairs(p):
         nNodes := length(G['Nodes']);
         for u in G['Nodes'] do protSeen[u]:='1'; cnt := cnt+1; od:
         topClusters := FindClusters( G, th, topLevelNr, alpha ):
