@@ -208,7 +208,7 @@ ParseContigHits := proc(arr)
         gaps := [];
         species := []:
         corder := []:
-        DB := DBs[arr[1,1,1]]:
+        DB := DBs[arr[i,1,1]]:
 
         if arr[i,3,1,5] = [1,2] then
             first := 1;
@@ -235,7 +235,7 @@ ParseContigHits := proc(arr)
         od:
         s3set := []:
         for e in arr[i,4] do
-            DB := DBs[arr[1,1,1]];
+            DB := DBs[arr[i,1,1]];
             s3set := append(s3set, SearchDelim(';', SearchTag('ID', Entry(e)))[1]);
         od:
         hits := append(hits, [seqs, labels, stdfacs, species, gaps, corder, s3set ]):
