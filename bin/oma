@@ -104,7 +104,7 @@ cleanup() {
 }
 
 cat $OMA_PATH/lib/splashscreen.txt
-for pNr in {1 $NProc} ; do
+for pNr in {1..${NProc}} ; do
     if [ "$localParallel" -gt 0 ] ; then
         OneMachineParallelInfo="NR_PROCESSES := $NProc; THIS_PROC_NR := $pNr;"
     fi
