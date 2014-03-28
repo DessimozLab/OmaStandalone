@@ -187,9 +187,8 @@ TaxHierarchy := proc(Levs,Up,Down,Memb) option noindex;
             gnr  := SearchArray(g, genomes):
             iLow := SearchArray( GS[g,Lineage,-1], levs ):
             starts := append(starts, iLow):
-            assert( Size[iLow] = 0 );
             Size[iLow] := Size[iLow] + 1;
-            memb[iLow] := {gnr};
+            memb[iLow] := append(memb[iLow], gnr);
             for i from length(GS[g,Lineage])-1 to 1 by -1 do
                 iCur := SearchArray( GS[g,Lineage,i], levs ):
                 if iCur<=0 then next fi:
@@ -205,6 +204,21 @@ TaxHierarchy := proc(Levs,Up,Down,Memb) option noindex;
                 memb[iLuca] := append(memb[iLuca], gnr);
             fi:
         od:
+        # sometimes stains are anotated as being internal nodes
+        # in the taxonomy. this does not make sense. we have to 
+        # correct these situations by introducing some new leaf 
+        # levels. 
+        for gNr to length(starts) do if Size[starts[gNr]]>1 then
+            t := starts[gNr];
+            levs := append(levs, levs[t].' (disambiguate '.genomes[gNr].')');
+            NL := NL + 1;
+            starts[gNr] := NL;
+            down[t] := append(down[t], NL);
+            down := append(down,{}):
+            up := append(up, t);
+            Size := append(Size, 1):
+            memb := append(memb, {gNr}):
+        fi od:
         if length(SearchAllArray(0,up))<>1 then
             error('All levels need to have a common last ancestor');
         fi:
