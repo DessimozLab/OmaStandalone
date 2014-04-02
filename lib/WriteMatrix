@@ -39,7 +39,7 @@ WriteMatrix := proc(Ort:matrix(numeric), fname:string)
          '\# Alternatively, use the OrthologousGroup.txt representation.');
     prints(ConcatStrings(genomes,'\t'));
     for r to length(Ort) do
-        print(ConcatStrings(zip(string(Ort[r])),'\t'));
+        prints(ConcatStrings(zip(string(Ort[r])),'\t'));
     od;
     OpenWriting(previous);
 end:
