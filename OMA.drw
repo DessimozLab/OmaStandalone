@@ -185,8 +185,10 @@ for g in G do
                 input[2,i],gname);
             next;
         fi:
-        printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n',
-            ReplaceString('\t','',input[2,i]) , s);
+        tmpID := ReplaceString('\t','',input[2,i]);
+        tmpID := ReplaceString('<','',tmpID);
+        tmpID := ReplaceString('>','',tmpID);
+        printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', tmpID, s);
     od:
     OpenWriting(previous);
     DB := ReadDb('Cache/DB/'.gname.'.db');
