@@ -81,7 +81,7 @@ IdentifyID := proc( grpmembers:set(posint) )
     od;
     
     # take only those spanning the most sequences
-    p2 := sort(p2,x->x[1]-x[2]);
+    p2 := sort(p2,x->x[1]-x[2]); n1 := -1;
     if p2<>[] then
         n1 := p2[1,2]-p2[1,1];
         for i to length(p2) do
@@ -128,7 +128,8 @@ GenerateStableIDs := proc(groups)
     DB := ReadDb(seqdbfn);
  
     nrGrps := length(grpmembers):
-    ids := CreateArray(1..nrGrps):
+    ids := CreateArray(1..nrGrps): 
+    no_id_cnt := 0:
     for gr to length(grpmembers) do 
         memb := grpmembers[gr];
         allPosIds, span := IdentifyID(memb):
@@ -140,11 +141,16 @@ GenerateStableIDs := proc(groups)
             else 
                 # if severals, choose best sounding one.
                 ids[gr] := traperror(sort(allPosIds,x->-(Readability(x,English)+Readability(x,VowCon)))[1]);
-                if ids[gr]=lasterror then ids[gr] := 'n/a' else ids[gr] := prefix.ids[gr] fi;
+                if ids[gr]=lasterror then 
+                    no_id_cnt := no_id_cnt+1;
+                    ids[gr] := sprintf('n/a_%d',no_id_cnt);
+                fi:
+                ids[gr] := prefix.ids[gr];
             fi:
         else 
             printf('Group %d : no IDs found\n',gr);
-            ids[gr] := 'n/a';
+            no_id_cnt := no_id_cnt+1;
+            ids[gr] := sprintf('%sn/a_%d',prefix, no_id_cnt);
         fi:
     od:
     DB := curDB:
