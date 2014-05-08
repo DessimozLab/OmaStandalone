@@ -60,7 +60,7 @@
 #
 ##############################################################################
 
-Set(gc=5e7):  
+Set(gc=5e8):  
 SetRandSeed():  
 GetStats := true;
 
@@ -76,7 +76,7 @@ print('Starting database conversion and checks...');
 
 if not assigned(Datasets) then
     G := TimedCallSystem('find -L DB -name "*.fa" -print')[2];
-    G := SearchDelim('\n',G);
+    G := sort(SearchDelim('\n',G));
 else
     G := Datasets;
 fi:
