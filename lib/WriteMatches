@@ -40,6 +40,9 @@ WriteMatches:= proc(fn:string, ms:list)
         od:
         lprint( res[-1], ']):');
     fi:
+    printf('AssertDatabaseVersionsInSync(%A,%A):\n', 
+        sha2(db1['string'])[1..16], sha2(db2['string'])[1..16]);
+
     OpenAppending(previous):
     Set(printgc=verb);
 end:
