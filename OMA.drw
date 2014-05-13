@@ -60,7 +60,7 @@
 #
 ##############################################################################
 
-Set(gc=5e7):  
+Set(gc=5e8):  
 SetRandSeed():  
 GetStats := true;
 
@@ -76,7 +76,7 @@ print('Starting database conversion and checks...');
 
 if not assigned(Datasets) then
     G := TimedCallSystem('find -L DB -name "*.fa" -print')[2];
-    G := SearchDelim('\n',G);
+    G := sort(SearchDelim('\n',G));
 else
     G := Datasets;
 fi:
@@ -136,12 +136,19 @@ for g in G do
     fi;
     genomes := append(genomes,gname);
 
+    # compute sha2 of fasta file.
+    checksum := sha2(ReadRawFile(g))[1..16]:
+
     # test if cached:
     if FileExists('Cache/DB/'.gname.'.db') then
         DB := ReadDb('Cache/DB/'.gname.'.db');
         if type(DB,database) then
             GS[gname] := GenomeSummary(DB);
             DBs := append(DBs,DB); 
+            fcheck := SearchTag('FASTACHECKSUM', DB['string']);
+            if fcheck<>'' and checksum<>fcheck then
+                error('cached genome ('.gname.') differs from fasta file');
+            fi:
             next;
         fi;
     fi;
@@ -152,9 +159,9 @@ for g in G do
 
     OpenWriting('Cache/DB/'.gname.'.db');
     printf('<5LETTERNAME>%s</5LETTERNAME>\n',code);
-    print('<OS>Unknown</OS>');
-    print('<KINGDOM>Unknown</KINGDOM>');
-    
+    printf('<OS>Unknown</OS>\n');
+    printf('<KINGDOM>Unknown</KINGDOM>\n');
+    printf('<FASTACHECKSUM>%s</FASTACHECKSUM>\n', checksum);
     if length(input[1]) <> length(input[2]) then 
         OpenWriting(previous);
         error('Fasta DB length missmatch') 
@@ -427,10 +434,13 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
         BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
         t3+1;
         Exclude1 := Exclude2 := {}:
+        db1 := DBs[g1]; db2 := DBs[g2]:
         # if there exist a 1-chunk archive, process it with higher priority
         fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
         if FileExists(fn1chunk) then
             ReadProgram(fn1chunk);
+            fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2', genomes[g1], genomes[g2]);
+            if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
         else
             nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
             for part to nrJunks do 
