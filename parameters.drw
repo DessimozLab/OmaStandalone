@@ -119,3 +119,7 @@ MinSeqLenContig := 20;
 # Minimum score for BestMatch in scaffold recognition
 MinBestScore := 250;
 
+
+# use experimental code (single processor only) to compute homologous
+# clusters instead of full All-against-all. 
+UseExperimentalHomologousClusters := true;

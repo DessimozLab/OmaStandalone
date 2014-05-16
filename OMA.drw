@@ -273,7 +273,10 @@ IsMyJob := proc(name1, name2, junk)
             pinf['NrParallelProc'] ) = pinf['ProcNr']-1) ); 
 end:
 
-
+if UseExperimentalHomologousClusters=true then
+    ReadProgram(If(not assigned(libdir),'lib',libdir).'/HomologousClustering'):
+else
+# run standard all-against-all comparisons
 tot := [seq(seq(NumberOfJunks(genomes[g1],genomes[g2]),g2=g1..NG), g1=1..NG)]; 
 c1 := 0:
 for g1 to NG do 
@@ -385,6 +388,7 @@ for g1 to NG do
         od: 
     od; 
 od:
+fi:
 
 ## Parallel version:
 ## At this point, check whether all files are ready. If not
