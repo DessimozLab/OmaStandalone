@@ -35,10 +35,20 @@
 # WARNING: THIS IS EXPERIMENTAL CODE!
 ##############################################################################
 
+#parameters as in paper:
+clusterMinScore := .75 * MinScore;
+nRepresentatives := 1;
+withSequenceCoverage := true;
+nAANotCovered := 20;
+withDistances := true;
+
 
 # Seq is used for storing the informations needed for clustering/alignment
 Seq := proc(seq: string, genomeID: integer, seqPos: integer)
 	noeval( procname(args) )
+end:
+Seq_print := proc(x)
+    printf('%s%05d',genomes[x['genomeID']],x['seqPos']):
 end:
 CompleteClass(Seq);
 
@@ -54,6 +64,11 @@ addToCluster := proc(clu: Cluster, newSeq: Seq)
 	fi:
 	clu['Seqs'] := append(clu['Seqs'], newSeq);
 end:
+Cluster_print := proc(x)
+    printf('('); print(x['firstRep']); printf(':%d [', length(x['Seqs']));
+    for z in x['Seqs'] do print(z); printf(','); od: printf(']\n');
+end:
+
 CompleteClass(Cluster);
 
 CandidatePairs := proc( dataTable )
@@ -120,7 +135,8 @@ addRange := proc(c:SequenceCoverage, nr:range)
 end:
 
 getCoverage := proc(c: SequenceCoverage)
-    return( sum(If(z='1',1,0), z=c['cover']) ):
+    cover := c['cover']:
+    return( sum(If(cover[i]='1',1,0), i=1..length(cover)) ):
 end:
 CompleteClass(SequenceCoverage);
 
@@ -292,6 +308,7 @@ printf('Maximum number of cluster for each sequence: %u\n', clusterCounterPerSeq
 
 clusterStat := Stat('Cluster statistics');
 for i to length(Clusters) do
+    print(Clusters[i]);
 	clusterStat + length(Clusters[i]['Seqs']);
 od:
 totalClusters := clusterStat['Number'];
@@ -415,7 +432,7 @@ printf('Number of clusters with only one sequence: %u\n', nOneSequenceClusters);
 
 print(alreadyComputedCounter);
 
-OpenWriting('Statistics/ClusterDensity.txt');
+OpenWriting('Cache/ClusterDensity.txt');
 print(candidateDensityList);
 OpenWriting(previous);
 
