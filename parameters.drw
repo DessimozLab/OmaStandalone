@@ -44,6 +44,10 @@ VerifiedPairTol := 1.53;
 # regular genomes is not considered.
 MinSeqLen := 50;
 
+# use experimental code (single processor only) to compute homologous
+# clusters instead of full All-against-all. 
+UseExperimentalHomologousClusters := false;
+
 ##############################################################
 # Output parameters
 ##############################################################
@@ -120,6 +124,3 @@ MinSeqLenContig := 20;
 MinBestScore := 250;
 
 
-# use experimental code (single processor only) to compute homologous
-# clusters instead of full All-against-all. 
-UseExperimentalHomologousClusters := true;
