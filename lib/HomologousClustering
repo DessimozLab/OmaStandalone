@@ -429,12 +429,7 @@ printf('Average candidate density per cluster: %f\n', DensityStat['Average']);
 printf('Minimal candidate density per cluster: %f\n', DensityStat['Min']);
 printf('Maximal candidate density per cluster: %f\n', DensityStat['Max']);
 printf('Number of clusters with only one sequence: %u\n', nOneSequenceClusters);
-
 print(alreadyComputedCounter);
-
-OpenWriting('Cache/ClusterDensity.txt');
-print(candidateDensityList);
-OpenWriting(previous);
 
 printf('\nFinished the all all within the clusters\n');
 
