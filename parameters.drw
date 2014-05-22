@@ -59,6 +59,16 @@ UseExperimentalHomologousClusters := false;
 # are stored in the OrthoXML files only.
 StableIdsForGroups := false;
 
+# Avoid producing some of the output files. This can reduce computing time
+# and especially avoids the generation of many files in large analysis. By 
+# default all the output files are generated. Uncomment certain lines to 
+# avoid the production of the corresponding output.
+#WriteOutput_PairwiseOrthologs := false;
+#WriteOutput_OrthologousPairs_orthoxml := false;  #this file requires lots of time.
+#WriteOutput_OrthologousGroupsFasta := false;
+#WriteOutput_HOGFasta := false;
+
+
 ##############################################################
 # Hierarchical Orthologous Groups
 ##############################################################
@@ -85,6 +95,7 @@ SpeciesTree := 'estimate';
 # The cutoff of 'average reachability within two steps' defines up to
 # what point a cluster is split into sub-clusters.
 ReachabilityCutoff := 0.65;
+
 
 
 ###############################################################################
