@@ -106,7 +106,8 @@ WriteOMAHClusterR := proc( grp; id:string, (indent=2):posint )
     elif op(0,grp)=OrthologousCluster then 
         printf('%s<orthologGroup %s>\n', inS,
             If(assigned(id),sprintf('id="%a"',id),''));
-        printf('%s <property name="TaxRange" value="%s"/>\n', inS, grp[1]);
+        printf('%s <property name="TaxRange" value="%s" taxid="%d"/>\n', 
+            inS, grp[1], TaxonomyIdFromLevel(grp[1]));
         for z in grp[2..-1] do
             WriteOMAHClusterR( z, indent+1);
         od:
@@ -137,6 +138,19 @@ IdForGroup := proc(i:posint)
     external Grp2Id;
     return( string(If(Grp2Id=0,i,Grp2Id[i])) );
 end:
+
+TaxonomyIdFromLevel := proc(level)
+    getId := proc(level)
+        tax := traperror(TaxonomyEntry(level)):
+        if tax=lasterror then id := -1 else id := tax['id'] fi:
+        return(id);
+    end:
+
+    if SpeciesTree='lineage' then
+        return( remember(getId(level)) )
+    else return(-1) fi:
+end:
+
 
 getParamsAsNotes := proc()
     params := []:
