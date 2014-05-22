@@ -108,7 +108,7 @@ for pNr in {1..${NProc}} ; do
     if [ "$localParallel" -gt 0 ] ; then
         OneMachineParallelInfo="NR_PROCESSES := $NProc; THIS_PROC_NR := $pNr;"
     fi
-$OMA_PATH/bin/omadarwin -q  << EOF & 
+$OMA_PATH/bin/omadarwin -E -q  << EOF &
 libdir := '$OMA_PATH/lib/': 
 e := traperror(eval(parse(ReadRawFile('$pfile')))): 
 if e=lasterror then print('$paramerror'): exit(1): fi: 

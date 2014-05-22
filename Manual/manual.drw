@@ -335,38 +335,49 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     are given as matrix with group per row and one genome
                     per tab-separated column. Numbers refer to entry number as
                     listed in the file ', TT('Map-SeqNum-ID.txt'), '.')),
-                    Row(TT('PairwiseOrthologs/'), 
-                    Paragraph(0, 'Each OMA group is provided as a separate
-                    Fasta file, with the species name as identifer. This
-                    format is particularly suitable as starting point for
-                    a phylogenetic reconstruction.')),
+                    Row(TT('OrthologousGroups.orthoxml'), 
+                       Paragraph(0,'The OMA groups of orthologs stored in ',
+                       Link(TextBlock('a', 
+                          href='http://orthoxml.org',
+                          'orthoxml format')),'.')),
                     Row(TT('OrthologousGroupsFasta/'), 
                     Paragraph(0, 'Each OMA group is provided as a separate
                     Fasta file, with the species name as identifer. This
                     format is particularly suitable as starting point for
                     a phylogenetic reconstruction.')),
+                    Row(TT('PairwiseOrthologs/'), 
+                       Paragraph(0, 'The textfiles in ', TT('Output/PairwiseOrthologs'), 
+                    ' are named according to ', TT('{genome a}-{genome b}.txt'),
+                    ' and consist of a list of pairwise orthologs for the two given
+                    genomes. Every pair is listed only once, and in no particular
+                    order. Each line in the file contains one pair; all fields are 
+                    separated by tabs. In the first two field, the unique IDs of the
+                    proteins are given. The next two fields contain the labels of
+                    the proteins, and in the last two fields, the type of orthology
+                    and (if any) the OMA group is given.')),
+                    Row(TT('OrthologousPairs.orthoxml'), 
+                       Paragraph(0,'The pairwise orthologs stored in ',
+                       Link(TextBlock('a', 
+                          href='http://orthoxml.org',
+                          'orthoxml format')),'. Each group in the file will have
+                          orthologs between genes from only two genomes.')),
                     Row(TT('HierarchicalGroups.orthoxml'), 
-                    Paragraph(0, 'The hierarchical groups of orthologs
+                       Paragraph(0, 'The hierarchical groups of orthologs
                     in OrthoXML format. A detailed description of how
                     these groups are computed is forthcoming.')),
                     Row(TT('EstimatedSpeciesTree.nwk'), 
-                    Paragraph(0, 'The inferred species tree on which 
+                       Paragraph(0, 'The inferred species tree on which 
                     the hierarchical groups inference procedure is based,
-                    in Newick format.'))
-
+                    in Newick format.')),
+                    Row(TT('HOGFasta/'), 
+                    Paragraph(0, 'For each toplevel HOG group we provide a
+                    separate Fasta file with all protein sequences clustered
+                    to it. This format is particularly suitable as starting 
+                    point for a phylogenetic reconstruction of a gene tree.')),
+                    NULL
             ) ,
             
-            Paragraph(0, 'The textfiles in ', TT('Output/PairwiseOrthologs'), 
-            ' are named according to ', TT('{genome a}-{genome b}.txt'),
-            ' and consist of a list of pairwise orthologs for the two given
-            genomes. Every pair is listed only once, and in no particular
-            order. Each line in the file contains one pair; all fields are 
-            separated by tabs. In the first two field, the unique IDs of the
-            proteins are given. The next two fields contain the labels of
-            the proteins, and in the last two fields, the type of orthology
-            and (if any) the OMA group is given.'),
-
-            Anchor(TextBlock('a', name='espritout',
+                        Anchor(TextBlock('a', name='espritout',
                 SectionHeader(3, 'ESPRIT Output')
             )),
             
@@ -441,7 +452,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         each unit runs, and the fewer files get produced. This 
                         allows to adjust the frequency of milestone steps 
                         (e.g. in case of computer crash) or to process few but 
-                        large genomes with many CPUs efficently.'),
+                        large genomes with many CPUs efficiently.'),
                         TT(1000*1000)),
                     Row(TT('MinScore'), 
                         Paragraph(0, 'Alignments which have a score lower than ',
@@ -488,7 +499,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        computating power.'), 
                        TT('true')),
                     Row(TT('MaxTimePerLevel'),
-                       Paragraph(0, 'Define maximum umount of time (in sec) spent by 
+                       Paragraph(0, 'Define maximum amount of time (in sec) spent by 
                        the program for breaking every connected component of the 
                        orthology graph at its weakest link on a given taxonomic level. 
                        If set to a negative value, no timelimit is enforced.'),
@@ -505,7 +516,14 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        Paragraph(0,'The cutoff of "average reachability within 
                        two steps" defines up to what point a cluster is split 
                        into sub-clusters.'), 
-                       TT('0.65'))
+                       TT('0.65')),
+                    Row(TT('WriteOutput_*'),
+                       Paragraph(0,'Switches to disable the generation of certain 
+                       output files if set to ',TT('false'),'. For very big analyses, 
+                       disabling the generation of unused output might save a 
+                       substantial amount of computing time and might drastically 
+                       reduce the number of produced files.'),
+                       TT('true'))
                 ),
                 Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
                     title = 'Table 4: ESPRIT parameters',

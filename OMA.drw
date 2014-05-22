@@ -60,7 +60,7 @@
 #
 ##############################################################################
 
-Set(gc=5e7):  
+Set(gc=5e8):  
 SetRandSeed():  
 GetStats := true;
 
@@ -76,7 +76,7 @@ print('Starting database conversion and checks...');
 
 if not assigned(Datasets) then
     G := TimedCallSystem('find -L DB -name "*.fa" -print')[2];
-    G := SearchDelim('\n',G);
+    G := sort(SearchDelim('\n',G));
 else
     G := Datasets;
 fi:
@@ -136,12 +136,19 @@ for g in G do
     fi;
     genomes := append(genomes,gname);
 
+    # compute sha2 of fasta file.
+    checksum := sha2(ReadRawFile(g))[1..16]:
+
     # test if cached:
     if FileExists('Cache/DB/'.gname.'.db') then
         DB := ReadDb('Cache/DB/'.gname.'.db');
         if type(DB,database) then
             GS[gname] := GenomeSummary(DB);
             DBs := append(DBs,DB); 
+            fcheck := SearchTag('FASTACHECKSUM', DB['string']);
+            if fcheck<>'' and checksum<>fcheck then
+                error('cached genome ('.gname.') differs from fasta file');
+            fi:
             next;
         fi;
     fi;
@@ -152,9 +159,9 @@ for g in G do
 
     OpenWriting('Cache/DB/'.gname.'.db');
     printf('<5LETTERNAME>%s</5LETTERNAME>\n',code);
-    print('<OS>Unknown</OS>');
-    print('<KINGDOM>Unknown</KINGDOM>');
-    
+    printf('<OS>Unknown</OS>\n');
+    printf('<KINGDOM>Unknown</KINGDOM>\n');
+    printf('<FASTACHECKSUM>%s</FASTACHECKSUM>\n', checksum);
     if length(input[1]) <> length(input[2]) then 
         OpenWriting(previous);
         error('Fasta DB length missmatch') 
@@ -268,7 +275,10 @@ IsMyJob := proc(name1, name2, junk)
             pinf['NrParallelProc'] ) = pinf['ProcNr']-1) ); 
 end:
 
-
+if UseExperimentalHomologousClusters=true then
+    ReadProgram(If(not assigned(libdir),'lib',libdir).'/HomologousClustering'):
+else
+# run standard all-against-all comparisons
 tot := [seq(seq(NumberOfJunks(genomes[g1],genomes[g2]),g2=g1..NG), g1=1..NG)]; 
 c1 := 0:
 for g1 to NG do 
@@ -380,6 +390,7 @@ for g1 to NG do
         od: 
     od; 
 od:
+fi:
 
 ## Parallel version:
 ## At this point, check whether all files are ready. If not
@@ -427,10 +438,13 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
         BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
         t3+1;
         Exclude1 := Exclude2 := {}:
+        db1 := DBs[g1]; db2 := DBs[g2]:
         # if there exist a 1-chunk archive, process it with higher priority
         fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
         if FileExists(fn1chunk) then
             ReadProgram(fn1chunk);
+            fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2', genomes[g1], genomes[g2]);
+            if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
         else
             nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
             for part to nrJunks do 
@@ -508,7 +522,7 @@ else
     fi:
     # # Retrieve all IDs
     # # Create File MapSeqNum-ID:
-    CallSystem('rm -rf Output; mkdir -p Output/PairwiseOrthologs');
+    CallSystem('rm -rf Output; mkdir -p Output'); 
     IDtable := CreateArray(1..NG);
     OpenWriting('Output/Map-SeqNum-ID.txt');
     print('\#Format: genome<tab>sequence number<tab>id');
@@ -546,39 +560,44 @@ else
     od:
 
     # Store the pairwise orthologs
-    for i to NG do for j from i+1 to NG do
-        if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
-            g1 := i;  g2 := j else g2 := i;  g1 := j fi;
-            OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
-                .'.txt');
-        printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
-             .'<tab>Orthology type<tab>OMA group (if any)\n');
-        printf('\# Every pair is listed only once, and in no particular order.\n');
-        printf('\# The map between sequence number and ID are given\n');
-        printf('\# in the file "Map-SeqNum-ID.map\n');
-
-        for k to ns[g1] do
-            vp := decompress(VPairs[g1,g2,k]);
-            typ2 := If(length(vp)>1,'many','1');
-            for l in vp do
-                # if only 1 in target -> :1, else :many
-                # l
-                typ1 := If(length(decompress(VPairs[g2,g1,l]))>1,'many','1');
-                printf('%d\t%d\t%s\t%s\t%s:%s\t%s\n',
-                    k,l,
-                    IDtable[g1,k],
-                    IDtable[g2,l],
-                    typ1, typ2,
-                    If(OGtable[g1,k]=OGtable[g2,l] and OGtable[g1,k] <> 0, 
-                        string(OGtable[g1,k]),
-                        '')
-                );
-            od;
-        od:
-        OpenWriting(previous);
-    od;od:
+    if not WriteOutput_PairwiseOrthologs=false then
+        CallSystem('mkdir Output/PairwiseOrthologs');
+        for i to NG do for j from i+1 to NG do
+            if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+                g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+                OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
+                    .'.txt');
+            printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
+                 .'<tab>Orthology type<tab>OMA group (if any)\n');
+            printf('\# Every pair is listed only once, and in no particular order.\n');
+            printf('\# The map between sequence number and ID are given\n');
+            printf('\# in the file "Map-SeqNum-ID.map\n');
+    
+            for k to ns[g1] do
+                vp := decompress(VPairs[g1,g2,k]);
+                typ2 := If(length(vp)>1,'many','1');
+                for l in vp do
+                    # if only 1 in target -> :1, else :many
+                    # l
+                    typ1 := If(length(decompress(VPairs[g2,g1,l]))>1,'many','1');
+                    printf('%d\t%d\t%s\t%s\t%s:%s\t%s\n',
+                        k,l,
+                        IDtable[g1,k],
+                        IDtable[g2,l],
+                        typ1, typ2,
+                        If(OGtable[g1,k]=OGtable[g2,l] and OGtable[g1,k] <> 0, 
+                            string(OGtable[g1,k]),
+                            '')
+                    );
+                od;
+            od:
+            OpenWriting(previous);
+        od;od:
+    fi:
     # store the pairwise orthologs in orthoxml format
-    WriteOrthoXML( VPairs, 'Output/OrthologousPairs.orthoxml');
+    if not WriteOutput_OrthologousPairs_orthoxml=false then
+        WriteOrthoXML( VPairs, 'Output/OrthologousPairs.orthoxml');
+    fi:
 
     # Store the groups of orthologs
     WriteMatrix(Ort,'Output/OrthologousMatrix.txt');
@@ -597,13 +616,17 @@ else
     fi:
 
     # store all orthologous groups in fasta format
-    WriteFastaGroups('Output/OrthologousGroupsFasta', Ort):
+    if not WriteOutput_OrthologousGroupsFasta=false then
+        WriteFastaGroups('Output/OrthologousGroupsFasta', Ort):
+    fi:
 
     # store hierarchical groups if computed
     if DoHierarchicalGroups=true then
         WriteOrthoXML( HOG, 'Output/HierarchicalGroups.orthoxml',
             StableIdsForGroups=true);
-        WriteFastaGroups('Output/HOGFasta', HOG);
+        if not WriteOutput_HOGFasta=false then 
+            WriteFastaGroups('Output/HOGFasta', HOG);
+        fi:
         if SpeciesTree='estimate' then
             OpenWriting('Output/EstimatedSpeciesTree.nwk');
             prints( Tree_Newick(speciesTree) .';' );

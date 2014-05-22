@@ -1,0 +1,506 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 2.0
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 2.0 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/2.0/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is OMA standalone.
+#
+# The Initial Developer of the Original Code is CBRG Research Group; 
+# ETH Zurich; Switzerland.
+# Portions created by the Initial Developer are Copyright (C) 2005-2013
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#   Christophe Dessimoz <cdessimoz@inf.ethz.ch>
+#   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
+#   Stefan Zoller <stefan.zoller@inf.ethz.ch>
+#   Adrian Schneider <adrian.schneider@inf.ethz.ch>
+#   Alexander Roth <alexander.roth@inf.ethz.ch>
+#   Gaston Gonnet <gonnet@inf.ethz.ch>
+#
+# ***** END LICENSE BLOCK *****
+
+##############################################################################
+# author: Lucas D. Wittwer
+# Purpose: Implementation of new clustering approach 
+# (building homologous clusters)
+# WARNING: THIS IS EXPERIMENTAL CODE!
+##############################################################################
+
+#parameters as in paper:
+clusterMinScore := .75 * MinScore;
+nRepresentatives := 1;
+withSequenceCoverage := true;
+nAANotCovered := 20;
+withDistances := true;
+
+
+# Seq is used for storing the informations needed for clustering/alignment
+Seq := proc(seq: string, genomeID: integer, seqPos: integer)
+	noeval( procname(args) )
+end:
+Seq_print := proc(x)
+    printf('%s%05d',genomes[x['genomeID']],x['seqPos']):
+end:
+CompleteClass(Seq);
+
+# Cluster is used for storing the sequences belonging to one cluster
+Cluster := proc(firstRep: Seq, repList: list(Seq), Seqs: list(Seq))
+	if nargs=1 then noeval(Cluster(firstRep, [firstRep], [firstRep]))
+	else error('invalid arguments') fi
+end:
+
+addToCluster := proc(clu: Cluster, newSeq: Seq)
+	if length(clu['repList']) < nRepresentatives then
+		clu['repList'] := append(clu['repList'], newSeq);
+	fi:
+	clu['Seqs'] := append(clu['Seqs'], newSeq);
+end:
+Cluster_print := proc(x)
+    printf('('); print(x['firstRep']); printf(':%d [', length(x['Seqs']));
+    for z in x['Seqs'] do print(z); printf(','); od: printf(']\n');
+end:
+
+CompleteClass(Cluster);
+
+CandidatePairs := proc( dataTable )
+	noeval( procname(args) )
+end:
+
+CandidatePairs_string := proc(cp: CandidatePairs) 
+	for z in Indices(candidatePairs['dataTable']) do
+		print(z);
+	od:
+end:
+
+CreateCandidatePairs := proc(genomes: list)
+	GenomePairs := table([],[]);
+	for i to length(genomes) do
+		for j from i to length(genomes) do
+			db1 := DBs[i];
+	       	n1 := db1[TotEntries];
+	        name1 := genomes[i];
+	        db2 := DBs[j];
+	       	n2 := db2[TotEntries];
+	        name2 := genomes[j];
+	        if n1 > n2 or n1=n2 and name1 > name2 then
+	            t := name1;  name1 := name2;  name2 := t;
+	            n1 := n2;
+	        fi:
+	        if  GenomePairs[[name1, name2]] = [] then
+	        	GenomePairs[[name1, name2]] := CreateArray(1..n1, []);
+	        fi:
+		od:
+	od:
+	candidatePairs := CandidatePairs(GenomePairs);
+end:
+
+addSequencePair := proc(cp: CandidatePairs, g1: string, s1:integer, g2:string, s2:integer, l: list)
+	cp['dataTable'][[g1, g2]][s1] := append(cp['dataTable'][[g1, g2]][s1], [s2, l]);
+end:
+
+pairIsComputed := proc(cp: CandidatePairs, g1, s1, g2, s2)
+	l := cp['dataTable'][[g1, g2]][s1];
+	isComputed := false;
+	for i to length(l) do
+		if l[i][1] = s2 then
+			isComputed := true;
+			break;
+		fi:
+	od:
+	return(isComputed);
+end:
+CompleteClass(CandidatePairs);
+
+SequenceCoverage := proc(cover)
+    if type(cover,posint) then
+        return( procname(CreateString(cover,'0')) ):
+    elif type(cover,string) then
+        return( noeval(procname(args)) ):
+    else error('unknown parameter type') fi:
+end:
+
+addRange := proc(c:SequenceCoverage, nr:range)
+    for i from nr[1] to nr[2] do
+        c['cover'][i] := '1';
+    od:
+end:
+
+getCoverage := proc(c: SequenceCoverage)
+    cover := c['cover']:
+    return( sum(If(cover[i]='1',1,0), i=1..length(cover)) ):
+end:
+CompleteClass(SequenceCoverage);
+
+
+
+##############################################################################
+# Needed by darwin and ordering of genomes
+##############################################################################
+CreateDayMatrices();
+DM := DayMatrix(224):
+NumberFormat := '%.10g':
+JustScoreBound := MinScore;
+
+
+if pinf['ProcNr']>1 then 
+    lprint('HomologousClustering is experimental code only and not yet'.
+        'available in parallel form. All but one jobs will be killed');
+    error('not available for parallel computations');
+fi:
+
+##############################################################################
+# Constructing the clusters
+##############################################################################
+computedPairs := Counter('Number of pairs computed');
+Clusters := [];
+clusterCounterPerSequenceStat := Stat('Clusters per Sequence');
+printf('\nStarting with building the clusters...\n');
+
+candidatePairs := CreateCandidatePairs(genomes);
+
+nAAafterAllClusters := Stat('Numbers of AA not covered after all clusters are processed');
+
+# We have to go through all the genomes
+for g1 to NG do
+	# Read the Sequences
+	DB := DBs[g1];
+	nEntries := DB[TotEntries];
+	genomeName := genomes[g1];
+
+	printf('Processing the %s genome...\n', genomeName);
+
+	seqs := CreateArray(1..nEntries);
+	for i to nEntries do 
+		seqs[i] := SearchTag('SEQ', Entry(i));
+	od;
+
+	# We go through all the sequences
+	for s to length(seqs) do
+
+		if mod(s,200)=0 then
+			toprint := sprintf('%.2f%% of this genome computed!', (s/length(seqs)*100));
+			print(toprint);
+		fi;
+
+		newSeq := Seq(seqs[s], g1, s);
+        seqCover := SequenceCoverage(length(seqs[s]));
+
+		foundCluster := false;
+		clusterCounterPerSequence := 0;
+
+		# and test it against all the family representative 
+		for i to length(Clusters) do
+			seq1 := newSeq['seq'];
+			seqPos1 := newSeq['seqPos'];
+			len1 := length(seq1);
+
+			for repSeq in Clusters[i]['repList'] do
+				computedPairs+1;
+				seq2 := repSeq['seq'];
+				dps := DynProgScore(seq1, seq2, DM, JustScoreShort);
+				if (dps[1] >= clusterMinScore) then
+	                # If we end up here we have already a cluster => add to it
+	                foundCluster := true;
+	                addToCluster(Clusters[i], newSeq);
+
+	                clusterCounterPerSequence := clusterCounterPerSequence + 1;
+
+	               	genome2 := repSeq['genomeID'];
+			        db2 := DBs[genome2];
+			       	n2 := db2[TotEntries];
+			        name2 := genomes[genome2];
+					len2 := length(seq2);
+					seqPos2 := repSeq['seqPos'];
+
+			        if (nEntries > n2) or (nEntries=n2 and genomeName > name2) or (genomeName=name2 and seqPos1 > seqPos2) then
+			        	aname1 := name2; name2 := genomeName;
+			        	aseqPos1 := seqPos2; seqPos2 := seqPos1;
+			        	aseq1 := seq2; seq2 := seq1;
+			        	alen1 := len2; len2 := len1;
+			        	changed := true;
+			        else
+			        	aname1 := genomeName; aseqPos1 := seqPos1;
+			        	aseq1 := seq1;
+			        	alen1 := len1;
+			        	changed := false;
+			        fi:
+
+			        if pairIsComputed(candidatePairs, aname1, aseqPos1, name2, seqPos2) then
+			        	break
+			        fi:
+
+			        if withDistances then
+	                	a := Align(aseq1,seq2,DMS);
+	                else
+	                	a := Align(aseq1,seq2,DM);
+	                fi:
+			        ioff := GetOffset(a[Seq1]) - GetOffset(aseq1);
+			        ran1 := ioff+1 .. ioff+a[Length1];
+			        ioff := GetOffset(a[Seq2]) - GetOffset(seq2);
+			        ran2 := ioff+1 .. ioff+a[Length2];
+
+			        if withSequenceCoverage then
+				        addRange(seqCover, If(changed, ran2, ran1));
+				    fi:
+
+
+			        # Adding to the computed pairs
+			       	if a[Score] < MinScore or min(a[Length1],a[Length2]) <
+                            max(30,0.3*min(alen1,len2)) then 
+			        	addSequencePair(candidatePairs, aname1, aseqPos1, name2, seqPos2, []);	# Computed yes, but is not a candidate pair!
+			        else
+			        	addSequencePair(candidatePairs, aname1, aseqPos1, name2, seqPos2, [aseqPos1, seqPos2, 
+		            		a[Score], a[PamDistance], ran1, ran2, a[PamVariance]]);
+		        	fi:
+
+	                break
+
+	             fi:
+	        od:
+
+		od:
+
+		UpdateStat(clusterCounterPerSequenceStat, clusterCounterPerSequence);
+
+ 		if withSequenceCoverage then
+			if (not foundCluster) or (nAANotCovered <= (length(newSeq['seq']) - getCoverage(seqCover))) then
+				# We haven't found a family for this sequence => add new family
+				newCluster := Cluster(newSeq);
+				Clusters := append(Clusters, newCluster);
+				if foundCluster then 
+					nAAafterAllClusters + (length(newSeq['seq']) - getCoverage(seqCover));
+				fi:
+			fi:
+		else:
+			if (not foundCluster) then
+				# We haven't found a family for this sequence => add new family
+				newCluster := Cluster(newSeq);
+				Clusters := append(Clusters, newCluster);
+			fi:
+		fi:
+	od:
+	printf('Genome %s finished, now the number of clusters is: %u\n', genomeName, length(Clusters));
+
+	oneClusters := 0;
+	for c in Clusters do
+		if length(c['Seqs']) = 1 then
+			oneClusters := oneClusters + 1;
+		fi:
+	od:
+	printf('The number of clusters with just one element is: %u\n', oneClusters);
+
+od:
+
+print(nAAafterAllClusters);
+
+printf('Average number of cluster for each sequence: %f\n', clusterCounterPerSequenceStat['Average']);
+printf('Minimum number of cluster for each sequence: %u\n', clusterCounterPerSequenceStat['Min']);
+printf('Maximum number of cluster for each sequence: %u\n', clusterCounterPerSequenceStat['Maximum']);
+
+clusterStat := Stat('Cluster statistics');
+for i to length(Clusters) do
+    print(Clusters[i]);
+	clusterStat + length(Clusters[i]['Seqs']);
+od:
+totalClusters := clusterStat['Number'];
+avgSizeClusters := clusterStat['Average'];
+minSizeClusters := clusterStat['Min'];
+maxSizeClusters := clusterStat['Max'];
+
+printf('Finished with homologous clustering, %u clusters found!\n\n', 
+	length(Clusters));
+
+##############################################################################
+# Now for each cluster we create the CandidatePairs, 
+# e.g. need the AllAll within the clusters
+##############################################################################
+
+printf('\nStarting with the allall within the clusters...\n');
+
+alreadyComputedCounter := Counter('Number of theoretical duplicates found');
+res := [];
+candidateDensityList := list();
+nOneSequenceClusters := 0;
+
+
+for cluster in Clusters do
+
+	clusterSeqs := cluster['Seqs'];
+	nSeqs := length(clusterSeqs);
+
+	nCandidates := 0; 
+
+	for j to nSeqs do
+
+		# Loading first database
+		genome1 := clusterSeqs[j]['genomeID'];
+		db1 := DBs[genome1];
+		n1 := db1[TotEntries];
+		name1 := genomes[genome1];
+
+		seq1 := clusterSeqs[j]['seq'];
+		len1 := length(seq1);
+		seqPos1 := clusterSeqs[j]['seqPos'];
+
+		for k from j+1 to nSeqs do
+
+			# Loading the second database
+	        genome2 := clusterSeqs[k]['genomeID'];
+	        db2 := DBs[genome2];
+	       	n2 := db2[TotEntries];
+	        name2 := genomes[genome2];
+
+			seq2 := clusterSeqs[k]['seq'];
+			len2 := length(seq2);
+			seqPos2 := clusterSeqs[k]['seqPos'];
+
+			neededChange := false;
+	        if n1 > n2 or n1=n2 and name1 > name2 then
+	        	aname1 := name2; name2 := name1;
+	        	aseqPos1 := seqPos2; seqPos2 := seqPos1;
+	        	aseq1 := seq2; seq2 := seq1;
+	        	alen1 := len2; len2 := len1;
+	        	neededChange := true;
+	        else
+	        	aname1 := name1; aseqPos1 := seqPos1;
+	        	aseq1 := seq1;
+	        	alen1 := len1;
+	        fi:
+	        if pairIsComputed(candidatePairs, aname1, aseqPos1, name2, seqPos2) then
+	        	alreadyComputedCounter + 1;
+	        	next
+	        fi:
+
+			computedPairs+1;
+
+	        dps := DynProgScore(aseq1,seq2,DM,JustScoreShort); 
+            if dps[1] >= .75*MinScore then
+            	if withDistances then
+                	a := Align(aseq1,seq2,DMS);
+                else
+                	a := Align(aseq1,seq2,DM);
+                fi:
+                if a[Score] < MinScore or min(a[Length1],a[Length2]) <
+                            max(30,0.3*min(alen1,len2)) then 
+        	               	addSequencePair(candidatePairs, aname1, aseqPos1, name2, seqPos2, []);
+                            next 
+                fi;
+
+  		        nCandidates := nCandidates + 1;
+
+		        # Getting the offsets
+		        #DB := db1;
+		        ioff := GetOffset(a[Seq1]) - GetOffset(aseq1);
+		        ran1 := ioff+1 .. ioff+a[Length1];
+		        #DB := db2;
+		        ioff := GetOffset(a[Seq2]) - GetOffset(seq2);
+		        ran2 := ioff+1 .. ioff+a[Length2];
+
+		        addSequencePair(candidatePairs, aname1, aseqPos1, name2, seqPos2, [aseqPos1, seqPos2, 
+		            	a[Score], a[PamDistance], ran1, ran2, a[PamVariance]]);
+            fi:
+		od:
+	od:
+
+	if nSeqs = 1 then
+		nOneSequenceClusters := nOneSequenceClusters + 1;
+	else
+		density := nCandidates / (nSeqs * (nSeqs-1)/2);
+		candidateDensityList := append(candidateDensityList, density);
+	fi:
+
+od;
+
+DensityStat := Stat('Cluster density');
+for candidateDensity in candidateDensityList do
+	UpdateStat(DensityStat, candidateDensity);
+od:
+
+printf('Average candidate density per cluster: %f\n', DensityStat['Average']);
+printf('Minimal candidate density per cluster: %f\n', DensityStat['Min']);
+printf('Maximal candidate density per cluster: %f\n', DensityStat['Max']);
+printf('Number of clusters with only one sequence: %u\n', nOneSequenceClusters);
+print(alreadyComputedCounter);
+
+printf('\nFinished the all all within the clusters\n');
+
+##############################################################################
+# Storing the results in the different files
+##############################################################################
+printf('\nNow storing the results...\n');
+
+for z in Indices(candidatePairs['dataTable']) do
+	name1 := z[1];
+	name2 := z[2];
+
+	candidateList := [];
+	for i to length(candidatePairs['dataTable'][z]) do
+		for j to length(candidatePairs['dataTable'][z][i]) do
+			if not candidatePairs['dataTable'][z][i][j][2] = [] then
+				candidateList := append(candidateList, candidatePairs['dataTable'][z][i][j][2]);
+			fi:
+		od:
+	od:
+
+	nCandidates := length(candidateList);
+
+	CallSystem('mkdir -p Cache/AllAll/'.name1);
+ 	fn := sprintf('Cache/AllAll/%s/%s', name1, name2);
+
+ 	OpenWriting(fn);
+ 	printf( '# AllAll of %s vs %s (Part %d of %d); pid %d; %s\n',
+        name1, name2, 1, 1, getpid(), hostname() ); # Here I have hard coded junks...
+
+ 	lprint('RefinedMatches(');
+    if candidateList=[] then lprint( candidateList,'):');
+    else
+        printf('[');
+        for i to length(candidateList)-1 do
+            printf('%a,\n', candidateList[i]);
+        od:
+        lprint( candidateList[-1], ']):');
+    fi:
+    OpenWriting(previous);
+
+    CallSystem('gzip -9f '.fn);
+
+	printf('Finished saving genome %s-%s with %u candidate pairs\n', name1, name2, nCandidates);
+od:
+
+printf('\nCreating the other files for which no pairs are found...\n');
+
+# Creating the files for the genome pair without any candidate pairs (only in small datasets)
+for i to NG do
+	for j from i to NG do
+		db1 := DBs[i];
+		db2 := DBs[j];
+		name1 := genomes[i];
+		name2 := genomes[j];
+		n1 := db1[TotEntries];
+		n2 := db2[TotEntries];
+		if n1 > n2 or n1=n2 and name1 > name2 then
+            t := name1;  name1 := name2;  name2 := t;
+        fi:
+
+        CallSystem('mkdir -p Cache/AllAll/'.name1);
+        fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
+        if not FileExists(fn1chunk) then 
+        	fn := sprintf('Cache/AllAll/%s/%s', name1, name2);
+            OpenWriting(fn);
+            printf( '# AllAll of %s vs %s (Part %d of %d); pid %d; %s\n',
+                name1, name2, 1, 1, getpid(), hostname() );
+            OpenWriting(previous);
+            CallSystem('gzip -9f '.fn);
+        fi;
+	od:
+od:
+

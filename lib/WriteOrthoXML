@@ -128,7 +128,7 @@ InitStableIDs := proc(data)
     external Grp2Id;
     Grp2Id := traperror(GenerateStableIDs(data));
     if Grp2Id=lasterror then
-        warning('could not generateStableIDs for groups:\n '.lasterror);
+        warning('could not generateStableIDs for groups:\n '.string(lasterror));
         Grp2Id := 0;
     fi:
 end:

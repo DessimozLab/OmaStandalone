@@ -44,6 +44,8 @@ GenomeSummary := noeval(ReadLibrary( OrthologsLib.'GenomeSummary',
 
 RefinedMatches := noeval(ReadLibrary( OrthologsLib.'RefinedMatches.drw',
         RefinedMatches)):
+AssertDatabaseVersionsInSync := noeval(ReadLibrary(OrthologsLib.'RefinedMatches.drw', 
+    AssertDatabaseVersionsInSync)):
 ReadProgram( OrthologsLib.'Pair');
 
 WriteEspritResults := noeval(ReadLibrary( OrthologsLib.'Esprit.drw',
