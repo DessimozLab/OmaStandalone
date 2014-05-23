@@ -1,0 +1,294 @@
+Set (printgc=false);
+
+# Ort is the global variable that holds the orthologous matrix:
+# one row is one orthologous group; one column is one organism.
+# An entry in the matrix is either
+# 1) zero (there is no ortholog in the respective organism)
+# 2) number (entry ID of the ortholog)
+
+# For testing, I am loading the orthologous matrix from the OMA database.
+
+isTest := true;
+
+# The fraction of OMA members that must have an annotation so that it is propagated across the OMA members. 
+fractionAnnotated := 0.0;
+
+# Evidence and reference codes we use to assign annotation via OMA membership.
+# If the included evidence code is other than IEA, the annotation is taken.
+# When the evidence code is IEA, only the listed reference codes are accepted. 
+evCodes := ['IEA', 'EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP']:
+refCodes := ['GO_REF:002', 'GO_REF:003', 'GO_REF:004', 'GO_REF:023']:
+
+if isTest then
+    # The first stage of testing: taking the files produced by the previous run of OMA standalone.
+    # The data files were originally on the UCL computer at /cs/research/biosciences/oma/research/christophe/bartek_2/
+    
+    # File exists method
+    ReadProgram('/home/skuncan/OMA-standalone/CODE/OmaStandalone/lib/FileExists'); 
+    
+    # Get the Ort variable.
+    # TODO There were issues with the Ort variable in the output. For now, I am parsing the file OrthologousMatrix.txt (see below) to get the orthology matrix and the corresponding organisms. 
+    #ReadProgram ('/home/skuncan/Bartek-function/Cache/ortholog_milestone.drw.gz');
+    
+    # Get the order of the genomes in the file OrthologousMatrix.txt. This is the same order as should be the order of genomes in the DBs array, and is the same order of genomes as is the order of columns in the Ort variable (i.e., the orthologous matrix).
+    
+    ortMatrixFile := '/home/skuncan/Bartek-function/OrthologousMatrix.txt':
+    cf := ReadRawFile (ortMatrixFile): 
+    ca := SplitLines (cf):
+    
+    # TODO Fifth line: specific for THIS file!
+    gnames := SearchDelim('\t', ca[5]):
+    gnames[-1] := trim(gnames[-1]): # Remove the trailing newline
+    
+    Ort := []:
+    for line in ca[6..-1] do # TODO Sixth line: specific for THIS file!
+        Ort := append(Ort, compress([seq(parse(z),z=SearchDelim('\t',trim(line)))]));
+    od:
+    
+    DBs := []:
+    # GS := table(): # TODO Assigning this variable (below) crashes sometimes because of lack of data in the organism.
+    
+    for gname in gnames do
+        
+        if FileExists('/home/skuncan/Bartek-function/Cache/DB/'.gname.'.db') then
+            
+            DB := ReadDb('/home/skuncan/Bartek-function/Cache/DB/'.gname.'.db');
+            if type(DB,database) then
+                #GS[gname] := GenomeSummary(DB);
+                DBs := append(DBs,DB); 
+                fcheck := SearchTag('FASTACHECKSUM', DB['string']);
+                if fcheck<>'' and checksum<>fcheck then
+                    error('cached genome ('.gname.') differs from fasta file');
+                fi:
+            fi:
+        
+        else
+            
+            error ('File does not exist: '.'/home/skuncan/Bartek-function/DB/'.gname.'.db'); 
+            
+        fi:
+        
+    od:
+    
+fi:
+
+# One group is one row in the Ort matrix. 
+# grp := [0,32,0,63,3];
+
+captureAnnotations := proc (InAnnotations:string)
+    # Capturing the available annotations in the DB. Parent annotations are NOT included. 
+    
+    # Test:
+    # annotations := SearchTag('GO', Entry(150)); 
+    
+    # For each annotation in the parsed string, return the triple [GO_ID, Evidence_code, Reference_Code]
+    
+    if InAnnotations = '' then
+        return (''):
+    fi:
+    
+    existingAnnotations := []:
+    
+    annotations := SearchDelim (';', InAnnotations): # Each array member is one GO term
+        
+    for b in annotations do
+        b := SearchDelim('@', b):
+        oneGO := parse(SearchDelim(':', b[1])[2]): # The GO term itself
+        evidence := eval (parse (b[2])); # All the evidence/reference codes pointing to this GO term
+        
+        for c in evidence do # Capture all the existing evidence codes
+            
+            for d in c[2] do
+                existingAnnotations := append (existingAnnotations, [oneGO, c[1], d]); 
+            od:
+            
+        od: 
+        
+    od:
+    
+    return (existingAnnotations); 
+    
+end:
+
+parseEntryAnnotations := proc (annotations:string)
+    # Parsing the annotation string. Parent annotations are NOT included.
+    
+    if annotations = '' then
+        return (''):
+    fi:
+    
+    filteredAnnotations := []:
+    
+    for a in annotations do
+    
+        a := SearchDelim (';', a): 
+        
+        for b in a do
+            b := SearchDelim('@', b):
+            oneGO := b[1]:
+            evidence := op (eval (parse (b[2])));
+            
+            for c in SearchAllArray (evidence[1], evCodes) do # If there is no hit, this loop is not executed. 
+                
+                if evidence[1] = 'IEA' then
+                    for oneR in evidence [2] do
+                        if length (SearchAllArray (oneR, refCodes)) > 0 then
+                            filteredAnnotations := append (filteredAnnotations, oneGO):
+                            break: # One Reference code is enough to support an annotation
+                        fi:
+                    od:
+                else
+                    filteredAnnotations := append (filteredAnnotations, oneGO):
+                fi:
+            od: 
+            
+        od:
+        
+    od:
+    
+    return (filteredAnnotations):
+    
+end:
+
+protein_existingAnnotations := table():
+OMA_annotations := table():
+OMA_annotation_score := table():
+OMA_members := table():
+
+print ('There are '.string(length (Ort)).' OMA groups to annotate.'); 
+
+#t := 1:
+#lastGroup := 10:
+
+if lastGroup > length (Ort) then
+    lastGroup := length (Ort); 
+fi:
+
+OMAcounter := 0:
+    
+for t from t to lastGroup do
+    
+    OMAcounter := OMAcounter + 1:
+    
+    grp := decompress(Ort[t]):
+    
+    OMAannotations := []:
+    allMembers := sum([seq(If(p>0, 1, 0), p=grp)]):
+    OMAmembers := []:
+    
+    for i to length(grp) do
+        
+        if grp[i] <> 0 then
+            
+            DB := DBs[i]:
+        
+            goString := SearchTag('GO', Entry(grp[i])):
+            gos := parseEntryAnnotations(goString):
+            
+            eID := SearchTag('OMA_ID', Entry(grp[i])):
+            
+            existing_annotations := captureAnnotations(goString):
+            
+            if existing_annotations <> '' then
+                protein_existingAnnotations[eID] := existing_annotations:
+            fi:
+            
+            OMAmembers := append (OMAmembers, eID):
+            
+            if gos = '' then
+                next;
+            fi:
+        
+            # Here, propagate parents such that one OMA member has a set of GO terms (i.e., no duplicate annotations)
+            
+            ouap := {}:
+            
+            for ua in gos do 
+                ouap := append (ouap, op(GOsuperclassR (ua))): # Parents
+                ouap := append (ouap, parse(SearchDelim(':', ua)[2])): # The term itself
+            od:
+            
+            OMAannotations := append (OMAannotations, op(ouap)):
+            #print (gos);
+            #print (ouap);
+        fi:
+    
+    od:
+    
+    # Annotating the group
+    
+    uniqueA := {op(OMAannotations)}:
+    
+    OMAannotation_score := table():
+    
+    for z in uniqueA do
+        frAnnOMA := (length (SearchAllArray(z, OMAannotations))) / allMembers:
+        
+        if frAnnOMA >= fractionAnnotated then
+            OMAannotation_score[z] := frAnnOMA:
+        fi:
+        
+    od:
+    
+    # We now have annotations for the OMA group, based on the membership
+    
+    OMA_annotation_score[t] := OMAannotation_score:
+    OMA_members[t] := OMAmembers:
+    
+    # Leave only the most specific GO annotations for the group.
+    OMAannotations_GOs := Indices(OMAannotation_score):
+    
+    mostSpecific := {}:
+    
+    for oneT in OMAannotations_GOs do
+        
+        if length (OMAannotations_GOs intersect {op(GOsubclassR(oneT))}) = 0 then
+            mostSpecific := append (mostSpecific, oneT):
+        fi:
+        
+    od:
+    
+    OMA_annotations[t] := mostSpecific:
+    
+    #print ('Annotated '.string(t));
+    
+    if (mod(OMAcounter,500)) = 0 then
+        print ('We finished with '.OMAcounter.' OMAs.'); 
+    fi:
+    
+od:
+
+OpenWriting ('/home/skuncan/Bartek-function/'.lastGroup.'-out.txt'):
+header := 'OMA protein ID\tGO index\tGO name\tEvidence code\tReference code':
+print (header);
+
+for oneOMA in Indices (OMA_annotations) do
+    for oneProtein in OMA_members[oneOMA] do
+        
+        for oneOMAannotation in OMA_annotations[oneOMA] do
+            prints (oneProtein.'\t'.oneOMAannotation.'\t'.GOname(oneOMAannotation).'\tIEA\tGO_REF:OMA'); 
+        od:
+        
+        if protein_existingAnnotations[oneProtein] <> 'unassigned' then
+            for oneKnownAnnotation in protein_existingAnnotations[oneProtein] do
+                #print (oneKnownAnnotation); 
+                prints (oneProtein.'\t'.oneKnownAnnotation[1].'\t'.GOname(oneKnownAnnotation[1]).'\t'.oneKnownAnnotation[2].'\t'.oneKnownAnnotation[3]); 
+            od:
+        fi:
+        
+    od:
+od:
+
+OpenWriting(previous); 
+
+
+
+
+
+
+
+
+
+
+
+
