@@ -158,7 +158,7 @@ OMA_members := table():
 print ('There are '.string(length (Ort)).' OMA groups to annotate.'); 
 
 #t := 1:
-#lastGroup := 10:
+#lastGroup := 100:
 
 if lastGroup > length (Ort) then
     lastGroup := length (Ort); 
@@ -186,6 +186,15 @@ for t from t to lastGroup do
             gos := parseEntryAnnotations(goString):
             
             eID := SearchTag('OMA_ID', Entry(grp[i])):
+            
+            if eID = '' then
+                eID := SearchTag('ID', Entry(grp[i])):
+            fi:
+            
+            if eID = '' then
+                prints (Entry(grp[i]));
+                break:
+            fi:
             
             existing_annotations := captureAnnotations(goString):
             
@@ -265,16 +274,22 @@ print (header);
 for oneOMA in Indices (OMA_annotations) do
     for oneProtein in OMA_members[oneOMA] do
         
-        for oneOMAannotation in OMA_annotations[oneOMA] do
-            prints (oneProtein.'\t'.oneOMAannotation.'\t'.GOname(oneOMAannotation).'\tIEA\tGO_REF:OMA'); 
-        od:
+        previouslyKnownAnnotations := {}:
         
         if protein_existingAnnotations[oneProtein] <> 'unassigned' then
             for oneKnownAnnotation in protein_existingAnnotations[oneProtein] do
                 #print (oneKnownAnnotation); 
-                prints (oneProtein.'\t'.oneKnownAnnotation[1].'\t'.GOname(oneKnownAnnotation[1]).'\t'.oneKnownAnnotation[2].'\t'.oneKnownAnnotation[3]); 
+                prints (oneProtein.'\t'.oneKnownAnnotation[1].'\t'.GOname(oneKnownAnnotation[1]).'\t'.oneKnownAnnotation[2].'\t'.oneKnownAnnotation[3]);
+                
+                previouslyKnownAnnotations := append (previouslyKnownAnnotations, oneKnownAnnotation[1]); 
+                
             od:
         fi:
+        
+        # Include only the OMA annotations for which there previously was no annotation. 
+        for oneOMAannotation in (OMA_annotations[oneOMA] minus previouslyKnownAnnotations) do
+            prints (oneProtein.'\t'.oneOMAannotation.'\t'.GOname(oneOMAannotation).'\tIEA\tGO_REF:OMA'); 
+        od:
         
     od:
 od:
