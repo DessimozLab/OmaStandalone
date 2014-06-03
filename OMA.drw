@@ -202,7 +202,9 @@ for g in G do
     GS[gname] := GenomeSummary(DB);
     DBs := append(DBs,DB); 
 od:
-convDone(true); # signal other processes to start.
+if pinf['ProcNr']=1 and not convDone() then 
+    convDone(true); # signal other processes to start.
+fi:
 NG := length(genomes):
 if NG < 2 then
     printf('\n\n'
