@@ -89,8 +89,8 @@ MaxTimePerLevel := 1200; # 20min
 # SpeciesTree variable to 'estimate', or a (partially resolved) tree can be 
 # given in Newick format. The estimation step needs again additional computing 
 # time.
-SpeciesTree := 'estimate';
-#SpeciesTree := '((mouse,mouse2),human,dog);';
+#SpeciesTree := 'estimate';
+SpeciesTree := '((moue,mouse2),human,dog);';
 
 # The cutoff of 'average reachability within two steps' defines up to what 
 # point a cluster is split into sub-clusters.
