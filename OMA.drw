@@ -481,7 +481,6 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
 # Verification of stable pairs and clique building or esprit 
 
 cput_mid := time(); time_mid := UTCTime();
-printlevel := 3:
 NumberFormat := '%.8g':
 params := [MinScore, LengthTol, StablePairTol, VerifiedPairTol, UseEsprit]:
 ParamSet := [];
@@ -510,7 +509,6 @@ else
     fi:
 
     if DoHierarchicalGroups=true then
-        printlevel := 1:
         if SpeciesTree='estimate' then
             speciesTree := BuildSpeciesTree( Ort );
         elif SpeciesTree='lineage' then
@@ -549,7 +547,7 @@ else
     print('\n\n****\n\nStoring results\n');
 
     if lasterror <> 'lasterror' then
-        warning('An error occured during inference: '.lasterror);
+        warning('An error occured during inference: '.string(lasterror));
         # quit;
     fi:
 
