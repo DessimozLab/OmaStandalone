@@ -335,6 +335,7 @@ for g1 to NG do
             OpenWriting(previous);
     
             t0 := UTCTime():
+            dat0 := time():
             res := []:
             c2 := 0;
             algnInRange := min(AlignBatchSize,NumberOfAlignments(name1,name2));
@@ -373,7 +374,7 @@ for g1 to NG do
             WriteMatches(fn,res):
 
             drt := UTCTime()-t0:
-            dat := time():
+            dat := time()-dat0:
             OpenAppending(fn);
             printf('# %s: %ds/%ds active = %.1f%%  %s\n',hostname(),round(dat),
                 round(drt), 100*dat/drt,If(dat/drt<0.7,'SLOW!',''));
