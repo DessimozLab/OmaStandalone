@@ -244,6 +244,13 @@ TaxHierarchy := proc(Levs,Up,Down,Memb) option noindex;
                 fi:
             fi:
         end:
+        # assert that species set and tree labels are congruent
+        leafSet := {seq(z['Label'], z=indets(args[1], Leaf))}:
+        genomeSet := {op(genomes)}:
+        if leafSet<>genomeSet then 
+            error(sprintf('Labels in species tree do not match with genome names: %a <--> %a',
+                minus(leafSet,genomeSet), minus(genomeSet,leafSet)));
+        fi:
         Nnds := 2*length(genomes)-1;
         memb := CreateArray(1..Nnds,{}):
         up := CreateArray(1..Nnds):
@@ -261,6 +268,7 @@ TaxHierarchy := proc(Levs,Up,Down,Memb) option noindex;
         procname(levs, up, down, memb);
     else error('unimplemented TaxHierarchy constructor') fi:
 end:
+TaxHierarchy_type := noeval(structure(anything,TaxHierarchy)):
 CompleteClass(TaxHierarchy):
 
 GetTopLevelIdx := proc(th:TaxHierarchy)
