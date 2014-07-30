@@ -41,19 +41,58 @@ WriteXMLHeader := proc(release:string ; notes:string)
     fi:
 end:
 
+
+GetBestIDs := proc(e)
+    ac := SearchTag('AC',e);
+    id := SearchTag('ID',e);
+    if ac='' then 
+        # not an exported genome. just report what is in ID as protId
+        return([id,'','']);
+    fi:
+    prt := tra := []:
+    do
+        ens := MatchRegex('ENS[A-Z]{0,3}([TP])[0-9]{6,11}',ac);
+        if length(ens)=0 then break fi:
+        if ens[2]='P' then prt := append(prt, ens[1]);
+        else tra := append(tra, ens[1]) fi:
+        ac := length(ens[1])+ac;
+    od:
+    if length(prt)=0 then prt := [ac] fi:
+
+    if length(id)<1000 then
+        ens := MatchRegex('ENS[A-Z]{0,3}G[0-9]{6,11}',id);
+    else 
+        for curId in SearchDelim('; ',id) do
+            ens := MatchRegex('ENS[A-Z]{0,3}G[0-9]{6,11}',curId);
+            if length(ens)>0 then break fi;
+        od:
+    fi:
+    if length(ens)>0 then id := ens[1] fi:
+
+    return([seq(ConcatStrings(z, '; '),z=[prt,tra]), id]);
+end:
+
+
 WriteGeneRefs := proc()
     global DB:
     id := 0;
     for gNr to length(genomes) do 
         g := genomes[gNr];
-        tax := GS[g,TAXONID]; 
+        tax := GS[g,TAXONID];
         if tax='' then tax := string(-1) fi;
+        rel := GS[g,'DBRELEASE'];
+        if rel='' then rel := GS[g,'FileName'] fi:
         printf(' <species name="%s" NCBITaxId="%s">\n', g, tax);
-        printf('  <database name="%s" version="%s">\n', g, GS[g,'FileName']);
+        printf('  <database name="%s" version="%s">\n', g, rel);
         printf('   <genes>\n');
+        DB := DBs[gNr];
         for i to GS[g,TotEntries] do 
             id := id+1;
-            printf('    <gene id="%d" protId="%s" />\n', id, IDtable[gNr,i]);
+            refs := GetBestIDs(Entry(i));
+            printf('    <gene id="%d" protId="%s"%s%s/>\n', id, 
+                refs[1], 
+                If(refs[2]<>'',sprintf(' transcriptId="%s"',refs[2]),''), 
+                If(refs[3]<>'',sprintf(' geneId="%s"',refs[3]),''));
         od:
         printf('   </genes>\n  </database>\n </species>\n');
     od:
@@ -106,7 +145,8 @@ WriteOMAHClusterR := proc( grp; id:string, (indent=2):posint )
     elif op(0,grp)=OrthologousCluster then 
         printf('%s<orthologGroup %s>\n', inS,
             If(assigned(id),sprintf('id="%a"',id),''));
-        printf('%s <property name="TaxRange" value="%s"/>\n', inS, grp[1]);
+        printf('%s <property name="TaxRange" value="%s" taxid="%d"/>\n', 
+            inS, grp[1], TaxonomyIdFromLevel(grp[1]));
         for z in grp[2..-1] do
             WriteOMAHClusterR( z, indent+1);
         od:
@@ -137,6 +177,19 @@ IdForGroup := proc(i:posint)
     external Grp2Id;
     return( string(If(Grp2Id=0,i,Grp2Id[i])) );
 end:
+
+TaxonomyIdFromLevel := proc(level)
+    getId := proc(level)
+        tax := traperror(TaxonomyEntry(level)):
+        if tax=lasterror then id := -1 else id := tax['id'] fi:
+        return(id);
+    end:
+
+    if SpeciesTree='lineage' then
+        return( remember(getId(level)) )
+    else return(-1) fi:
+end:
+
 
 getParamsAsNotes := proc()
     params := []:

@@ -202,7 +202,9 @@ for g in G do
     GS[gname] := GenomeSummary(DB);
     DBs := append(DBs,DB); 
 od:
-convDone(true); # signal other processes to start.
+if pinf['ProcNr']=1 and not convDone() then 
+    convDone(true); # signal other processes to start.
+fi:
 NG := length(genomes):
 if NG < 2 then
     printf('\n\n'
@@ -333,6 +335,7 @@ for g1 to NG do
             OpenWriting(previous);
     
             t0 := UTCTime():
+            dat0 := time():
             res := []:
             c2 := 0;
             algnInRange := min(AlignBatchSize,NumberOfAlignments(name1,name2));
@@ -371,7 +374,7 @@ for g1 to NG do
             WriteMatches(fn,res):
 
             drt := UTCTime()-t0:
-            dat := time():
+            dat := time()-dat0:
             OpenAppending(fn);
             printf('# %s: %ds/%ds active = %.1f%%  %s\n',hostname(),round(dat),
                 round(drt), 100*dat/drt,If(dat/drt<0.7,'SLOW!',''));
@@ -479,7 +482,6 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
 # Verification of stable pairs and clique building or esprit 
 
 cput_mid := time(); time_mid := UTCTime();
-printlevel := 3:
 NumberFormat := '%.8g':
 params := [MinScore, LengthTol, StablePairTol, VerifiedPairTol, UseEsprit]:
 ParamSet := [];
@@ -508,7 +510,6 @@ else
     fi:
 
     if DoHierarchicalGroups=true then
-        printlevel := 1:
         if SpeciesTree='estimate' then
             speciesTree := BuildSpeciesTree( Ort );
         elif SpeciesTree='lineage' then
@@ -519,6 +520,9 @@ else
         fi:
         # call hierarchical group procedure
         HOG := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));
+        if HOG=lasterror then 
+            warning('computation of HierarchicalGroups failed: '.string(lasterror));
+        fi:
     fi:
     # # Retrieve all IDs
     # # Create File MapSeqNum-ID:
@@ -544,7 +548,7 @@ else
     print('\n\n****\n\nStoring results\n');
 
     if lasterror <> 'lasterror' then
-        print('Abort because of error: '.lasterror);
+        warning('An error occured during inference: '.string(lasterror));
         # quit;
     fi:
 
@@ -621,7 +625,7 @@ else
     fi:
 
     # store hierarchical groups if computed
-    if DoHierarchicalGroups=true then
+    if DoHierarchicalGroups=true and type(HOG, list) then
         WriteOrthoXML( HOG, 'Output/HierarchicalGroups.orthoxml',
             StableIdsForGroups=true);
         if not WriteOutput_HOGFasta=false then 
