@@ -59,7 +59,14 @@ GetBestIDs := proc(e)
     od:
     if length(prt)=0 then prt := [ac] fi:
 
-    ens := MatchRegex('ENS[A-Z]{0,3}G[0-9]{6,11}',id);
+    if length(id)<1000 then
+        ens := MatchRegex('ENS[A-Z]{0,3}G[0-9]{6,11}',id);
+    else 
+        for curId in SearchDelim('; ',id) do
+            ens := MatchRegex('ENS[A-Z]{0,3}G[0-9]{6,11}',curId);
+            if length(ens)>0 then break fi;
+        od:
+    fi:
     if length(ens)>0 then id := ens[1] fi:
 
     return([seq(ConcatStrings(z, '; '),z=[prt,tra]), id]);
