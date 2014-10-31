@@ -541,7 +541,10 @@ else
     od:
     OpenWriting(previous);
 
-
+    if DoHomologyFunctionPrediction=true then
+        PredictViaHomology();
+    fi:
+    
     ############################################################################
     # Store results
     Set('printgc'=false);
