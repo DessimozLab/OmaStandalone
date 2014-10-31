@@ -1,0 +1,41 @@
+Set (printgc=false);
+
+for x to NG do
+
+    for y to NG do
+        
+        # Homologs of genome x in genome y
+        # List of length the number of entries in x
+        
+        # Debug
+        # x := 2; y := 1; 
+        
+        xPairs := BestMatch[x, y]:
+        
+        for xEntry to length(decompress (xPairs)) do
+            
+            yEntries := decompress (xPairs[xEntry]);
+            
+            yHomologs := []: # Homologs of y gene in X genome
+            
+            for yEntry to length (yEntries) do
+                #print (yEntries[yEntry][Entry]);
+                print (yEntries[yEntry]);
+                yHomologs := append (yHomologs, yEntries[yEntry]); 
+                #oneScore := print (yEntries[yEntry][Score100] / 100);
+            od:
+            
+            # We now have all homologs of y, so we can infer function based on homology.
+            DB := DBs[x]; 
+            
+            for 
+            
+        od:
+        
+    od:
+    
+od:
+
+decompress(BestMatch[4, 2, 5])[1][Entry];
+
+BestMatch
