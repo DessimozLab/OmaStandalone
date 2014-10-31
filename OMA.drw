@@ -273,8 +273,9 @@ end:
 RangeOfJunk := noeval(RangeOfJunk):
 
 IsMyJob := proc(name1, name2, junk)
-    return( evalb(mod( hash([name1,name2,junk]), 
-            pinf['NrParallelProc'] ) = pinf['ProcNr']-1) ); 
+    h := sha2(sprintf('%a',[name1,name2,junk]))[1..8]:
+    nr := sscanf(h, '%x')[1];
+    return( evalb(mod(nr, pinf['NrParallelProc']) = pinf['ProcNr']-1) );
 end:
 
 if UseExperimentalHomologousClusters=true then
