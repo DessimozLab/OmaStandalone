@@ -1,5 +1,82 @@
 Set (printgc=false);
 
+GOsuper := proc(term) return(remember(GOsuperclassR(term))) end:
+GOsub := proc(term) return(remember(GOsubclassR(term))) end:
+
+parseEntryAnnotations := proc (annotations:string, evCodes, refCodes)
+    # Parsing the annotation string. Parent annotations are NOT included.
+    
+    # e.g., evCodes := ['IEA', 'EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP']:
+    # e.g., refCodes := ['GO_REF:002', 'GO_REF:003', 'GO_REF:004', 'GO_REF:023']:
+    
+    if annotations = '' then
+        return ([]):
+    fi:
+    
+    filteredAnnotations := []:
+    
+    for a in annotations do
+    
+        a := SearchDelim (';', a): 
+        
+        for b in a do
+            b := SearchDelim('@', b):
+            oneGO := trim(b[1]):
+            evidence := op (eval (parse (b[2])));
+            
+            for c in SearchAllArray (evidence[1], evCodes) do
+                # If there is no hit, this loop is not executed. 
+                
+                if evidence[1] = 'IEA' then
+                    for oneR in evidence [2] do
+                        if length (SearchAllArray (oneR, refCodes)) > 0 then
+                            filteredAnnotations := append (filteredAnnotations, oneGO):
+                            break: # One Reference code is enough to support an annotation
+                        fi:
+                    od:
+                else
+                    filteredAnnotations := append (filteredAnnotations, oneGO):
+                fi:
+            od: 
+            
+        od:
+        
+    od:
+    
+    return (filteredAnnotations):
+    
+end:
+
+# When running to develop and test annotation pipeline, start by downloading the
+# all against all files from the OMA web browser.
+# This gives the full OMA version along with the files.
+
+# Next, run
+# ReadProgram('parameters.drw'):
+# Finally, copy the code in the OMA.drw file, up to the ESPRIT part.
+
+# What follows uses the above data to get the annotations via homology.
+
+# Which evidence and reference codes do we use to propagate annotations
+# based on homology?
+inclEvCodes := ['EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP']:
+inclRefCodes := []: # If there is no IEA evidence code included, this does not make a difference
+
+# goFunctions is an array that has as many members as there are genomes.
+# Each member is an array that then has as many members as there are genes in the genome. 
+goFunctions := CreateArray(1..NG);
+for x to NG do
+    goFunctions[x] := CreateArray(1..GS[genomes[x], TotEntries]):
+od:
+
+for x to length (goFunctions) do
+    for y to length (goFunctions[x]) do
+        
+        goFunctions[x][y] := []:
+        
+    od:
+od:
+
 for x to NG do
 
     for y to NG do
@@ -10,25 +87,32 @@ for x to NG do
         # Debug
         # x := 2; y := 1; 
         
-        xPairs := BestMatch[x, y]:
+        xPairs := decompress (BestMatch[x, y]):
         
-        for xEntry to length(decompress (xPairs)) do
+        for xEntry to length(xPairs) do
             
-            yEntries := decompress (xPairs[xEntry]);
+            # xEntry := 152:
+            
+            yEntries := decompress(xPairs[xEntry]);
             
             yHomologs := []: # Homologs of y gene in X genome
             
+            DB := DBs[y]; 
             for yEntry to length (yEntries) do
-                #print (yEntries[yEntry][Entry]);
-                print (yEntries[yEntry]);
-                yHomologs := append (yHomologs, yEntries[yEntry]); 
+                # print (yEntries[yEntry]);
+                yHomologs := append (yHomologs, yEntries[yEntry][Entry]);
+                
+                yBasedFunctions := SearchTag('GO', Entry(yEntry));
+                
+                inferredA := parseEntryAnnotations(yBasedFunctions, inclEvCodes, inclRefCodes):
+                
+                if length (inferredA) > 0 then
+                    goFunctions[x][xEntry] := append (goFunctions[x][xEntry], op(inferredA)); 
+                fi:
+                
                 #oneScore := print (yEntries[yEntry][Score100] / 100);
+                # goFunctions[2, 2220]; 
             od:
-            
-            # We now have all homologs of y, so we can infer function based on homology.
-            DB := DBs[x]; 
-            
-            for 
             
         od:
         
@@ -36,6 +120,3 @@ for x to NG do
     
 od:
 
-decompress(BestMatch[4, 2, 5])[1][Entry];
-
-BestMatch
