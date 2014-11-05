@@ -33,9 +33,43 @@ StoreOrthologMilestone := proc(fn_)
     for var in ['Ort', 'VPairs', 'StablePairs'] do
         printf('%s := %A:\n', var, eval(symbol(var))):
     od:
+    printf('_genomes_order := %A:\n', genomes):
+    printf('_hash_DBs := %A:\n', HashDBs()):
     printf('# Milestone created on %s on %s\n', date(), hostname());
     OpenWriting(previous);
     if fn_<>fn then
         CallSystem('gzip -f9 '.fn);
     fi:
+end:
+
+HashDBs := proc()
+    hashes := [seq(sha2(DBs[i,string])[1..16], i=1..NG)];
+    return(hashes)
+end:
+
+
+LoadOrthologMilestone := proc(fn)
+    global Ort, VPairs, StablePairs, _genomes_order, _hash_DBs;
+    _genomes_order := _hash_DBs := 0;
+    cur_DB_hashes := HashDBs():
+    err := traperror(ReadProgram(fn)):
+    
+    if err=lasterror or (_genomes_order<>0 and _genomes_order<>genomes) or 
+        (_hash_DBs<>0 and _hash_DBs<>cur_DB_hashes) then
+        warning(fn.' could not be used due to inconsistencies with current dataset.');
+        if _genomes_order<>0 and _genomes_order<>genomes then
+            warning(sprintf('genome order differ: %A <--> %A\n', 
+                genomes, _genomes_order));
+        elif _hash_DBs<>0 and _hash_DBs<>cur_DB_hashes then
+            for i to NG do if _hash_DBs[i]<>cur_DB_hashes[i] then
+                warning(sprintf('DB for "%s" differs', genomes[i]));
+            fi od:
+        fi: 
+        warning('  Will redo now orthology inference');    
+
+        CallSystem('rm -rf '.fn);
+        return(false);
+    fi:
+    return(true);
+
 end:

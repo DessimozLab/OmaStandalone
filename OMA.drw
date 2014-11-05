@@ -495,16 +495,12 @@ if UseEsprit then
 else
     # check whether orthologs have already been computed
     orthoCacheFile := 'Cache/ortholog_milestone.drw.gz':
-    needComp := true;
+    alreadyComputed := false;
     if FileExists(orthoCacheFile) then
-        err := traperror(ReadProgram(orthoCacheFile));
-        if err=lasterror then 
-            CallSystem('rm -f '.orthoCacheFile); 
-        else needComp := false;
-        fi:
+        alreadyComputed := LoadOrthologMilestone(orthoCacheFile):
     fi:
 
-    if needComp then 
+    if not alreadyComputed then 
         print('\n\n****\n\nIdentification of Stable-Pairs (Putative Orthologs)\n');
         Ort := OrthologousMatrix( op(params) ):
         StoreOrthologMilestone( orthoCacheFile );

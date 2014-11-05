@@ -61,6 +61,8 @@ DistBounds := noeval(ReadLibrary(OrthologsLib.'IdentifyPosition.drw',
 FileExists := noeval(ReadLibrary(OrthologsLib.'FileExists',FileExists));
 StoreOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
     StoreOrthologMilestone));
+LoadOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
+    LoadOrthologMilestone));
 
 WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
