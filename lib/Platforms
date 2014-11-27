@@ -57,11 +57,36 @@ SunGrid_Platform := proc()
     return(ParallelInfo(NrParallelProc, jobidx));
 end:
 
+Slurm_Platform := proc()
+    jobidx := getenv('SLURM_ARRAY_TASK_ID');
+    # if not a jobarray, assume single process and warn user.
+    if jobidx = '' then
+        jobidx := 1;
+        NrParallelProc := 1;
+        warning('not run as job-array. Will assume it is a single process.');
+    else
+        jobidx := parse(jobidx);
+        jobId := getenv('SLURM_ARRAY_JOB_ID');
+        jobsum := TimedCallSystem('squeue -j '.jobId);
+        if jobsum[1]<>0 then
+            error('cannot call ''squeue'' command successfully');
+        fi:
+        sndLine := SplitLines(jobsum[2]);
+        NrParallelProc := length(sndLine) -1;
+    fi;
+    if jobidx > NrParallelProc then
+        error('require range from 1-x of jobarray.');
+    fi:
+    return(ParallelInfo(NrParallelProc, jobidx));
+end:
+
 DetectParallelInfo := proc()
     if getenv('LSB_JOBID')<>'' then
         return(LSF_Platform());
     elif getenv('SGE_ROOT')<>'' then
         return(SunGrid_Platform());
+    elif getenv('SLURM_ARRAY_JOB_ID') <> '' then
+        return(Slurm_Platform());
     elif type(NR_PROCESSES,posint) then
         if not type(THIS_PROC_NR,posint) then 
             error('oma standalone is not propperly started. bye.');
