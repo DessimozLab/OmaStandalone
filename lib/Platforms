@@ -58,6 +58,8 @@ SunGrid_Platform := proc()
 end:
 
 Slurm_Platform := proc()
+    sleep(3);
+    # wait for a while to let slurm give the full squeue
     jobidx := getenv('SLURM_ARRAY_TASK_ID');
     # if not a jobarray, assume single process and warn user.
     if jobidx = '' then
@@ -80,6 +82,44 @@ Slurm_Platform := proc()
     return(ParallelInfo(NrParallelProc, jobidx));
 end:
 
+PBS_Platform := proc()
+    sleep(3);
+    # wait for a while just in case...
+    jobidx := getenv('PBS_ARRAY_INDEX');
+    # if not a jobarray, assume single process and warn user.
+    if jobidx = '' then
+        jobidx := 1;
+        NrParallelProc := 1;
+        warning('not run as job-array. Will assume it is a single process.');
+    else
+        jobidx := parse(jobidx);
+        jobId := getenv('PBS_ARRAY_ID');
+        jobsum := TimedCallSystem('qstat -f '.jobId);
+        if jobsum[1] <> 0 then
+            error('cannot call ''qstat'' command successfully');
+        fi;
+        sndLine := SplitLines(jobsum[2]);
+        for eachLine in sndLine do
+            if SearchString('array_state_count', eachLine) <> -1 then
+                targetLine := eachLine;
+                break;
+            fi;
+        od;
+        indexQueued := SearchString('Queued', targetLine);
+        indexRunning := SearchString('Running', targetLine);
+        indexExiting := SearchString('Exiting', targetLine);
+        indexExpired := SearchString('Expired', targetLine);
+        NrParallelProc := parse(targetLine[(indexQueued+8)..indexRunning]) +
+                          parse(targetLine[(indexRunning+9)..indexExiting]) +
+                          parse(targetLine[(indexExiting+9)..indexExpired]) +
+                          parse(targetLine[(indexExpired+9)..length(targetLine)]);
+    fi;
+    if jobidx > NrParallelProc then
+        error('require range from 1-x of jobarray.');
+    fi;
+    return(ParallelInfo(NrParallelProc, jobidx));
+end:
+
 DetectParallelInfo := proc()
     if getenv('LSB_JOBID')<>'' then
         return(LSF_Platform());
@@ -87,6 +127,8 @@ DetectParallelInfo := proc()
         return(SunGrid_Platform());
     elif getenv('SLURM_ARRAY_JOB_ID') <> '' then
         return(Slurm_Platform());
+    elif getenv('PBS_ARRAY_INDEX') <> '' then
+        return(PBS_Platform());
     elif type(NR_PROCESSES,posint) then
         if not type(THIS_PROC_NR,posint) then 
             error('oma standalone is not propperly started. bye.');
