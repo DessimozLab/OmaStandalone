@@ -76,7 +76,7 @@ Slurm_Platform := proc()
         sndLine := SplitLines(jobsum[2]);
         NrParallelProc := length(sndLine) -1;
     fi;
-    if jobidx > NrParallelProc then
+    if jobidx < 1 or jobidx > NrParallelProc then
         error('require range from 1-x of jobarray.');
     fi:
     return(ParallelInfo(NrParallelProc, jobidx));
