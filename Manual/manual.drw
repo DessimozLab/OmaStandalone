@@ -226,7 +226,7 @@ OMA')),
         'it is recomended to start "N" parallel processes with the "-n" option, i.e.',
         Code('OMA -n 5'), 
         ' will start 5 parallel jobs. Note that on HPC with schedulers there is a ',
-        'better way described ', Link(TextBlock('a', href='LSF', 'below'))),
+        'better way described ', Anchor(TextBlock('a', href='schedulers', 'below'))),
         
         Paragraph(0, 'Therefore, there is not need to specify which parts are 
         to be done by which process. One should only ensure that all processes 
@@ -234,20 +234,47 @@ OMA')),
         computed by a single process only.'
         ),
 
-        Anchor(TextBlock('a', name='LSF', 
-            SectionHeader(3, 'Parallelization with LSF or SunGridEngine'))
+        Anchor(TextBlock('a', name='schedulers', 
+            SectionHeader(3, 'Parallelization with LSF, PBS Pro, Slurm, or SunGridEngine'))
         ),
-        Paragraph(0, 'With LSF or SGE, running parallel jobs is particularly easy,
+        Paragraph(0, 'With a scheduler such as LSF or SGE, running parallel jobs is particularly easy,
         as the parallel jobs can be start using as a job array. OMA will 
         automatically spread the work for the all-against-all among all processes.
-        Do not start OMA with the -n option for that:'),
+        Do not start OMA with the -n option for that. Instead, use a job 
+        array with one of the supported schedulers below (the example is to 
+        start 100 jobs in parallel)'),
+
+        Anchor(TextBlock('a', name='LSF', SectionHeader(3, 'LSF'))),
 
         Paragraph(0, 
-            Code('bsub -J "OMA[1-100]" -o "out.%I" "OMA"'),' or',
-            Code('qsub -t 1-100 "OMA"')
-            ),
+            Code('bsub -J "OMA[1-100]" -o "out.%I" "OMA"')),
 
-        Paragraph(0, 'respectively, which starts 100 processes in parallel.'),
+        Anchor(TextBlock('a', name='SGE', SectionHeader(3, 'Sun Grid Engine (aka Oracle Grid Engine)'))),
+
+        Paragraph(0, 
+            Code('qsub -t 1-100 "OMA"')
+        ),
+
+        Anchor(TextBlock('a', name='PBS_Pro', SectionHeader(3, 'PBS Pro'))),
+
+        Paragraph(0, 'Prepare a job script called e.g. job.sh:', Code('
+\#!/bin/bash
+\# set the number of nodes and processes per node
+\#PBS -l select=1:ncpus=1:mem=1000mb
+\# set max wallclock time
+\#PBS -l walltime=01:00:00
+\#PBS -J 1-3
+OMA'), 'The script can then be submitted as follows:', 
+        Code('qsub job.sh')
+        ),
+
+        Anchor(TextBlock('a', name='Slurm', SectionHeader(3, 'Slurm'))),
+
+        Paragraph(0, Code('sbatch --array=1-100 -N1 <<EOF
+\#!/bin/sh 
+/absolute/path/to/bin/OMA
+EOF')
+        ),
 
         Anchor(TextBlock('a', name='Adding/Updating new genomes', 
             SectionHeader(2, 'Adding/Updating new genomes'))
