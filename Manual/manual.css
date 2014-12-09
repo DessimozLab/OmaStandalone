@@ -43,8 +43,10 @@ h3 {
     font-size: 16px;
 }
 
-h3:after { 
-    content:":";
+h4 {
+    font-weight: normal;
+    font-style:italic;
+    font-size: 16px;
 }
 
 pre {
