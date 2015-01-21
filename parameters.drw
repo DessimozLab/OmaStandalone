@@ -13,8 +13,11 @@
 #   
 ################################################################################
 
-# If you want to recompute everything from scratch everytime the script is 
-# run, set the following parameter to false.
+# Type of input sequence data, has to be either 'DNA' or 'AA'
+InputDataType := 'AA';
+
+# if you want to recompute everything from scratch everytime the script
+# is run, set the following parameter to false.
 ReuseCachedResults := true;
 
 # number of pairwise protein alignments done in one unit. The larger this 

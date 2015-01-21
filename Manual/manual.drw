@@ -244,18 +244,18 @@ OMA')),
         array with one of the supported schedulers below (the example is to 
         start 100 jobs in parallel)'),
 
-        Anchor(TextBlock('a', name='LSF', SectionHeader(4, 'LSF'))),
+        Anchor(TextBlock('a', name='LSF', SectionHeader(3, 'LSF'))),
 
         Paragraph(0, 
             Code('bsub -J "OMA[1-100]" -o "out.%I" "OMA"')),
 
-        Anchor(TextBlock('a', name='SGE', SectionHeader(4, 'Sun Grid Engine (aka Oracle Grid Engine)'))),
+        Anchor(TextBlock('a', name='SGE', SectionHeader(3, 'Sun Grid Engine (aka Oracle Grid Engine)'))),
 
         Paragraph(0, 
             Code('qsub -t 1-100 "OMA"')
         ),
 
-        Anchor(TextBlock('a', name='PBS_Pro', SectionHeader(4, 'PBS Pro'))),
+        Anchor(TextBlock('a', name='PBSPro', SectionHeader(3, 'PBS Pro'))),
 
         Paragraph(0, 'Prepare a job script called e.g. job.sh:', Code('
 \#!/bin/bash
@@ -268,7 +268,7 @@ OMA'), 'The script can then be submitted as follows:',
         Code('qsub job.sh')
         ),
 
-        Anchor(TextBlock('a', name='Slurm', SectionHeader(4, 'Slurm'))),
+        Anchor(TextBlock('a', name='Slurm', SectionHeader(3, 'Slurm'))),
 
         Paragraph(0, Code('sbatch --array=1-100 -N1 <<EOF
 \#!/bin/sh 
@@ -467,6 +467,11 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                     title = 'Table 3: General parameters in OMA',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
                     Rule,
+                    Row(TT('InputDataType'),
+                        Paragraph(0, 'Type of input sequences. This can be set
+                        either to ''AA'' for amino acid sequences or ''DNA'' for
+                        nucleotide sequences'),
+                        TT('AA')),
                     Row(TT('ReuseCachedResults'), 
                         Paragraph(0, 'If you want to recompute everything from
                         scratch everytime the script is run, set this to ',
