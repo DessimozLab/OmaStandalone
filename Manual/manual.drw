@@ -467,6 +467,11 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                     title = 'Table 3: General parameters in OMA',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
                     Rule,
+                    Row(TT('InputDataType'),
+                        Paragraph(0, 'Type of input sequences. This can be set
+                        either to ''AA'' for amino acid sequences or ''DNA'' for
+                        nucleotide sequences'),
+                        TT('AA')),
                     Row(TT('ReuseCachedResults'), 
                         Paragraph(0, 'If you want to recompute everything from
                         scratch everytime the script is run, set this to ',

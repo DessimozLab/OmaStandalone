@@ -66,6 +66,7 @@ GetStats := true;
 
 # Read libraries
 if assigned(libdir) then
+    if libdir[-1]<>'/' then libdir := libdir .'/' fi:
     ReadProgram( libdir . 'darwinit'):
 else
     ReadProgram('lib/darwinit'):
@@ -217,9 +218,16 @@ fi;
 
 ##############################################################################
 # All-against-all
-#   assign name1, name2, db1, db2
-CreateDayMatrices();
-DM := DayMatrix(224):
+if InputDataType='DNA' then
+    ReadProgram(If(assigned(libdir),libdir,'lib') . '/DNA_matrix');
+    CreateDayMatrices(DNA_Counts);
+    DM := DayMatrix(50):
+elif not assigned(InputDataType) or InputDataType='AA' then
+    CreateDayMatrices();
+    DM := DayMatrix(224):
+else error('unexpected value for ''InputDataType'': '.str(InputDataType));
+fi:
+
 NumberFormat := '%.10g':
 JustScoreBound := MinScore;
 
