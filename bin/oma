@@ -29,6 +29,7 @@ options:
   -n <number>   number of parallel jobs to be started on this computer
   -v            version
   -d <level>    increase debug info to <level>. By default level is set to 1.
+  -i            interactive session, don't quit in case of error and at end.
   -h/?          this help
 
 paramfile       path to the parameter file. it defaults to ./parameters.drw
@@ -47,8 +48,9 @@ wdir="./"
 dbglevel="1"
 NProc="1"
 localParallel="0"
-
-while getopts "hn:vd:" opt ; do
+darwin_flag="-E -q"
+interactive=""
+while getopts "hn:vd:i" opt ; do
     case $opt in 
     h) usage
          exit 0
@@ -70,6 +72,9 @@ while getopts "hn:vd:" opt ; do
          ;;
     v)   echo "OMA version [VERSIONNR]"
          exit 0
+         ;;
+    i)   darwin_flag=""
+         interactive="1"
          ;;
     \?)  echo "invalid option" >&2
          usage
@@ -93,6 +98,11 @@ if [ ! -e $pfile ] ; then
     exit 1
 fi
 
+if [[ -n "$interactive" && $localParallel == "1" && $NProc -gt "1" ]]; then
+    echo "interactive mode only possible without parallelism."
+    exit 1
+fi
+
 set -o monitor
 trap cleanup EXIT
 
@@ -103,20 +113,32 @@ cleanup() {
     fi
 }
 
-cat $OMA_PATH/lib/splashscreen.txt
-for pNr in $(eval echo {1..${NProc}}) ; do
-    if [ "$localParallel" -gt 0 ] ; then
-        OneMachineParallelInfo="NR_PROCESSES := $NProc; THIS_PROC_NR := $pNr;"
-    fi
-$OMA_PATH/bin/omadarwin -E -q  << EOF &
+drw_cmds=$(cat << EOC
 libdir := '$OMA_PATH/lib/': 
 e := traperror(eval(parse(ReadRawFile('$pfile')))): 
 if e=lasterror then print('$paramerror'): exit(1): fi: 
-printlevel := $dbglevel: ${OneMachineParallelInfo} 
+printlevel := $dbglevel: 
 OMA_STANDALONE_VERSION := '[VERSIONNR]': 
-ReadProgram('$OMA_PATH/OMA.drw'): 
-done:
-EOF
-done
+ReadProgram('$OMA_PATH/OMA.drw'):
+EOC
+)
 
-wait
+cat $OMA_PATH/lib/splashscreen.txt
+if [ -n "$interactive" ] ; then
+    # run interactive, i.e. no background 
+    $OMA_PATH/bin/omadarwin ${darwin_flag} << EOA
+    $drw_cmds
+EOA
+else
+    for pNr in $(eval echo {1..${NProc}}) ; do
+        if [ "$localParallel" -gt 0 ] ; then
+            OneMachineParallelInfo="NR_PROCESSES := $NProc; THIS_PROC_NR := $pNr;"
+        fi
+        $OMA_PATH/bin/omadarwin ${darwin_flag} << EOF &
+        ${OneMachineParallelInfo}
+        $drw_cmds
+        done;
+EOF
+    done
+    wait
+fi
