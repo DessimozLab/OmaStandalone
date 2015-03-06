@@ -374,17 +374,36 @@ ExtractBestMatchesSubgroupAsEdges := proc( X, Y, p1, p2, off1, off2 ;
             edges2verify[y2] := append(edges2verify[y2],x1);
         fi:
     od od:
-    if X=Y then return( edges ) fi:
-
-    for y2 in Indices(edges2verify) do  for a1 in decompress(BestMatch[Y,X,y2]) do
-        x1 := a1['Entry'];
-        if member(x1, edges2verify[y2]) then
-            edges := append(edges, Edge( If(assigned(score),score,a1[Score100]),
-               x1+off1, y2+off2) );
+    if X<>Y then
+        for y2 in Indices(edges2verify) do for a1 in decompress(BestMatch[Y,X,y2]) do
+            x1 := a1['Entry'];
+            if member(x1, edges2verify[y2]) then
+                edges := append(edges, Edge( If(assigned(score),score,a1[Score100]),
+                   x1+off1, y2+off2) );
+            fi:
+        od od:
+    fi:
+    # this trimming is necessary if we have some duplicated relations in the 
+    # AllAll files.
+    edges := {op(edges)}: 
+    if length(edges)=length({seq(z[2..3],z=edges)}) then 
+        return(edges);
+    fi:
+    edges := sort([op(edges)], x->x[2..3]):
+    uniq := []:
+    lE := length(edges);
+    for k to lE do 
+        for k1 from k+1 to lE while edges[k,2]=edges[k1,2] and edges[k,3]=edges[k1,3] do od:
+        m := edges[k];
+        if k1-k>1 then 
+            for i from k to k1-1 do if edges[i,1]>m[1] then m:=edges[i]; fi: od:
         fi:
-    od od:
-    return( {op(edges)} ):
+        uniq := append(uniq, m);
+        k := k1-1;
+    od:
+    return( {op(uniq)} ):
 end:
+
 
 ConsistentPairs := CreateArray(1..NG,1..NG):
 idone := totVPadded := totVPremoved := 0; 
