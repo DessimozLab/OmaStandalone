@@ -32,6 +32,9 @@ then
 else
     echo "Operating system not supported!"
 fi
-
-exec $DARWIN_BINARY -l $DARWIN_LIB $@
+if [ -f $DARWIN_BINARY ]; then
+    exec $DARWIN_BINARY -l $DARWIN_LIB $@
+else
+    exec darwin $@
+fi
 
