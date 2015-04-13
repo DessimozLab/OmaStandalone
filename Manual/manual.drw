@@ -240,6 +240,8 @@ OMA')),
         Paragraph(0, 'With a scheduler such as LSF or SGE, running parallel jobs is particularly easy,
         as the parallel jobs can be start using as a job array. OMA will 
         automatically spread the work for the all-against-all among all processes.
+        For a brief discussion on the required resources refer to the section ',
+        Anchor(TextBlock('a', href='resources', 'below')), '
         Do not start OMA with the -n option for that. Instead, use a job 
         array with one of the supported schedulers below (the example is to 
         start 100 jobs in parallel)'),
@@ -275,6 +277,38 @@ OMA'), 'The script can then be submitted as follows:',
 /absolute/path/to/bin/OMA
 EOF')
         ),
+
+        Anchor(TextBlock('a', name='resources', 
+            SectionHeader(2,'Required Resources'))
+        ),
+        
+        Paragraph(0, 'Depending on the dataset to be analysed, OMA can require
+        quite a significant amount of computational resources, i.e. RAM and cpu
+        time. Most computing time is spent to compute the all-against-all
+        sequence alignments, which is why this part has been parallelized.
+        Although cpu intensive this phase does not require too much memory. As
+        a rule of thumb you can assume it requires roughly 5 times the size of
+        your DB folder. The second part of OMA runs sequential on a single
+        core, but it requires a lot more memory: Again, as a rule of thumb,
+        count on ', TT('300MB * pow(nr_genomes, 1.5)'),'. Obviously this
+        depends also a lot on the size of your genomes. 60 metazoas have been
+        successfully computed using 120GB, and for the same number of bacterial
+        genomes, 50GB were reported to be enough.'), 
+        
+        Paragraph(0, 'Because of this imbalance regarding the required memory
+        the OMA starter script now has command line option ',TT('-s'), ' to run
+        only the first part of the OMA pipeline. Using this option, the
+        computation can be split into a parallel, little memory requiring
+        phase, and a single process requiring a lot more RAM. Running the OMA
+        thus becomes a two stage process like this:', Code('
+# first stage, little memory:
+OMA -s 
+
+# once first stage terminated, run second stage
+OMA'), 'Note that this staging is mostly useful on computing clusters where 
+        often memory and cpu time has to be reserved at job submission.'
+        ),
+        
 
         Anchor(TextBlock('a', name='Adding/Updating new genomes', 
             SectionHeader(2, 'Adding/Updating new genomes'))

@@ -416,6 +416,10 @@ if length(f) > 0 then
     quit;
 fi:
 
+if only_run_allall=true then 
+    print('\n\n*** terminating after AllAll phase due to user flag. ***');
+    quit;
+fi:
 
 ##############################################################################
 # Candidate Pairs

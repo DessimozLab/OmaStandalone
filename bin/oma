@@ -30,6 +30,11 @@ options:
   -v            version
   -d <level>    increase debug info to <level>. By default level is set to 1.
   -i            interactive session, don't quit in case of error and at end.
+  -s            stop after the AllAll phase. This is the part which is parallelized.
+                The option can be useful on big datasets that require lot of 
+                memory for the later phases of OMA. It allows to stop after the 
+                parallelized step and restart again a single process with more
+                memory.
   -h/?          this help
 
 paramfile       path to the parameter file. it defaults to ./parameters.drw
@@ -50,7 +55,8 @@ NProc="1"
 localParallel="0"
 darwin_flag="-E -q"
 interactive=""
-while getopts "hn:vd:i" opt ; do
+earlyStop="false"
+while getopts "hn:vd:is" opt ; do
     case $opt in 
     h) usage
          exit 0
@@ -75,6 +81,8 @@ while getopts "hn:vd:i" opt ; do
          ;;
     i)   darwin_flag=""
          interactive="1"
+         ;;
+    s)   earlyStop="true;"
          ;;
     \?)  echo "invalid option" >&2
          usage
@@ -118,7 +126,8 @@ libdir := '$OMA_PATH/lib/':
 e := traperror(eval(parse(ReadRawFile('$pfile')))): 
 if e=lasterror then print('$paramerror'): exit(1): fi: 
 printlevel := $dbglevel: 
-OMA_STANDALONE_VERSION := '[VERSIONNR]': 
+OMA_STANDALONE_VERSION := '[VERSIONNR]':
+only_run_allall := $earlyStop:
 ReadProgram('$OMA_PATH/OMA.drw'):
 EOC
 )
