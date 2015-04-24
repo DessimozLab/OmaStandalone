@@ -323,16 +323,29 @@ for g1 to NG do
             next;
         fi;
 
+        # from release 0.99z.3 on, we store files in subdirectories per genome *pair*
+        dir := sprintf('Cache/AllAll/%s/%s', name1, name2);
+        if not FileExists(dir) then
+            CallSystem('mkdir -p '.dir);
+        fi:
+
         nrJunks := NumberOfJunks(name1, name2);
         for part to nrJunks do
             c1 := c1+1;
             if not IsMyJob(name1,name2,part) then next fi:
 
             # skip if cached or already computed
-            fn := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, nrJunks);
+            fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d', name1, name2, part, nrJunks);
             if FileExists(fn) or FileExists(fn.'.gz') then
                 printf('Pair %s/%s part %d of %d already computed. Skipped.\n',
                     name1, name2, part, nrJunks);
+                next;
+            fi:
+
+            fn_oldstyle := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, nrJunks);
+            if FileExists(fn_oldstyle.'.gz') then
+                CallSystem('mv '.fn_oldstyle.'.gz '.fn.'.gz');
+                warning('using AllAll files from old release. moved file '.fn_oldstyle.'.gz into subfolder');
                 next;
             fi:
 
@@ -416,6 +429,10 @@ if length(f) > 0 then
     quit;
 fi:
 
+if only_run_allall=true then 
+    print('\n\n*** terminating after AllAll phase due to user flag. ***');
+    quit;
+fi:
 
 ##############################################################################
 # Candidate Pairs
@@ -460,7 +477,7 @@ t7 := Counter('Number of matches discarded below MinSeqLen');
         else
             nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
             for part to nrJunks do 
-                fn := sprintf('Cache/AllAll/%s/%s_%d-%d',genomes[g1],genomes[g2],
+                fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
                     part, nrJunks);
                 ReadProgram( fn );
             od:
