@@ -344,9 +344,19 @@ iformat := [
             
             Paragraph(0, 'As almost everywhere else, OMA uses the greater-than 
             symbol ">" to distinguish labels from sequences. Each sequence 
-            in an MSA is supposed to have its own label. Have a look at the 
+            in a genome is supposed to have its own label. Have a look at the 
             FASTA files included in ToyExample/DB in our installer package for 
             some example files.'),
+
+            Paragraph(0, 'In case your genomes contain multiple alternative 
+            splicing variants, you can add a text-based file per genome called',
+            TT('DB/{YourGenome}.splice'), 'that put together the different
+            splicing variants, e.g. to indicate that the three splicing variants
+            ENSP00000384207, ENSP00000263741 and ENSP00000353094 are encoded by the 
+            same gene, add the following line to the splice file:'),
+            Paragraph(0, Code('ENSP00000384207; ENSP00000263741; ENSP00000353094'),
+            'OMA requires that the individual IDs are uniq prefixes of your 
+            FASTA headers.'),
             
             Paragraph(0, 'If you want to use ESPRIT, make sure that FASTA files
             containing contigs are called ', TT('{YourGenome}.contig.fa'), '.
@@ -551,6 +561,13 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         TT('MinSeqLen'), ' amino acids long in regular genomes
                         is not considered.'),
                         TT('50')),
+                    Row(TT('UseOnlyOneSplicingVariant'),
+                        Paragraph(0, 'Enables/disables the filtering on a single represetative 
+                        splicing variant. If enabled, OMA selects the variant that has the most 
+                        homologous matches with all other genomes. Orthology inference is then 
+                        only based on this variant. If disabled, alternative splicing variants 
+                        will usually be infered as paralogs.'),
+                        TT('true')),
                     Row(TT('StableIdsForGroups'),
                         Paragraph(0, 'Enables/disables the generation of stable identifiers for OMA groups 
                         (and Hierarchical Groups if their computation enabled). The identifier consists of 
