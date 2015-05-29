@@ -442,50 +442,49 @@ t6 := Counter('empty all-all'):
 t7 := Counter('Number of matches discarded below MinSeqLen');
 
 # Read the BestMatch from all x all files #
-
-    BestMatch := CreateArray(1..NG,1..NG):
-    for i to NG do for j from i to NG do
-        BestMatch[i,j] := CreateArray(1..ns[i],[]);
-        if j>i then BestMatch[j,i] := CreateArray(1..ns[j],[]) fi;
-        if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
-            g1 := i;  g2 := j else g2 := i;  g1 := j fi;
-        BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
-        t3+1;
-        Exclude1 := Exclude2 := {}:
-        db1 := DBs[g1]; db2 := DBs[g2]:
-        # if there exist a 1-chunk archive, process it with higher priority
-        fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
-        if FileExists(fn1chunk) then
-            ReadProgram(fn1chunk);
-            fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2', genomes[g1], genomes[g2]);
-            if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
-        else
-            nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
-            for part to nrJunks do 
-                fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
-                    part, nrJunks);
-                ReadProgram( fn );
-            od:
-        fi;
-        # no Pairs should be cut for being below the Scoretol, as those
-        # may serve to break a stable pair
-        sij := sum(length(BestMatch[i,j,k]), k=1..length(BestMatch[i,j]));
-        sji := sum(length(BestMatch[j,i,k]), k=1..length(BestMatch[j,i]));
-        t5+max(sij,sji);
-        if sij=0 or sji=0 then
-            t6+1;
-            # relax in case of mitochondion genome or synthetic evolution
-            warning('empty all-all for '.genomes[g1].' '. genomes[g2] ) 
-        fi;
-        for k to length(BestMatch[i,j]) do
-            if BestMatch[i,j,k] <> [] then
-            BestMatch[i,j,k] := compress(BestMatch[i,j,k]) fi od;
-        for k to length(BestMatch[j,i]) do
-            if BestMatch[j,i,k] <> [] then
-            BestMatch[j,i,k] := compress(BestMatch[j,i,k]) fi od;
-        printf( '# %s vs %s done, (%d/%d)\n', genomes[g1],genomes[g2], 
-            sij, sji );
-    od od:
+BestMatch := CreateArray(1..NG,1..NG):
+for i to NG do for j from i to NG do
+    BestMatch[i,j] := CreateArray(1..ns[i],[]);
+    if j>i then BestMatch[j,i] := CreateArray(1..ns[j],[]) fi;
+    if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+        g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+    BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
+    t3+1;
+    Exclude1 := Exclude2 := {}:
+    db1 := DBs[g1]; db2 := DBs[g2]:
+    # if there exist a 1-chunk archive, process it with higher priority
+    fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
+    if FileExists(fn1chunk) then
+        ReadProgram(fn1chunk);
+        fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2', genomes[g1], genomes[g2]);
+        if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
+    else
+        nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
+        for part to nrJunks do 
+            fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
+                part, nrJunks);
+            ReadProgram( fn );
+        od:
+    fi;
+    # no Pairs should be cut for being below the Scoretol, as those
+    # may serve to break a stable pair
+    sij := sum(length(BestMatch[i,j,k]), k=1..length(BestMatch[i,j]));
+    sji := sum(length(BestMatch[j,i,k]), k=1..length(BestMatch[j,i]));
+    t5+max(sij,sji);
+    if sij=0 or sji=0 then
+        t6+1;
+        # relax in case of mitochondion genome or synthetic evolution
+        warning('empty all-all for '.genomes[g1].' '. genomes[g2] ) 
+    fi;
+    for k to length(BestMatch[i,j]) do
+        if BestMatch[i,j,k] <> [] then
+        BestMatch[i,j,k] := compress(BestMatch[i,j,k]) fi od;
+    for k to length(BestMatch[j,i]) do
+        if BestMatch[j,i,k] <> [] then
+        BestMatch[j,i,k] := compress(BestMatch[j,i,k]) fi od;
+    printf( '# %s vs %s done, (%d/%d)\n', genomes[g1],genomes[g2], 
+        sij, sji );
+od od:
 
 
 
