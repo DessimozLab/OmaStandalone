@@ -58,6 +58,8 @@ IdentifyPosition := noeval(ReadLibrary (OrthologsLib.'IdentifyPosition.drw',
 DistBounds := noeval(ReadLibrary(OrthologsLib.'IdentifyPosition.drw',
     DistBounds));
 
+
+CleanupSequences := noeval(ReadLibrary(OrthologsLib.'InputGenomePreProcessing', CleanupSequences));
 FileExists := noeval(ReadLibrary(OrthologsLib.'FileExists',FileExists));
 StoreOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
     StoreOrthologMilestone));

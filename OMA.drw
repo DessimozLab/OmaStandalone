@@ -157,6 +157,8 @@ for g in G do
     ##
     code := 'S'.sprintf('%04d',length(genomes));
     input := ReadFastaWithNames(g);
+    ML := If(isContig[-1], MinSeqLenContig, MinSeqLen);
+    input := CleanupSequences(input, gname, ML);
 
     OpenWriting('Cache/DB/'.gname.'.db');
     printf('<5LETTERNAME>%s</5LETTERNAME>\n',code);
@@ -169,34 +171,7 @@ for g in G do
     fi;
     ML := If(isContig[-1],MinSeqLenContig,MinSeqLen);
     for i to length(input[1]) do
-        s := uppercase(input[1,i]):
-        # minimal check of sequences
-        if length(s) < ML then
-            warning( sprintf( 
-                'Sequence %s (%s) is less than MinSeqLen(Contig)=%d AA'.
-                'long. Ignored. \n',
-                input[2,i], gname, ML));
-            next;
-        fi;
-        c_toX := 0;
-        for j to length(s) do
-            aa := AToInt(s[j]);
-            if aa < 1 or aa > 21 then
-                warning(sprintf('Unknown character: %s (in %s, %s pos %d) --> X', 
-                    s[j], input[2,i], gname, j));
-                s[j] := 'X';
-                c_toX := c_toX+1;
-            fi;
-        od;
-        if c_toX>=5 and c_toX>.05*length(s) then
-            warning('Too many unknwon chars in %s, %s. skipping.',
-                input[2,i],gname);
-            next;
-        fi:
-        tmpID := ReplaceString('\t','',input[2,i]);
-        tmpID := ReplaceString('<','',tmpID);
-        tmpID := ReplaceString('>','',tmpID);
-        printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', tmpID, s);
+        printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', input[2,i], input[1,i]);
     od:
     OpenWriting(previous);
     DB := ReadDb('Cache/DB/'.gname.'.db');
