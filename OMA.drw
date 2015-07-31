@@ -90,6 +90,12 @@ if pinf=lasterror then
 fi:
 print(pinf);
 
+# check that OutputFolder contains no spaces
+for c in [' ','\n','\t','\c','\r'] do if SearchString(c, OutputFolder) >= 0 then
+    error('found invalid character in ''OutputFolder'' argument (no spaces allowed).');
+fi od:
+OutputFolder := NormalizePath(OutputFolder);
+
 # if not job nr 1, wait until conversion of DBs are done.
 convDone := proc() 
     filename := 'Cache/conversion.done';
@@ -536,9 +542,9 @@ else
     fi:
     # # Retrieve all IDs
     # # Create File MapSeqNum-ID:
-    CallSystem('rm -rf Output; mkdir -p Output'); 
+    CallSystem('rm -rf '.OutputFolder.'; mkdir -p '.OutputFolder); 
     IDtable := CreateArray(1..NG);
-    OpenWriting('Output/Map-SeqNum-ID.txt');
+    OpenWriting(OutputFolder.'/Map-SeqNum-ID.txt');
     print('\#Format: genome<tab>sequence number<tab>id');
     for i to NG do
         DB := DBs[i];
@@ -578,11 +584,11 @@ else
 
     # Store the pairwise orthologs
     if not WriteOutput_PairwiseOrthologs=false then
-        CallSystem('mkdir Output/PairwiseOrthologs');
+        CallSystem('mkdir '.OutputFolder.'/PairwiseOrthologs');
         for i to NG do for j from i+1 to NG do
             if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
                 g1 := i;  g2 := j else g2 := i;  g1 := j fi;
-                OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
+                OpenWriting(OutputFolder.'/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
                     .'.txt');
             printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
                  .'<tab>Orthology type<tab>OMA group (if any)\n');
@@ -613,39 +619,39 @@ else
     fi:
     # store the pairwise orthologs in orthoxml format
     if not WriteOutput_OrthologousPairs_orthoxml=false then
-        WriteOrthoXML( VPairs, 'Output/OrthologousPairs.orthoxml');
+        WriteOrthoXML( VPairs, OutputFolder.'/OrthologousPairs.orthoxml');
     fi:
 
     # Store the groups of orthologs
-    WriteMatrix(Ort,'Output/OrthologousMatrix.txt');
-    WriteGroups(Ort,'Output/OrthologousGroups.txt');
+    WriteMatrix(Ort, OutputFolder.'/OrthologousMatrix.txt');
+    WriteGroups(Ort, OutputFolder.'/OrthologousGroups.txt');
     # store orthologous groups in orthoxml format
-    WriteOrthoXML( Ort, 'Output/OrthologousGroups.orthoxml',
+    WriteOrthoXML(Ort, OutputFolder.'/OrthologousGroups.orthoxml',
         StableIdsForGroups=true);
     
     # developpment code
     if type(MergeOMAGroups, procedure) then
         mergedOMAGroups := MergeOMAGroups(Ort, VPairs);
-        WriteOrthoXML( mergedOMAGroups, 'Output/MergedOMAGroups.orthoxml',
+        WriteOrthoXML( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.orthoxml',
             StableIdsForGroups=true);
-        WriteMatrix( mergedOMAGroups, 'Output/MergedOMAMatrix.txt');
-        WriteGroups( mergedOMAGroups, 'Output/MergedOMAGroups.txt');
+        WriteMatrix( mergedOMAGroups, OutputFolder.'/MergedOMAMatrix.txt');
+        WriteGroups( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.txt');
     fi:
 
     # store all orthologous groups in fasta format
     if not WriteOutput_OrthologousGroupsFasta=false then
-        WriteFastaGroups('Output/OrthologousGroupsFasta', Ort):
+        WriteFastaGroups(OutputFolder.'/OrthologousGroupsFasta', Ort):
     fi:
 
     # store hierarchical groups if computed
     if DoHierarchicalGroups=true and type(HOG, list) then
-        WriteOrthoXML( HOG, 'Output/HierarchicalGroups.orthoxml',
+        WriteOrthoXML( HOG, OutputFolder.'/HierarchicalGroups.orthoxml',
             StableIdsForGroups=true);
         if not WriteOutput_HOGFasta=false then 
-            WriteFastaGroups('Output/HOGFasta', HOG);
+            WriteFastaGroups(OutputFolder.'/HOGFasta', HOG);
         fi:
         if SpeciesTree='estimate' then
-            OpenWriting('Output/EstimatedSpeciesTree.nwk');
+            OpenWriting(OutputFolder.'/EstimatedSpeciesTree.nwk');
             prints( Tree_Newick(speciesTree) .';' );
             OpenWriting(previous):
         fi:
@@ -664,7 +670,7 @@ else
             od:
         od:
         if length(used_variants)>0 then
-            OpenWriting('Output/used_splicing_variants.txt');
+            OpenWriting(OutputFolder.'/used_splicing_variants.txt');
             for z in used_variants do
                 printf('%s\t%s\n', op(z));
             od:

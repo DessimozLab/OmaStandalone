@@ -384,7 +384,8 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
             )),
             
             Paragraph(0, 'The output of OMA gets written to files stored in 
-            a directory ', TT('Output'), ' in your working directory. There are 
+            a directory ', TT('Output'), ' in your working directory. This can be 
+            changed by changing the ', TT('OutputFolder'), ' parameter, There are 
             text files and directories organized as described in Table 1.'),
             
             Table( hastitlerow, ColAlign('l', 'p{10cm}'),
@@ -445,6 +446,12 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     separate Fasta file with all protein sequences clustered
                     to it. This format is particularly suitable as starting 
                     point for a phylogenetic reconstruction of a gene tree.')),
+                    Row(TT('used_splicing_variants.txt'),
+                    Paragraph(0, 'If ',TT('UseOnlyOneSplicingVariant'), 'is activated and
+                    splicing information is available, the variant which has been used 
+                    for calling the orthologous relations is stored in this file.
+                    The format is a tab-delimitted text file with the species in the 
+                    first column and the id of the used splicing variant in the second column.')),
                     NULL
             ) ,
             
@@ -516,6 +523,12 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         either to ''AA'' for amino acid sequences or ''DNA'' for
                         nucleotide sequences'),
                         TT('AA')),
+                    Row(TT('OutputFolder'), 
+                        Paragraph(0, 'Folder to which the output is written. At
+                        each run, the content of this folder will be overwritten.
+                        Don''t store any important files in it. The ', TT('OutputFolder'),
+                        'must not contain any spaces.'),
+                        TT('Output')),
                     Row(TT('ReuseCachedResults'), 
                         Paragraph(0, 'If you want to recompute everything from
                         scratch everytime the script is run, set this to ',

@@ -16,6 +16,9 @@
 # Type of input sequence data, has to be either 'DNA' or 'AA'
 InputDataType := 'AA';
 
+# Output folder
+OutputFolder := 'Output';
+
 # if you want to recompute everything from scratch everytime the script
 # is run, set the following parameter to false.
 ReuseCachedResults := true;
