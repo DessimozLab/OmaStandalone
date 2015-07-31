@@ -651,6 +651,27 @@ else
         fi:
     fi:
 
+    # store used splicing variant
+    if UseOnlyOneSplicingVariant=true then
+        used_variants := []:
+        for i to NG do
+            g := genomes[i];
+            if GS[g,'SPLICEMAP'] = '' then next fi:
+            for alt in parse(GS[g,'SPLICEMAP']) do
+                NM := [seq(sum(length(decompress(BestMatch[i,j,k])),j=1..NG),k=alt)];
+                best := SearchArray(max(NM), NM);
+                used_variants := append(used_variants, [g, IDtable[i,alt[best]]]);
+            od:
+        od:
+        if length(used_variants)>0 then
+            OpenWriting('Output/used_splicing_variants.txt');
+            for z in used_variants do
+                printf('%s\t%s\n', op(z));
+            od:
+            OpenWriting(previous);
+        fi:
+    fi:
+
 fi:
 
 print('\n\n***\n\nDone!!\n\n');
