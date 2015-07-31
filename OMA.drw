@@ -455,9 +455,9 @@ for i to NG do for j from i to NG do
     # if there exist a 1-chunk archive, process it with higher priority
     fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
     if FileExists(fn1chunk) then
-        ReadProgram(fn1chunk);
-        fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2', genomes[g1], genomes[g2]);
+        fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2.gz', genomes[g1], genomes[g2]);
         if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
+        ReadProgram(fn1chunk);
     else
         nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
         for part to nrJunks do 
