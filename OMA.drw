@@ -90,6 +90,23 @@ if pinf=lasterror then
 fi:
 print(pinf);
 
+# check that OutputFolder contains no spaces
+for c in [' ','\n','\t','\c','\r'] do if SearchString(c, OutputFolder) >= 0 then
+    error('found invalid character in ''OutputFolder'' argument (no spaces allowed).');
+fi od:
+OutputFolder := NormalizePath(OutputFolder);
+
+if InputDataType='DNA' then
+    ReadProgram(If(assigned(libdir),libdir,'lib') . '/DNA_matrix');
+    CreateDayMatrices(DNA_Counts);
+    DM := DayMatrix(50):
+elif not assigned(InputDataType) or InputDataType='AA' then
+    CreateDayMatrices();
+    DM := DayMatrix(224):
+else error('unexpected value for ''InputDataType'': '.str(InputDataType));
+fi:
+
+
 # if not job nr 1, wait until conversion of DBs are done.
 convDone := proc() 
     filename := 'Cache/conversion.done';
@@ -139,64 +156,49 @@ for g in G do
 
     # compute sha2 of fasta file.
     checksum := sha2(ReadRawFile(g))[1..16]:
+    spliceFn := g[1..-3].'splice';
 
     # test if cached:
     if FileExists('Cache/DB/'.gname.'.db') then
         DB := ReadDb('Cache/DB/'.gname.'.db');
         if type(DB,database) then
-            GS[gname] := GenomeSummary(DB);
-            DBs := append(DBs,DB); 
             fcheck := SearchTag('FASTACHECKSUM', DB['string']);
             if fcheck<>'' and checksum<>fcheck then
                 error('cached genome ('.gname.') differs from fasta file');
             fi:
-            next;
+            if FileExists(spliceFn) and SearchTag('SPLICEMAP', DB[string])='' then
+                warning('cached genome ('.gname.') contains no splicing map. Will rebuild cache.');
+                CallSystem('rm -f Cache/DB/'.gname.'.db');
+            else
+                GS[gname] := GenomeSummary(DB);
+                DBs := append(DBs,DB); 
+                # genome is ready, continue with next one.
+                next;
+            fi:
+        else error('cannot load database for '.gname);
         fi;
     fi;
 
     ##
     code := 'S'.sprintf('%04d',length(genomes));
     input := ReadFastaWithNames(g);
+    ML := If(isContig[-1], MinSeqLenContig, MinSeqLen);
+    input := CleanupSequences(input, gname, ML);
+    
+    if FileExists(spliceFn) then
+        splicemap := EstablishSpliceMap(spliceFn, input[2], input[3]);
+    fi:
 
     OpenWriting('Cache/DB/'.gname.'.db');
     printf('<5LETTERNAME>%s</5LETTERNAME>\n',code);
     printf('<OS>Unknown</OS>\n');
     printf('<KINGDOM>Unknown</KINGDOM>\n');
     printf('<FASTACHECKSUM>%s</FASTACHECKSUM>\n', checksum);
-    if length(input[1]) <> length(input[2]) then 
-        OpenWriting(previous);
-        error('Fasta DB length missmatch') 
-    fi;
-    ML := If(isContig[-1],MinSeqLenContig,MinSeqLen);
+    if FileExists(spliceFn) then 
+        printf('<SPLICEMAP>%A</SPLICEMAP>', splicemap);
+    fi:
     for i to length(input[1]) do
-        s := uppercase(input[1,i]):
-        # minimal check of sequences
-        if length(s) < ML then
-            warning( sprintf( 
-                'Sequence %s (%s) is less than MinSeqLen(Contig)=%d AA'.
-                'long. Ignored. \n',
-                input[2,i], gname, ML));
-            next;
-        fi;
-        c_toX := 0;
-        for j to length(s) do
-            aa := AToInt(s[j]);
-            if aa < 1 or aa > 21 then
-                warning(sprintf('Unknown character: %s (in %s, %s pos %d) --> X', 
-                    s[j], input[2,i], gname, j));
-                s[j] := 'X';
-                c_toX := c_toX+1;
-            fi;
-        od;
-        if c_toX>=5 and c_toX>.05*length(s) then
-            warning('Too many unknwon chars in %s, %s. skipping.',
-                input[2,i],gname);
-            next;
-        fi:
-        tmpID := ReplaceString('\t','',input[2,i]);
-        tmpID := ReplaceString('<','',tmpID);
-        tmpID := ReplaceString('>','',tmpID);
-        printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', tmpID, s);
+        printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', input[2,i], input[1,i]);
     od:
     OpenWriting(previous);
     DB := ReadDb('Cache/DB/'.gname.'.db');
@@ -218,16 +220,6 @@ fi;
 
 ##############################################################################
 # All-against-all
-if InputDataType='DNA' then
-    ReadProgram(If(assigned(libdir),libdir,'lib') . '/DNA_matrix');
-    CreateDayMatrices(DNA_Counts);
-    DM := DayMatrix(50):
-elif not assigned(InputDataType) or InputDataType='AA' then
-    CreateDayMatrices();
-    DM := DayMatrix(224):
-else error('unexpected value for ''InputDataType'': '.str(InputDataType));
-fi:
-
 NumberFormat := '%.10g':
 JustScoreBound := MinScore;
 
@@ -457,50 +449,49 @@ t6 := Counter('empty all-all'):
 t7 := Counter('Number of matches discarded below MinSeqLen');
 
 # Read the BestMatch from all x all files #
-
-    BestMatch := CreateArray(1..NG,1..NG):
-    for i to NG do for j from i to NG do
-        BestMatch[i,j] := CreateArray(1..ns[i],[]);
-        if j>i then BestMatch[j,i] := CreateArray(1..ns[j],[]) fi;
-        if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
-            g1 := i;  g2 := j else g2 := i;  g1 := j fi;
-        BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
-        t3+1;
-        Exclude1 := Exclude2 := {}:
-        db1 := DBs[g1]; db2 := DBs[g2]:
-        # if there exist a 1-chunk archive, process it with higher priority
-        fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
-        if FileExists(fn1chunk) then
-            ReadProgram(fn1chunk);
-            fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2', genomes[g1], genomes[g2]);
-            if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
-        else
-            nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
-            for part to nrJunks do 
-                fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
-                    part, nrJunks);
-                ReadProgram( fn );
-            od:
-        fi;
-        # no Pairs should be cut for being below the Scoretol, as those
-        # may serve to break a stable pair
-        sij := sum(length(BestMatch[i,j,k]), k=1..length(BestMatch[i,j]));
-        sji := sum(length(BestMatch[j,i,k]), k=1..length(BestMatch[j,i]));
-        t5+max(sij,sji);
-        if sij=0 or sji=0 then
-            t6+1;
-            # relax in case of mitochondion genome or synthetic evolution
-            warning('empty all-all for '.genomes[g1].' '. genomes[g2] ) 
-        fi;
-        for k to length(BestMatch[i,j]) do
-            if BestMatch[i,j,k] <> [] then
-            BestMatch[i,j,k] := compress(BestMatch[i,j,k]) fi od;
-        for k to length(BestMatch[j,i]) do
-            if BestMatch[j,i,k] <> [] then
-            BestMatch[j,i,k] := compress(BestMatch[j,i,k]) fi od;
-        printf( '# %s vs %s done, (%d/%d)\n', genomes[g1],genomes[g2], 
-            sij, sji );
-    od od:
+BestMatch := CreateArray(1..NG,1..NG):
+for i to NG do for j from i to NG do
+    BestMatch[i,j] := CreateArray(1..ns[i],[]);
+    if j>i then BestMatch[j,i] := CreateArray(1..ns[j],[]) fi;
+    if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+        g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+    BestMatch1 := BestMatch[g1,g2];  BestMatch2 := BestMatch[g2,g1];
+    t3+1;
+    Exclude1 := Exclude2 := {}:
+    db1 := DBs[g1]; db2 := DBs[g2]:
+    # if there exist a 1-chunk archive, process it with higher priority
+    fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
+    if FileExists(fn1chunk) then
+        fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2.gz', genomes[g1], genomes[g2]);
+        if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
+        ReadProgram(fn1chunk);
+    else
+        nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
+        for part to nrJunks do 
+            fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
+                part, nrJunks);
+            ReadProgram( fn );
+        od:
+    fi;
+    # no Pairs should be cut for being below the Scoretol, as those
+    # may serve to break a stable pair
+    sij := sum(length(BestMatch[i,j,k]), k=1..length(BestMatch[i,j]));
+    sji := sum(length(BestMatch[j,i,k]), k=1..length(BestMatch[j,i]));
+    t5+max(sij,sji);
+    if sij=0 or sji=0 then
+        t6+1;
+        # relax in case of mitochondion genome or synthetic evolution
+        warning('empty all-all for '.genomes[g1].' '. genomes[g2] ) 
+    fi;
+    for k to length(BestMatch[i,j]) do
+        if BestMatch[i,j,k] <> [] then
+        BestMatch[i,j,k] := compress(BestMatch[i,j,k]) fi od;
+    for k to length(BestMatch[j,i]) do
+        if BestMatch[j,i,k] <> [] then
+        BestMatch[j,i,k] := compress(BestMatch[j,i,k]) fi od;
+    printf( '# %s vs %s done, (%d/%d)\n', genomes[g1],genomes[g2], 
+        sij, sji );
+od od:
 
 
 
@@ -518,6 +509,10 @@ if UseEsprit then
             true, MaxContigOverlap]):
     WriteEspritResults();
 else
+    if UseOnlyOneSplicingVariant=true then
+        FilterBestSplicingMatches();
+    fi:
+
     # check whether orthologs have already been computed
     orthoCacheFile := 'Cache/ortholog_milestone.drw.gz':
     alreadyComputed := false;
@@ -548,9 +543,9 @@ else
     fi:
     # # Retrieve all IDs
     # # Create File MapSeqNum-ID:
-    CallSystem('rm -rf Output; mkdir -p Output'); 
+    CallSystem('rm -rf '.OutputFolder.'; mkdir -p '.OutputFolder); 
     IDtable := CreateArray(1..NG);
-    OpenWriting('Output/Map-SeqNum-ID.txt');
+    OpenWriting(OutputFolder.'/Map-SeqNum-ID.txt');
     print('\#Format: genome<tab>sequence number<tab>id');
     for i to NG do
         DB := DBs[i];
@@ -590,11 +585,11 @@ else
 
     # Store the pairwise orthologs
     if not WriteOutput_PairwiseOrthologs=false then
-        CallSystem('mkdir Output/PairwiseOrthologs');
+        CallSystem('mkdir '.OutputFolder.'/PairwiseOrthologs');
         for i to NG do for j from i+1 to NG do
             if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
                 g1 := i;  g2 := j else g2 := i;  g1 := j fi;
-                OpenWriting('Output/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
+                OpenWriting(OutputFolder.'/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
                     .'.txt');
             printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
                  .'<tab>Orthology type<tab>OMA group (if any)\n');
@@ -625,41 +620,62 @@ else
     fi:
     # store the pairwise orthologs in orthoxml format
     if not WriteOutput_OrthologousPairs_orthoxml=false then
-        WriteOrthoXML( VPairs, 'Output/OrthologousPairs.orthoxml');
+        WriteOrthoXML( VPairs, OutputFolder.'/OrthologousPairs.orthoxml');
     fi:
 
     # Store the groups of orthologs
-    WriteMatrix(Ort,'Output/OrthologousMatrix.txt');
-    WriteGroups(Ort,'Output/OrthologousGroups.txt');
+    WriteMatrix(Ort, OutputFolder.'/OrthologousMatrix.txt');
+    WriteGroups(Ort, OutputFolder.'/OrthologousGroups.txt');
     # store orthologous groups in orthoxml format
-    WriteOrthoXML( Ort, 'Output/OrthologousGroups.orthoxml',
+    WriteOrthoXML(Ort, OutputFolder.'/OrthologousGroups.orthoxml',
         StableIdsForGroups=true);
     
     # developpment code
     if type(MergeOMAGroups, procedure) then
         mergedOMAGroups := MergeOMAGroups(Ort, VPairs);
-        WriteOrthoXML( mergedOMAGroups, 'Output/MergedOMAGroups.orthoxml',
+        WriteOrthoXML( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.orthoxml',
             StableIdsForGroups=true);
-        WriteMatrix( mergedOMAGroups, 'Output/MergedOMAMatrix.txt');
-        WriteGroups( mergedOMAGroups, 'Output/MergedOMAGroups.txt');
+        WriteMatrix( mergedOMAGroups, OutputFolder.'/MergedOMAMatrix.txt');
+        WriteGroups( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.txt');
     fi:
 
     # store all orthologous groups in fasta format
     if not WriteOutput_OrthologousGroupsFasta=false then
-        WriteFastaGroups('Output/OrthologousGroupsFasta', Ort):
+        WriteFastaGroups(OutputFolder.'/OrthologousGroupsFasta', Ort):
     fi:
 
     # store hierarchical groups if computed
     if DoHierarchicalGroups=true and type(HOG, list) then
-        WriteOrthoXML( HOG, 'Output/HierarchicalGroups.orthoxml',
+        WriteOrthoXML( HOG, OutputFolder.'/HierarchicalGroups.orthoxml',
             StableIdsForGroups=true);
         if not WriteOutput_HOGFasta=false then 
-            WriteFastaGroups('Output/HOGFasta', HOG);
+            WriteFastaGroups(OutputFolder.'/HOGFasta', HOG);
         fi:
         if SpeciesTree='estimate' then
-            OpenWriting('Output/EstimatedSpeciesTree.nwk');
+            OpenWriting(OutputFolder.'/EstimatedSpeciesTree.nwk');
             prints( Tree_Newick(speciesTree) .';' );
             OpenWriting(previous):
+        fi:
+    fi:
+
+    # store used splicing variant
+    if UseOnlyOneSplicingVariant=true then
+        used_variants := []:
+        for i to NG do
+            g := genomes[i];
+            if GS[g,'SPLICEMAP'] = '' then next fi:
+            for alt in parse(GS[g,'SPLICEMAP']) do
+                NM := [seq(sum(length(decompress(BestMatch[i,j,k])),j=1..NG),k=alt)];
+                best := SearchArray(max(NM), NM);
+                used_variants := append(used_variants, [g, IDtable[i,alt[best]]]);
+            od:
+        od:
+        if length(used_variants)>0 then
+            OpenWriting(OutputFolder.'/used_splicing_variants.txt');
+            for z in used_variants do
+                printf('%s\t%s\n', op(z));
+            od:
+            OpenWriting(previous);
         fi:
     fi:
 

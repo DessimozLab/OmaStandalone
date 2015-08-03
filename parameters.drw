@@ -16,6 +16,9 @@
 # Type of input sequence data, has to be either 'DNA' or 'AA'
 InputDataType := 'AA';
 
+# Output folder
+OutputFolder := 'Output';
+
 # if you want to recompute everything from scratch everytime the script
 # is run, set the following parameter to false.
 ReuseCachedResults := true;
@@ -47,6 +50,12 @@ VerifiedPairTol := 1.53;
 # Any sequence which is less than MinSeqLen amino acids long in regular 
 # genomes is not considered.
 MinSeqLen := 50;
+
+# Whether or not OMA should keep only one splicing variant per gene, i.e. 
+# the one with the most homologous matches in all other species.
+# Annotation of splicing variants needs to be provided in a text file 
+# DB/<genome>.splice 
+UseOnlyOneSplicingVariant := true;
 
 # use experimental code (single processor only) to compute homologous
 # clusters instead of full All-against-all. 

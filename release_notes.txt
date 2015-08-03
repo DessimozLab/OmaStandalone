@@ -1,0 +1,53 @@
+============================================
+ Release notes for OMA Standalone 1.x series
+============================================
+
+ :Author: Oma Developers
+ :Contact: contact@omabrowser.org
+
+With the release of OmaStandalone 1.x series we switch from a 
+beta to a stable software product. 
+
+
+Summary of Changes from 0.99v to 1.0.0
+===========================
+
+Additional features
+-------------------
+- Support of alternative splicing variants as in public OMA database.
+  The strategy is described in OMA NAR 2010.
+
+- Additional support of HPC schedulers: 
+  - SLURM
+  - PBS
+
+- made output folder a parameter
+
+- command line flag to stop after all-against-all phase. This
+  allows different resource allocations for subprocesses on HPC.
+
+- command line flag to drop into interactive session on error
+
+- support to infer orthology based on cDNA sequences
+
+Improvements
+------------
+- Checks to verify consitency between genomes and cached results
+
+- store all-against-all files in sub-folders to avoid too many files
+  per directory.
+
+- possibility to avoid storing output files that are not needed
+  and can take a lot of time to compute.
+
+- extended documentation 
+
+- moved to some more sane release numbers :-)
+
+Bug Fixes
+---------
+- stable genome order accross filesystems 
+
+- skip duplicated entries in AllAll files
+
+- proper conversion of DNA nucleotides

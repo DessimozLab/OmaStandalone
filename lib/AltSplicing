@@ -1,0 +1,72 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 2.0
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 2.0 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/2.0/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is OMA standalone.
+#
+# The Initial Developer of the Original Code is CBRG Research Group; 
+# ETH Zurich; Switzerland.
+# Portions created by the Initial Developer are Copyright (C) 2005-2013
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#   Christophe Dessimoz <cdessimoz@inf.ethz.ch>
+#   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
+#   Stefan Zoller <stefan.zoller@inf.ethz.ch>
+#   Adrian Schneider <adrian.schneider@inf.ethz.ch>
+#   Alexander Roth <alexander.roth@inf.ethz.ch>
+#   Gaston Gonnet <gonnet@inf.ethz.ch>
+#
+# ***** END LICENSE BLOCK *****
+
+FilterBestSplicingMatches := proc()
+    global BestMatch;
+
+    # find for each group of alternatively spliced genes                                                     
+    # the one with the most BestMatches.
+    S1 := Stat('matches of removed splice variants'):
+    S2 := Stat('matches of kept splice variants'):
+    remove := CreateArray(1..NG,[]):
+    for i to NG do
+        if GS[genomes[i],'SPLICEMAP']='' then next fi;
+        for alt in parse(GS[genomes[i],'SPLICEMAP']) do
+            NM := [seq(sum(length(decompress(BestMatch[i,j,k])),j=1..NG),k=alt)];
+            best := SearchArray(max(NM),NM);
+            remove[i] := append(remove[i], op(alt minus {alt[best]}));
+            for k to length(alt) do
+                if k=best then S2+NM[k] else S1+NM[k] fi:
+            od:
+        od:
+    od:
+    print(S1,S2);
+
+    # remove all BestMatches involving a removed splicing variant
+    for i to NG do remove[i] := {op(remove[i])} od:
+    for i to NG do for j to NG do
+        nold := nnew := 0:
+        for k to ns[i] do
+            if BestMatch[i,j,k]=[] then next fi;
+            tmp1 := decompress(BestMatch[i,j,k]);
+            nold := nold+length(tmp1);
+            if member(k,remove[i]) then BestMatch[i,j,k] := []; next fi;
+            tmp2 := [seq(If(member(z['Entry'],remove[j]),NULL,z),
+                                    z=tmp1)];
+            if tmp2=[] then BestMatch[i,j,k] := []
+            else BestMatch[i,j,k] := compress(tmp2) fi;
+            nnew := nnew+length(tmp2);
+        od:
+        printf('%s/%s: remove %d BestMatches, keep %d\n',
+                            genomes[i],genomes[j],nold-nnew,nnew);
+    od od:
+end:
+
+

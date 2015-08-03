@@ -69,12 +69,20 @@ Slurm_Platform := proc()
     else
         jobidx := parse(jobidx);
         jobId := getenv('SLURM_ARRAY_JOB_ID');
-        jobsum := TimedCallSystem('squeue -j '.jobId);
+        jobsum := TimedCallSystem('scontrol show jobid -dd '.jobId);
         if jobsum[1]<>0 then
-            error('cannot call ''squeue'' command successfully');
+            error('cannot call ''scontrol'' command successfully');
         fi:
-        sndLine := SplitLines(jobsum[2]);
-        NrParallelProc := length(sndLine) -1;
+        re := MatchRegex('ArrayTaskId=\([[:digit:]]\+\)-\([[:digit:]]\+\)', jobsum[2]);
+        if length(re)<3 then
+            error('Cannot determine total number of jobs in jobarray. requires a range from 1-x');
+        fi:
+        if parse(re[2]) <> 1 then
+            warning(sprintf('ArrayTaskId doesn''t start from 1, but %a instead. Verify that you '.
+                            'started the array with a range from 1-x. If you started a relatively '.
+                            'large array, this warning can probably be ignored.', re[2]));
+        fi:
+        NrParallelProc := parse(re[3]);
     fi;
     if jobidx < 1 or jobidx > NrParallelProc then
         error('require range from 1-x of jobarray.');

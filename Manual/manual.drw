@@ -82,12 +82,12 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             addition ESPRIT. The software can be installed on Linux (x86, 
             both 64bit and 32bit) and MacOSX (x86, both 32bit and 64bit).'),
             
-            Paragraph(0, 'For background info on OMA, 
-            please refer to the OMA browser page:'), 
+            Paragraph(0, 'For a short summary and pointers to detailed algorithmic 
+            publications of OMA, please refer to the OMA browser page:'), 
             
             Paragraph(0, Link(TextBlock('a', 
-                href='http://omabrowser.org/Algorithm.html',
-                'http://omabrowser.org/Algorithm.html'))),
+                href='http://omabrowser.org/oma/about/',
+                'http://omabrowser.org/oma/about/'))),
                 
             Paragraph(0, 'For background info on ESPRIT, 
             please refer to this article:'), 
@@ -344,9 +344,19 @@ iformat := [
             
             Paragraph(0, 'As almost everywhere else, OMA uses the greater-than 
             symbol ">" to distinguish labels from sequences. Each sequence 
-            in an MSA is supposed to have its own label. Have a look at the 
+            in a genome is supposed to have its own label. Have a look at the 
             FASTA files included in ToyExample/DB in our installer package for 
             some example files.'),
+
+            Paragraph(0, 'In case your genomes contain multiple alternative 
+            splicing variants, you can add a text-based file per genome called',
+            TT('DB/{YourGenome}.splice'), 'that put together the different
+            splicing variants, e.g. to indicate that the three splicing variants
+            ENSP00000384207, ENSP00000263741 and ENSP00000353094 are encoded by the 
+            same gene, add the following line to the splice file:'),
+            Paragraph(0, Code('ENSP00000384207; ENSP00000263741; ENSP00000353094'),
+            'OMA requires that the individual IDs are uniq prefixes of your 
+            FASTA headers.'),
             
             Paragraph(0, 'If you want to use ESPRIT, make sure that FASTA files
             containing contigs are called ', TT('{YourGenome}.contig.fa'), '.
@@ -374,7 +384,8 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
             )),
             
             Paragraph(0, 'The output of OMA gets written to files stored in 
-            a directory ', TT('Output'), ' in your working directory. There are 
+            a directory ', TT('Output'), ' in your working directory. This can be 
+            changed by changing the ', TT('OutputFolder'), ' parameter, There are 
             text files and directories organized as described in Table 1.'),
             
             Table( hastitlerow, ColAlign('l', 'p{10cm}'),
@@ -435,6 +446,12 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     separate Fasta file with all protein sequences clustered
                     to it. This format is particularly suitable as starting 
                     point for a phylogenetic reconstruction of a gene tree.')),
+                    Row(TT('used_splicing_variants.txt'),
+                    Paragraph(0, 'If ',TT('UseOnlyOneSplicingVariant'), 'is activated and
+                    splicing information is available, the variant which has been used 
+                    for calling the orthologous relations is stored in this file.
+                    The format is a tab-delimitted text file with the species in the 
+                    first column and the id of the used splicing variant in the second column.')),
                     NULL
             ) ,
             
@@ -506,6 +523,12 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         either to ''AA'' for amino acid sequences or ''DNA'' for
                         nucleotide sequences'),
                         TT('AA')),
+                    Row(TT('OutputFolder'), 
+                        Paragraph(0, 'Folder to which the output is written. At
+                        each run, the content of this folder will be overwritten.
+                        Don''t store any important files in it. The ', TT('OutputFolder'),
+                        'must not contain any spaces.'),
+                        TT('Output')),
                     Row(TT('ReuseCachedResults'), 
                         Paragraph(0, 'If you want to recompute everything from
                         scratch everytime the script is run, set this to ',
@@ -551,6 +574,13 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         TT('MinSeqLen'), ' amino acids long in regular genomes
                         is not considered.'),
                         TT('50')),
+                    Row(TT('UseOnlyOneSplicingVariant'),
+                        Paragraph(0, 'Enables/disables the filtering on a single represetative 
+                        splicing variant. If enabled, OMA selects the variant that has the most 
+                        homologous matches with all other genomes. Orthology inference is then 
+                        only based on this variant. If disabled, alternative splicing variants 
+                        will usually be infered as paralogs.'),
+                        TT('true')),
                     Row(TT('StableIdsForGroups'),
                         Paragraph(0, 'Enables/disables the generation of stable identifiers for OMA groups 
                         (and Hierarchical Groups if their computation enabled). The identifier consists of 

@@ -1,0 +1,143 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 2.0
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 2.0 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/2.0/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is OMA standalone.
+#
+# The Initial Developer of the Original Code is CBRG Research Group; 
+# ETH Zurich; Switzerland.
+# Portions created by the Initial Developer are Copyright (C) 2005-2013
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#   Christophe Dessimoz <cdessimoz@inf.ethz.ch>
+#   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
+#   Stefan Zoller <stefan.zoller@inf.ethz.ch>
+#   Adrian Schneider <adrian.schneider@inf.ethz.ch>
+#   Alexander Roth <alexander.roth@inf.ethz.ch>
+#   Gaston Gonnet <gonnet@inf.ethz.ch>
+#
+# ***** END LICENSE BLOCK *****
+
+ReplaceDNAambigousWithAA := proc(s):
+    reported_IUPAC_amb := false;
+    for i to length(s) do 
+        if member(s[i], {'A','C','T','G'}) then next;
+        elif s[i] = 'U' then s[i] := 'T';
+        elif s[i] = 'N' then s[i] := 'X';
+        elif member(s[i], {'R','Y','S','W','K','M','B','D','H','V'}) then
+            if not reported_IUPAC_amb then
+                warning('IUPAC ambiguity characters for DNA/RNA not supported. Will replace them with ''X''');
+                reported_IUPAC_amb := true;
+            fi:
+            s[i] := 'X';
+        fi:
+    od:
+    return(s);
+end:
+
+
+CleanupSequences := proc(seqs_ids_tuple, gname, minLen)
+    ids := seqs := rem := []:
+    for i to length(seqs_ids_tuple[1]) do
+        s := uppercase(seqs_ids_tuple[1,i]):
+        # minimal check of sequences
+        if length(s) < minLen then
+            warning( sprintf( 
+                'Sequence %s (%s) is shorter (%d) than MinSeqLen=%d AA long. Ignored.\n',
+                seqs_ids_tuple[2,i], gname, length(s), minLen));
+            rem := append(rem, CleanID(seqs_ids_tuple[2,i]));
+            next;
+        fi;
+        c_toX := 0;
+        if InputDataType = 'DNA' then
+            s := ReplaceDNAambigousWithAA(s);
+        fi:
+        for j to length(s) do
+            aa := AToInt(s[j]);
+            if aa < 1 or aa > 21 then
+                warning(sprintf('Unknown character: %s (in %s, %s pos %d) --> X', 
+                    s[j], seqs_ids_tuple[2,i], gname, j));
+                s[j] := 'X';
+                c_toX := c_toX+1;
+            fi;
+        od;
+
+        if c_toX>=5 and c_toX>.05*length(s) then
+            warning('Too many unknwon chars in %s, %s. skipping.',
+                seqs_ids_tuple[2,i],gname);
+            rem := append(rem, CleanID(seqs_ids_tuple[2,i]));
+            next;
+        fi:
+        seqs := append(seqs, s);
+        ids := append(ids, CleanID(seqs_ids_tuple[2,i]));
+    od:
+    # check that IDs are uniq
+    if length(ids) <> length({op(ids)}) then
+        warning('not all IDs are uniq. This may cause problems with interpreting the results');
+    fi:
+    return([seqs, ids, rem]);
+end:
+
+CleanID := proc(id)
+    tmpID := ReplaceString('\t','', id);
+    tmpID := ReplaceString('<','',tmpID);
+    tmpID := ReplaceString('>','',tmpID);
+    return(tmpID);
+end:
+
+EstablishSpliceMap := proc(spliceFn, ids, rem)
+    splicedata := [seq(SearchDelim(';', trim(z)), z=SplitLines(ReadRawFile(spliceFn)))]:
+    lenIDs := length(ids):
+    removed := sort(rem):
+    sorted_ids_w_lookup := transpose(sort( [seq([ids[i],i], i=1..lenIDs)] )):
+    for i to lenIDs-1 do
+        if sorted_ids_w_lookup[1,i]=sorted_ids_w_lookup[1,i+1] then
+            error('IDs are not uniq ('.sorted_ids_w_lookup[1,i].
+                  '). Splicing map requires uniq ids.');
+        fi:
+    od:
+
+    splicemap := []:
+    for gene in splicedata do if length(gene)>1 then
+        # iterate over all variantes of a gene
+        geneMap := []:
+        for variant in gene do
+            variant := CleanID(variant); lV := length(variant);
+            # check if variant is a uniq prefix of any id
+            k := SearchOrderedArray(variant, sorted_ids_w_lookup[1]);
+            if k>0 and sorted_ids_w_lookup[1,k]=variant then 
+                # exact match are taken!
+                geneMap := append(geneMap, sorted_ids_w_lookup[2,k]);
+            elif k<lenIDs and sorted_ids_w_lookup[1,k+1,1..lV]=variant then
+                if k<lenIDs-1 and sorted_ids_w_lookup[1,k+2,1..lV]=variant then
+                    error('splicing variant prefix '''.variant.''' is not uniq in the proteome.'.
+                          ' There are at least two proteins with that ID prefix');
+                fi:
+                geneMap := append(geneMap, sorted_ids_w_lookup[2,k+1]);
+            else
+                k := SearchOrderedArray(variant, removed);
+                if (k>0 and removed[k]=variant) or (k<length(removed) and removed[k+1,1..lV]=variant) then
+                    # nothing to report. this variant has been removed in cleanup step.
+                else
+                    error('no gene for splicing prefix '''.variant.' found.');
+                fi:
+            fi:
+        od:
+        if length(geneMap)>1 then 
+            splicemap := append(splicemap, geneMap);
+        fi:
+    fi od:
+    return(splicemap);
+end:
+
+    
