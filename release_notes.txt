@@ -42,9 +42,12 @@ Improvements
 
 - extended documentation 
 
+- moved to some more sane release numbers :-)
+
 Bug Fixes
 ---------
 - stable genome order accross filesystems 
 
 - skip duplicated entries in AllAll files
 
+- proper conversion of DNA nucleotides

@@ -96,6 +96,17 @@ for c in [' ','\n','\t','\c','\r'] do if SearchString(c, OutputFolder) >= 0 then
 fi od:
 OutputFolder := NormalizePath(OutputFolder);
 
+if InputDataType='DNA' then
+    ReadProgram(If(assigned(libdir),libdir,'lib') . '/DNA_matrix');
+    CreateDayMatrices(DNA_Counts);
+    DM := DayMatrix(50):
+elif not assigned(InputDataType) or InputDataType='AA' then
+    CreateDayMatrices();
+    DM := DayMatrix(224):
+else error('unexpected value for ''InputDataType'': '.str(InputDataType));
+fi:
+
+
 # if not job nr 1, wait until conversion of DBs are done.
 convDone := proc() 
     filename := 'Cache/conversion.done';
@@ -209,16 +220,6 @@ fi;
 
 ##############################################################################
 # All-against-all
-if InputDataType='DNA' then
-    ReadProgram(If(assigned(libdir),libdir,'lib') . '/DNA_matrix');
-    CreateDayMatrices(DNA_Counts);
-    DM := DayMatrix(50):
-elif not assigned(InputDataType) or InputDataType='AA' then
-    CreateDayMatrices();
-    DM := DayMatrix(224):
-else error('unexpected value for ''InputDataType'': '.str(InputDataType));
-fi:
-
 NumberFormat := '%.10g':
 JustScoreBound := MinScore;
 

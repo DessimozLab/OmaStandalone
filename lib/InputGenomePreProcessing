@@ -28,6 +28,24 @@
 #
 # ***** END LICENSE BLOCK *****
 
+ReplaceDNAambigousWithAA := proc(s):
+    reported_IUPAC_amb := false;
+    for i to length(s) do 
+        if member(s[i], {'A','C','T','G'}) then next;
+        elif s[i] = 'U' then s[i] := 'T';
+        elif s[i] = 'N' then s[i] := 'X';
+        elif member(s[i], {'R','Y','S','W','K','M','B','D','H','V'}) then
+            if not reported_IUPAC_amb then
+                warning('IUPAC ambiguity characters for DNA/RNA not supported. Will replace them with ''X''');
+                reported_IUPAC_amb := true;
+            fi:
+            s[i] := 'X';
+        fi:
+    od:
+    return(s);
+end:
+
+
 CleanupSequences := proc(seqs_ids_tuple, gname, minLen)
     ids := seqs := rem := []:
     for i to length(seqs_ids_tuple[1]) do
@@ -41,6 +59,9 @@ CleanupSequences := proc(seqs_ids_tuple, gname, minLen)
             next;
         fi;
         c_toX := 0;
+        if InputDataType = 'DNA' then
+            s := ReplaceDNAambigousWithAA(s);
+        fi:
         for j to length(s) do
             aa := AToInt(s[j]);
             if aa < 1 or aa > 21 then
@@ -50,6 +71,7 @@ CleanupSequences := proc(seqs_ids_tuple, gname, minLen)
                 c_toX := c_toX+1;
             fi;
         od;
+
         if c_toX>=5 and c_toX>.05*length(s) then
             warning('Too many unknwon chars in %s, %s. skipping.',
                 seqs_ids_tuple[2,i],gname);
