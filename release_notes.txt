@@ -6,7 +6,14 @@
  :Contact: contact@omabrowser.org
 
 With the release of OmaStandalone 1.x series we switch from a 
-beta to a stable software product. 
+beta to a stable software product.
+
+Summary of Changes from 1.0.0 to XXX
+====================================
+
+Bug Fixes
+---------
+- fixed listing of unfinished AllAll jobs in cases when the list is long.
 
 
 Summary of Changes from 0.99v to 1.0.0
