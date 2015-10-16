@@ -5,8 +5,6 @@
  :Author: Oma Developers
  :Contact: contact@omabrowser.org
 
-With the release of OmaStandalone 1.x series we switch from a 
-beta to a stable software product.
 
 Summary of Changes from 1.0.0 to XXX
 ====================================
@@ -15,9 +13,16 @@ Bug Fixes
 ---------
 - fixed listing of unfinished AllAll jobs in cases when the list is long.
 
+- too many unknown AA in a sequence will properly skip the sequence with 
+  a warning message on stderr.
+
+
 
 Summary of Changes from 0.99v to 1.0.0
-===========================
+======================================
+
+With the release of OmaStandalone 1.x series we switch from a 
+beta to a stable software product. 
 
 Additional features
 -------------------
