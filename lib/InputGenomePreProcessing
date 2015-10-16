@@ -73,8 +73,8 @@ CleanupSequences := proc(seqs_ids_tuple, gname, minLen)
         od;
 
         if c_toX>=5 and c_toX>.05*length(s) then
-            warning('Too many unknwon chars in %s, %s. skipping.',
-                seqs_ids_tuple[2,i],gname);
+            warning(sprintf('Too many unknwon chars in %s, %s. skipping.',
+                seqs_ids_tuple[2,i],gname));
             rem := append(rem, CleanID(seqs_ids_tuple[2,i]));
             next;
         fi:
