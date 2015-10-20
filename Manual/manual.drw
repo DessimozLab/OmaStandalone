@@ -98,7 +98,8 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             
             Paragraph(0, 'If you have specific questions about the installation 
             or the usage of OMA, please contact 
-            {adrian or cdessimoz}@inf.ethz.ch .')
+            adrian.altenhoff ',IT('at'),' inf.ethz.ch or christophe.dessimoz ',
+            IT('at'),' unil.ch.')
         ]:
 
 downloads := [ Anchor(TextBlock('a', name='downloads',
