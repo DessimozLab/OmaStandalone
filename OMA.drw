@@ -286,11 +286,20 @@ tot := [seq(seq(NumberOfJunks(genomes[g1],genomes[g2]),g2=g1..NG), g1=1..NG)];
 c1 := 0:
 for g1 to NG do 
     for g2 from g1 to NG do
+        
+        name1 := genomes[g1];
+        name2 := genomes[g2];
+        # skip if 1-chunk archive already present (import from OMA AxA)
+        fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
+        if FileExists(fn1chunk) then 
+            printf('Pair %s/%s already computed (probably imported). Skipped.\n',
+                name1, name2 );
+            next;
+        fi;
+
         # Phase 0
         db1 := DBs[g1];
         db2 := DBs[g2]; 
-        name1 := genomes[g1];
-        name2 := genomes[g2];
         n1 := db1[TotEntries]:
         n2 := db2[TotEntries];
         if n1 > n2 or n1=n2 and name1 > name2 then
@@ -305,22 +314,13 @@ for g1 to NG do
         DB := db2:
         for i2 to n2 do Seqs2[i2] := SearchTag('SEQ',Entry(i2)) od:
 
-        # Phase 1
-        CallSystem('mkdir -p Cache/AllAll/'.name1);
-        # skip if 1-chunk archive already present (import from OMA AxA)
-        fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
-        if FileExists(fn1chunk) then 
-            printf('Pair %s/%s already computed (probably imported). Skipped.\n',
-                name1, name2 );
-            next;
-        fi;
-
         # from release 0.99z.3 on, we store files in subdirectories per genome *pair*
         dir := sprintf('Cache/AllAll/%s/%s', name1, name2);
         if not FileExists(dir) then
             CallSystem('mkdir -p '.dir);
         fi:
 
+        # Phase 1
         nrJunks := NumberOfJunks(name1, name2);
         for part to nrJunks do
             c1 := c1+1;
