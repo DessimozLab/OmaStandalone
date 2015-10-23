@@ -341,8 +341,8 @@ for g1 to NG do
                 next;
             fi:
 
-            printf('[pid %6d]: Computing %s vs %s (Part %d of %d)\n', 
-                getpid(), name1, name2, part, nrJunks);
+            printf('[pid %6d]: Computing %s vs %s (Part %d of %d). Mem: %.3fGB\n', 
+                getpid(), name1, name2, part, nrJunks, Set(BytesAlloc)/2^30);
             OpenWriting(fn);
             printf( '# AllAll of %s vs %s (Part %d of %d); pid %d; %s\n',
                 name1, name2, part, nrJunks, getpid(), hostname() );
@@ -364,9 +364,9 @@ for g1 to NG do
                 c2 := c2+1;
                 if mod(c2,50000)=0 then
                     printf('   [pid %6d]: %.2f%% complete, time left for this '.
-                        'part=%.1fh, %.1f%% of AllAll done\n',
+                        'part=%.1fh, %.1f%% of AllAll done. Mem: %.3fGB\n',
                         getpid(),100*c2/algnInRange,algnInRange/c2*(UTCTime()-t0)/3600,
-                        100*( (c1-1+c2/algnInRange)/sum(tot) ));
+                        100*( (c1-1+c2/algnInRange)/sum(tot) ), Set(BytesAlloc)/2^30);
                 fi:
                 dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
                 if dps[1] >= .75*MinScore then
@@ -492,7 +492,7 @@ for i to NG do for j from i to NG do
     printf( '# %s vs %s done, (%d/%d)\n', genomes[g1],genomes[g2], 
         sij, sji );
 od od:
-
+printf('# Matches loaded. Mem: %.3fGB\n', Set(BytesAlloc)/2^30);
 
 
 ##############################################################################
