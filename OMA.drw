@@ -232,7 +232,7 @@ NumberOfAlignments := proc(name1:string,name2:string)
     return(nrAlignments);
 end:
 
-NumberOfJunks := proc(name1, name2)
+NumberOfChunks := proc(name1, name2)
     return(ceil(NumberOfAlignments(name1, name2)/AlignBatchSize));
 end:
 
@@ -251,15 +251,15 @@ FullInd2Tuple := proc(index, N)
     return([m+1,c]);
 end:
 
-RangeOfJunk_iterator := proc(x)
-    name1 := x[1]; name2 := x[2]; junk:= x[3];
-    totJunks := NumberOfJunks(name1, name2);
-    if not type(junk,posint) or junk>totJunks then
-        error('invalid junk number: '.junk)
+RangeOfChunk_iterator := proc(x)
+    name1 := x[1]; name2 := x[2]; chunk:= x[3];
+    totChunks := NumberOfChunks(name1, name2);
+    if not type(chunk,posint) or chunk>totChunks then
+        error('invalid chunk number: '.chunk)
     fi:
     all := NumberOfAlignments(name1, name2);
-    first := floor((junk-1)*all/totJunks)+1;
-    last := floor(junk*all/totJunks);
+    first := floor((chunk-1)*all/totChunks)+1;
+    last := floor(chunk*all/totChunks);
     if name1=name2 then 
         for index from first to last do
             iterate( UpperTriangInd2Tuple(index, GS[name1,TotEntries]));
@@ -270,10 +270,10 @@ RangeOfJunk_iterator := proc(x)
         od:
     fi:
 end:
-RangeOfJunk := noeval(RangeOfJunk):
+RangeOfChunk := noeval(RangeOfChunk):
 
-IsMyJob := proc(name1, name2, junk)
-    h := sha2(sprintf('%a',[name1,name2,junk]))[1..8]:
+IsMyJob := proc(name1, name2, chunk)
+    h := sha2(sprintf('%a',[name1,name2,chunk]))[1..8]:
     nr := sscanf(h, '%x')[1];
     return( evalb(mod(nr, pinf['NrParallelProc']) = pinf['ProcNr']-1) );
 end:
@@ -282,11 +282,11 @@ if UseExperimentalHomologousClusters=true then
     ReadProgram(If(not assigned(libdir),'lib',libdir).'/HomologousClustering'):
 else
 # run standard all-against-all comparisons
-tot := [seq(seq(NumberOfJunks(genomes[g1],genomes[g2]),g2=g1..NG), g1=1..NG)]; 
-c1 := 0:
+tot := [seq(seq(NumberOfChunks(genomes[g1],genomes[g2]),g2=g1..NG), g1=1..NG)]; 
+chunk_cnt := chunk_processed := genomepair_cnt := tot_align_time := 0:
 for g1 to NG do 
     for g2 from g1 to NG do
-        
+        genomepair_cnt := genomepair_cnt + 1;
         name1 := genomes[g1];
         name2 := genomes[g2];
         # skip if 1-chunk archive already present (import from OMA AxA)
@@ -321,20 +321,20 @@ for g1 to NG do
         fi:
 
         # Phase 1
-        nrJunks := NumberOfJunks(name1, name2);
-        for part to nrJunks do
-            c1 := c1+1;
+        nrChunks := NumberOfChunks(name1, name2);
+        for part to nrChunks do
+            chunk_cnt := chunk_cnt+1;
             if not IsMyJob(name1,name2,part) then next fi:
 
             # skip if cached or already computed
-            fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d', name1, name2, part, nrJunks);
+            fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d', name1, name2, part, nrChunks);
             if FileExists(fn) or FileExists(fn.'.gz') then
                 printf('Pair %s/%s part %d of %d already computed. Skipped.\n',
-                    name1, name2, part, nrJunks);
+                    name1, name2, part, nrChunks);
                 next;
             fi:
 
-            fn_oldstyle := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, nrJunks);
+            fn_oldstyle := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, nrChunks);
             if FileExists(fn_oldstyle.'.gz') then
                 CallSystem('mv '.fn_oldstyle.'.gz '.fn.'.gz');
                 warning('using AllAll files from old release. moved file '.fn_oldstyle.'.gz into subfolder');
@@ -342,10 +342,10 @@ for g1 to NG do
             fi:
 
             printf('[pid %6d]: Computing %s vs %s (Part %d of %d). Mem: %.3fGB\n', 
-                getpid(), name1, name2, part, nrJunks, Set(BytesAlloc)/2^30);
+                getpid(), name1, name2, part, nrChunks, Set(BytesAlloc)/2^30);
             OpenWriting(fn);
             printf( '# AllAll of %s vs %s (Part %d of %d); pid %d; %s\n',
-                name1, name2, part, nrJunks, getpid(), hostname() );
+                name1, name2, part, nrChunks, getpid(), hostname() );
             OpenWriting(previous);
     
             t0 := UTCTime():
@@ -354,8 +354,8 @@ for g1 to NG do
             c2 := 0;
             algnInRange := min(AlignBatchSize,NumberOfAlignments(name1,name2));
             
-            # iterate over all the protein pairs in this junk and compute alignment
-            for proteinPair in RangeOfJunk(name1, name2, part) do
+            # iterate over all the protein pairs in this chunk and compute alignment
+            for proteinPair in RangeOfChunk(name1, name2, part) do
                 i1 := proteinPair[1]; 
                 i2 := proteinPair[2];
                 
@@ -364,9 +364,9 @@ for g1 to NG do
                 c2 := c2+1;
                 if mod(c2,50000)=0 then
                     printf('   [pid %6d]: %.2f%% complete, time left for this '.
-                        'part=%.1fh, %.1f%% of AllAll done. Mem: %.3fGB\n',
-                        getpid(),100*c2/algnInRange,algnInRange/c2*(UTCTime()-t0)/3600,
-                        100*( (c1-1+c2/algnInRange)/sum(tot) ), Set(BytesAlloc)/2^30);
+                        'part=%.2fh, %.1f%% of AllAll done. Mem: %.3fGB\n',
+                        getpid(),100*c2/algnInRange,(algnInRange/c2-1)*(UTCTime()-t0)/3600,
+                        100*( (chunk_cnt-1+c2/algnInRange)/sum(tot) ), Set(BytesAlloc)/2^30);
                 fi:
                 dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
                 if dps[1] >= .75*MinScore then
@@ -389,6 +389,8 @@ for g1 to NG do
 
             drt := UTCTime()-t0:
             dat := time()-dat0:
+            chunk_processed := chunk_processed + 1;
+            tot_align_time := tot_align_time + drt;
             OpenAppending(fn);
             printf('# %s: %ds/%ds active = %.1f%%  %s\n',hostname(),round(dat),
                 round(drt), 100*dat/drt,If(dat/drt<0.7,'SLOW!',''));
@@ -398,11 +400,11 @@ for g1 to NG do
             if c2 > 0 then
                 printf('Finished %s vs %s (Part %d of %d)\n'.
                 '  %.1f%% of AllAll done, estimated remaining time:'
-                .' %.1fh\n\n', name1,name2,part,nrJunks, 
-                100*c1/sum(tot), algnInRange * drt * sum(tot[c1..-1])/c2/3600);
+                .' %.1fh\n\n', name1, name2, part, nrChunks, 
+                100*chunk_cnt/sum(tot), tot_align_time/chunk_processed * (sum(tot[genomepair_cnt..-1])+nrChunks-part)/3600);
             else
                 printf('Finished %s vs %s (Part %d of %d)\n',
-                    name1,name2,part,nrJunks);
+                    name1,name2,part,nrChunks);
             fi;
         od: 
     od; 
@@ -466,10 +468,10 @@ for i to NG do for j from i to NG do
         if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
         ReadProgram(fn1chunk);
     else
-        nrJunks := NumberOfJunks(genomes[g1],genomes[g2]);
-        for part to nrJunks do 
+        nrChunks := NumberOfChunks(genomes[g1],genomes[g2]);
+        for part to nrChunks do 
             fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
-                part, nrJunks);
+                part, nrChunks);
             ReadProgram( fn );
         od:
     fi;
