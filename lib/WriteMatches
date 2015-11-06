@@ -38,10 +38,10 @@ WriteMatches:= proc(fn:string, ms:list)
     if ms=[] then lprint( ms,'):');
     else
         printf('[');
-        for i to length(res)-1 do
+        for i to length(ms)-1 do
             printf('%a,\n', ms[i]);
         od:
-        lprint( res[-1], ']):');
+        lprint( ms[-1], ']):');
     fi:
     OpenAppending(previous):
     Set(printgc=verb);
