@@ -77,8 +77,8 @@ pagetitle := 'OMA stand-alone':
 intro := [  Anchor(TextBlock('a', name='introduction', 
                 SectionHeader(1, 'Introduction')
             )),
-            Paragraph(0, 'You can download and install OMA as a stand-alone
-            version. Included are the algorithms for OMA itself plus its 
+            Paragraph(0, 'You can run OMA as a stand-alone program.
+            Included are the algorithms for OMA itself plus its 
             addition ESPRIT. The software can be installed on Linux (x86, 
             both 64bit and 32bit) and MacOSX (x86, both 32bit and 64bit).'),
             
@@ -213,10 +213,10 @@ OMA')),
         'parameter "AlignBatchSize" and the ',
         'total number of genomes (n) will determine into how many chunks the ',
         'all-against-all phase is divided. AlignBatchSize will split the n*(n-1)/2 ',
-        'genome pairs further into junks of at most "AlignBatchSize" alignments. ',
+        'genome pairs further into chunks of at most "AlignBatchSize" alignments. ',
         'The larger AlignBatchSize is, the more and smaller jobs will be executed.'),
         
-        Paragraph(0, 'Scheduling is quite straightforward: all compute 
+        Paragraph(0, 'Scheduling is straightforward: all compute 
         processes ',
         'need to start from the same directory, and each one will try to do an equal 
         amount of ',
@@ -297,11 +297,11 @@ EOF')
         genomes, 50GB were reported to be enough.'), 
         
         Paragraph(0, 'Because of this imbalance regarding the required memory
-        the OMA starter script now has command line option ',TT('-s'), ' to run
+        the OMA starter script has command line option ',TT('-s'), ' to run
         only the first part of the OMA pipeline. Using this option, the
-        computation can be split into a parallel, little memory requiring
-        phase, and a single process requiring a lot more RAM. Running the OMA
-        thus becomes a two stage process like this:', Code('
+        computation can be split into a parallel phase with little memory 
+        requirement , and a single process requiring a lot more RAM. Running 
+        the OMA thus becomes a two stage process like this:', Code('
 # first stage, little memory:
 OMA -s 
 
@@ -537,7 +537,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         TT('true')),
                     Row(TT('AlignBatchSize'),
                         Paragraph(0, 'In the all-against-all phase, each genome
-                        pair is split in smaller junks of ',TT('AlignBatchSize'), 
+                        pair is split in smaller chunks of ',TT('AlignBatchSize'), 
                         'protein comparisons. The larger this number, the longer 
                         each unit runs, and the fewer files get produced. This 
                         allows to adjust the frequency of milestone steps 
@@ -661,6 +661,20 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                 )
                 ]:
 
+# GETTING HELP
+
+gettinghelp := [ Anchor(TextBlock('a', name='gettinghelp',
+                SectionHeader(1, 'Getting help')
+            )),
+            
+            Paragraph(0, 'The preferred way to get help about OMA is via the 
+            ', Link(TextBlock('a',href='https://www.biostars.org/t/oma/', 
+            'Biostars')), ' community resource. Please consider asking your 
+            question there, including the tags "OMA" and "orthologs".'),
+            Paragraph(0, 'If your question requires privacy, we are also 
+            reachable by email at contact@omabrowser.org. ' )
+            ]:
+
 # LICENSE
 license := [ Anchor(TextBlock('a', name='license',
                 SectionHeader(1, 'License')
@@ -714,6 +728,8 @@ htmltabs := TextBlock('div', class='navigation',
                 ' - ',
                 Anchor(TextBlock('a', href='parameters', 'Parameters')),
                 ' - ',
+                Anchor(TextBlock('a', href='gettinghelp', 'Getting help')),
+                ' - ',
                 Anchor(TextBlock('a', href='license', 'License')),
                 ' - ',
                 Link(TextBlock('a', href='http://omabrowser.org', 'Omabrowser'))
@@ -760,6 +776,7 @@ urlcolor=blue') ) ):
         op(usage),
         op(formats),
         op(parameters),
+        op(gettinghelp),
         op(license)
     ) ) ):
     prints( LaTeXC( DocEl('end', 'document')) . '\n' ):
@@ -791,6 +808,7 @@ OpenWriting('Manual/manual.html'):
                 op(usage),
                 op(formats),
                 op(parameters),
+                op(gettinghelp),
                 op(license)
             )
         ), pagetitle, css1=omabrowsercss, css2=additionalcss, title=false)):
