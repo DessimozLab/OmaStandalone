@@ -288,10 +288,10 @@ EOF')
         time. Most computing time is spent to compute the all-against-all
         sequence alignments, which is why this part has been parallelized.
         Although cpu intensive this phase does not require too much memory. As
-        a rule of thumb you can assume it requires roughly 5 times the size of
-        your DB folder. The second part of OMA runs sequential on a single
+        a rule of thumb you can assume it requires roughly 10 times the size of
+        your DB folder, but at minimum 650MB. The second part of OMA runs sequential on a single
         core, but it requires a lot more memory: Again, as a rule of thumb,
-        count on ', TT('300MB * pow(nr_genomes, 1.5)'),'. Obviously this
+        count on ', TT('400MB * pow(nr_genomes, 1.4)'),'. Obviously this
         depends also a lot on the size of your genomes. 60 metazoas have been
         successfully computed using 120GB, and for the same number of bacterial
         genomes, 50GB were reported to be enough.'), 
