@@ -36,7 +36,7 @@ cp /home/darwin/v2/source/macintel64/darwin $instpath/bin/omadarwin.mac64
 cp -r lib $instpath/
 
 # copy OMA files to $1/OMA$versionnr
-cp OMA.drw parameters.drw install.sh README.oma LICENSE $instpath/
+cp OMA.drw parameters.drw install.sh README.oma LICENSE release_notes.txt $instpath/
 cp bin/oma bin/omadarwin $instpath/bin/
 
 # create manual and copy files to $instpath
