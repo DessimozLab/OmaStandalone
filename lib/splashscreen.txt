@@ -12,20 +12,24 @@
 
       Stand-alone version
       Christophe Dessimoz, Adrian Schneider, Adrian Altenhoff,
-      Alexander Roth, Stefan Zoller, and Gaston Gonnet
+      Alexander Roth, Stefan Zoller, Gaston Gonnet.
 
-      (c) CBRG, ETH Zurich, June 2011
+      (c) CBRG, ETH Zurich, 2004-2015
+      (c) Dessimoz lab, UCL and UNIL, 2013-2015
 
       Version [VERSIONNR]
 
       Please cite:
 
-      Dessimoz et al., "OMA, a comprehensive, automated project for the
-      identification of orthologs from complete genome data: Introduction and
-      first achievements", RECOMB-CG 2005, LNCS 3678, Springer, 2005
+      Altenhoff et al., "The OMA orthology database in 2015: function 
+      predictions, better plant support, synteny view and other improvements",
+      Nucl Acids Res 2015, 43:D240-249
 
-      Roth et al., "Algorithm of OMA for large-scale ortholgoy inference", BMC
-      Bioinformatics, 2008, 9:518
+
+      If you use perform HOG analyses, please cite:
+
+      Altenhoff et al., "Inferring hierarchical orthologous groups from 
+      orthologous gene pairs", PLoS One 2013 8 (1), e53786
 
 
       If you use ESPRIT, please cite:

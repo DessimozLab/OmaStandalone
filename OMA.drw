@@ -15,11 +15,11 @@
 #
 # The Initial Developer of the Original Code is CBRG Research Group; 
 # ETH Zurich; Switzerland.
-# Portions created by the Initial Developer are Copyright (C) 2005-2013
+# Portions created by the Initial Developer are Copyright (C) 2005-2015
 # the Initial Developer. All Rights Reserved.
 #
 # Contributor(s):
-#   Christophe Dessimoz <cdessimoz@inf.ethz.ch>
+#   Christophe Dessimoz <cdessimoz@ucl.ac.uk>
 #   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
 #   Stefan Zoller <stefan.zoller@inf.ethz.ch>
 #   Adrian Schneider <adrian.schneider@inf.ethz.ch>
@@ -42,7 +42,8 @@
 #      \/__/         \/__/         \/__/    
 #
 #       Stand-alone version
-#          (c) CBRG, ETH Zurich, 2004-2011
+#          (c) CBRG (ETH Zurich) 2004-2015
+#          (c) Dessimoz Lab (UCL and UNIL) 2013-2015
 ##############################################################################
 # Usage
 #
