@@ -29,7 +29,7 @@
 # ***** END LICENSE BLOCK *****
 # Set(quiet):
 ##############################################################################
-#       ___           ___           ___     
+#       ___           ___           ___
 #      /\  \         /\__\         /\  \    
 #     /::\  \       /::|  |       /::\  \   
 #    /:/\:\  \     /:|:|  |      /:/\:\  \  
@@ -40,7 +40,7 @@
 #    \:\/:/  /        /:/  /        /:/  /  
 #     \::/  /        /:/  /        /:/  /   
 #      \/__/         \/__/         \/__/    
-# 
+#
 #       Stand-alone version
 #          (c) CBRG, ETH Zurich, 2004-2011
 ##############################################################################
@@ -56,12 +56,12 @@
 #   - Run this script from the same directory.
 #   - Script parameters are set in parameters.drw in the same directory
 #   - Each genome should have its own fasta file (filename ending with .fa)
-#     and be placed in a directory called DB/ 
+#     and be placed in a directory called DB/
 #
 ##############################################################################
 
-Set(gc=5e8):  
-SetRandSeed():  
+Set(gc=1e8):
+SetRandSeed():
 GetStats := true;
 
 # Read libraries
@@ -108,22 +108,22 @@ fi:
 
 
 # if not job nr 1, wait until conversion of DBs are done.
-convDone := proc() 
+convDone := proc()
     filename := 'Cache/conversion.done';
-    if nargs=0 then 
+    if nargs=0 then
         return(FileExists(filename));
     elif nargs=1 and args[1] then
-        OpenWriting(filename); 
-        printf('# finished at %s on %s (pid %d), time %f\n', date(), hostname(), 
+        OpenWriting(filename);
+        printf('# finished at %s on %s (pid %d), time %f\n', date(), hostname(),
             getpid(), time());
         OpenWriting(previous);
     fi:
 end:
 if pinf['ProcNr']>1 then
-    for k to 5*length(G) while not convDone() do 
-        sleep(min(20, ceil(Rand()*2^k))) 
+    for k to 5*length(G) while not convDone() do
+        sleep(min(20, ceil(Rand()*2^k)))
     od:
-    if not convDone() then 
+    if not convDone() then
         printf('job %d [pid %d]: waiting for too long. abort.\n', pinf['ProcNr'], getpid());
         exit(1);
     fi:
@@ -132,12 +132,12 @@ fi:
 GS := table();
 DBs := genomes := isContig := [];
 if pinf['ProcNr']=1 and not ReuseCachedResults then
-    CallSystem('rm -rf Cache'); 
+    CallSystem('rm -rf Cache');
 fi;
 CallSystem('mkdir -p Cache/DB');
 for g in G do
     off := SearchAllString('/', g);
-    gname := g[off[-1]+1..-1];   
+    gname := g[off[-1]+1..-1];
     if SearchString('contig',gname) > -1 then
         isContig := append(isContig,true);
     else
@@ -171,7 +171,7 @@ for g in G do
                 CallSystem('rm -f Cache/DB/'.gname.'.db');
             else
                 GS[gname] := GenomeSummary(DB);
-                DBs := append(DBs,DB); 
+                DBs := append(DBs,DB);
                 # genome is ready, continue with next one.
                 next;
             fi:
@@ -184,7 +184,7 @@ for g in G do
     input := ReadFastaWithNames(g);
     ML := If(isContig[-1], MinSeqLenContig, MinSeqLen);
     input := CleanupSequences(input, gname, ML);
-    
+
     if FileExists(spliceFn) then
         splicemap := EstablishSpliceMap(spliceFn, input[2], input[3]);
     fi:
@@ -194,7 +194,7 @@ for g in G do
     printf('<OS>Unknown</OS>\n');
     printf('<KINGDOM>Unknown</KINGDOM>\n');
     printf('<FASTACHECKSUM>%s</FASTACHECKSUM>\n', checksum);
-    if FileExists(spliceFn) then 
+    if FileExists(spliceFn) then
         printf('<SPLICEMAP>%A</SPLICEMAP>', splicemap);
     fi:
     for i to length(input[1]) do
@@ -203,9 +203,9 @@ for g in G do
     OpenWriting(previous);
     DB := ReadDb('Cache/DB/'.gname.'.db');
     GS[gname] := GenomeSummary(DB);
-    DBs := append(DBs,DB); 
+    DBs := append(DBs,DB);
 od:
-if pinf['ProcNr']=1 and not convDone() then 
+if pinf['ProcNr']=1 and not convDone() then
     convDone(true); # signal other processes to start.
 fi:
 NG := length(genomes):
@@ -216,12 +216,13 @@ if NG < 2 then
           .'the present directory.\n\n', NG);
     quit;
 fi;
- 
+
 
 ##############################################################################
 # All-against-all
 NumberFormat := '%.10g':
 JustScoreBound := MinScore;
+Set(gc=1e7):
 
 NumberOfAlignments := proc(name1:string,name2:string)
     if name1=name2 then
@@ -260,7 +261,7 @@ RangeOfChunk_iterator := proc(x)
     all := NumberOfAlignments(name1, name2);
     first := floor((chunk-1)*all/totChunks)+1;
     last := floor(chunk*all/totChunks);
-    if name1=name2 then 
+    if name1=name2 then
         for index from first to last do
             iterate( UpperTriangInd2Tuple(index, GS[name1,TotEntries]));
         od:
@@ -282,16 +283,16 @@ if UseExperimentalHomologousClusters=true then
     ReadProgram(If(not assigned(libdir),'lib',libdir).'/HomologousClustering'):
 else
 # run standard all-against-all comparisons
-tot := [seq(seq(NumberOfChunks(genomes[g1],genomes[g2]),g2=g1..NG), g1=1..NG)]; 
+tot := [seq(seq(NumberOfChunks(genomes[g1],genomes[g2]),g2=g1..NG), g1=1..NG)];
 chunk_cnt := chunk_processed := genomepair_cnt := tot_align_time := 0:
-for g1 to NG do 
+for g1 to NG do
     for g2 from g1 to NG do
         genomepair_cnt := genomepair_cnt + 1;
         name1 := genomes[g1];
         name2 := genomes[g2];
         # skip if 1-chunk archive already present (import from OMA AxA)
         fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
-        if FileExists(fn1chunk) then 
+        if FileExists(fn1chunk) then
             printf('Pair %s/%s already computed (probably imported). Skipped.\n',
                 name1, name2 );
             next;
@@ -299,7 +300,7 @@ for g1 to NG do
 
         # Phase 0
         db1 := DBs[g1];
-        db2 := DBs[g2]; 
+        db2 := DBs[g2];
         n1 := db1[TotEntries]:
         n2 := db2[TotEntries];
         if n1 > n2 or n1=n2 and name1 > name2 then
@@ -341,24 +342,24 @@ for g1 to NG do
                 next;
             fi:
 
-            printf('[pid %6d]: Computing %s vs %s (Part %d of %d). Mem: %.3fGB\n', 
+            printf('[pid %6d]: Computing %s vs %s (Part %d of %d). Mem: %.3fGB\n',
                 getpid(), name1, name2, part, nrChunks, Set(BytesAlloc)/2^30);
             OpenWriting(fn);
             printf( '# AllAll of %s vs %s (Part %d of %d); pid %d; %s\n',
                 name1, name2, part, nrChunks, getpid(), hostname() );
             OpenWriting(previous);
-    
+
             t0 := UTCTime():
             dat0 := time():
             res := []:
             c2 := 0;
             algnInRange := min(AlignBatchSize,NumberOfAlignments(name1,name2));
-            
+
             # iterate over all the protein pairs in this chunk and compute alignment
             for proteinPair in RangeOfChunk(name1, name2, part) do
-                i1 := proteinPair[1]; 
+                i1 := proteinPair[1];
                 i2 := proteinPair[2];
-                
+
                 len1 := length(Seqs1[i1]);
                 len2 := length(Seqs2[i2]);
                 c2 := c2+1;
@@ -380,7 +381,7 @@ for g1 to NG do
                     res := append(res,[i1,i2,a[Score],a[PamDistance],
                                 ran1,ran2,a[PamVariance]] );
                 fi;
-                if length(res)>1e5 then 
+                if length(res)>1e5 then
                     WriteMatches(fn, res);
                     res := []:
                 fi:
@@ -400,14 +401,14 @@ for g1 to NG do
             if c2 > 0 then
                 printf('Finished %s vs %s (Part %d of %d)\n'.
                 '  %.1f%% of AllAll done, estimated remaining time:'
-                .' %.1fh\n\n', name1, name2, part, nrChunks, 
+                .' %.1fh\n\n', name1, name2, part, nrChunks,
                 100*chunk_cnt/sum(tot), tot_align_time/chunk_processed * (sum(tot[genomepair_cnt..-1])+nrChunks-part)/3600);
             else
                 printf('Finished %s vs %s (Part %d of %d)\n',
                     name1,name2,part,nrChunks);
             fi;
-        od: 
-    od; 
+        od:
+    od;
 od:
 fi:
 
@@ -423,13 +424,14 @@ if length(f) > 0 then
     quit;
 fi:
 
-if only_run_allall=true then 
+if only_run_allall=true then
     print('\n\n*** terminating after AllAll phase due to user flag. ***');
     quit;
 fi:
 
 ##############################################################################
 # Candidate Pairs
+Set(gc=1e8):
 
 print('\n\n****\n\nReading the all-against-all files...\n');
 
@@ -469,7 +471,7 @@ for i to NG do for j from i to NG do
         ReadProgram(fn1chunk);
     else
         nrChunks := NumberOfChunks(genomes[g1],genomes[g2]);
-        for part to nrChunks do 
+        for part to nrChunks do
             fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
                 part, nrChunks);
             ReadProgram( fn );
@@ -483,7 +485,7 @@ for i to NG do for j from i to NG do
     if sij=0 or sji=0 then
         t6+1;
         # relax in case of mitochondion genome or synthetic evolution
-        warning('empty all-all for '.genomes[g1].' '. genomes[g2] ) 
+        warning('empty all-all for '.genomes[g1].' '. genomes[g2] )
     fi;
     for k to length(BestMatch[i,j]) do
         if BestMatch[i,j,k] <> [] then
@@ -491,14 +493,14 @@ for i to NG do for j from i to NG do
     for k to length(BestMatch[j,i]) do
         if BestMatch[j,i,k] <> [] then
         BestMatch[j,i,k] := compress(BestMatch[j,i,k]) fi od;
-    printf( '# %s vs %s done, (%d/%d)\n', genomes[g1],genomes[g2], 
+    printf( '# %s vs %s done, (%d/%d)\n', genomes[g1],genomes[g2],
         sij, sji );
 od od:
 printf('# Matches loaded. Mem: %.3fGB\n', Set(BytesAlloc)/2^30);
 
 
 ##############################################################################
-# Verification of stable pairs and clique building or esprit 
+# Verification of stable pairs and clique building or esprit
 
 cput_mid := time(); time_mid := UTCTime();
 NumberFormat := '%.8g':
@@ -522,7 +524,7 @@ else
         alreadyComputed := LoadOrthologMilestone(orthoCacheFile):
     fi:
 
-    if not alreadyComputed then 
+    if not alreadyComputed then
         print('\n\n****\n\nIdentification of Stable-Pairs (Putative Orthologs)\n');
         Ort := OrthologousMatrix( op(params) ):
         StoreOrthologMilestone( orthoCacheFile );
@@ -539,13 +541,13 @@ else
         fi:
         # call hierarchical group procedure
         HOG := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));
-        if HOG=lasterror then 
+        if HOG=lasterror then
             warning('computation of HierarchicalGroups failed: '.string(lasterror));
         fi:
     fi:
     # # Retrieve all IDs
     # # Create File MapSeqNum-ID:
-    CallSystem('rm -rf '.OutputFolder.'; mkdir -p '.OutputFolder); 
+    CallSystem('rm -rf '.OutputFolder.'; mkdir -p '.OutputFolder);
     IDtable := CreateArray(1..NG);
     OpenWriting(OutputFolder.'/Map-SeqNum-ID.txt');
     print('\#Format: genome<tab>sequence number<tab>id');
@@ -563,7 +565,7 @@ else
     if DoHomologyFunctionPrediction=true then
         PredictViaHomology();
     fi:
-    
+
     ############################################################################
     # Store results
     Set('printgc'=false);
@@ -579,7 +581,7 @@ else
     for r to length(Ort) do
         for k to NG do
             t := Ort[r,k];
-            if t <> 0 then 
+            if t <> 0 then
                 OGtable[k,t] := r;
             fi;
         od;
@@ -598,7 +600,7 @@ else
             printf('\# Every pair is listed only once, and in no particular order.\n');
             printf('\# The map between sequence number and ID are given\n');
             printf('\# in the file "Map-SeqNum-ID.map\n');
-    
+
             for k to ns[g1] do
                 vp := decompress(VPairs[g1,g2,k]);
                 typ2 := If(length(vp)>1,'many','1');
@@ -611,7 +613,7 @@ else
                         IDtable[g1,k],
                         IDtable[g2,l],
                         typ1, typ2,
-                        If(OGtable[g1,k]=OGtable[g2,l] and OGtable[g1,k] <> 0, 
+                        If(OGtable[g1,k]=OGtable[g2,l] and OGtable[g1,k] <> 0,
                             string(OGtable[g1,k]),
                             '')
                     );
@@ -631,7 +633,7 @@ else
     # store orthologous groups in orthoxml format
     WriteOrthoXML(Ort, OutputFolder.'/OrthologousGroups.orthoxml',
         StableIdsForGroups=true);
-    
+
     # developpment code
     if type(MergeOMAGroups, procedure) then
         mergedOMAGroups := MergeOMAGroups(Ort, VPairs);
@@ -650,7 +652,7 @@ else
     if DoHierarchicalGroups=true and type(HOG, list) then
         WriteOrthoXML( HOG, OutputFolder.'/HierarchicalGroups.orthoxml',
             StableIdsForGroups=true);
-        if not WriteOutput_HOGFasta=false then 
+        if not WriteOutput_HOGFasta=false then
             WriteFastaGroups(OutputFolder.'/HOGFasta', HOG);
         fi:
         if SpeciesTree='estimate' then
