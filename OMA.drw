@@ -291,13 +291,6 @@ for g1 to NG do
         genomepair_cnt := genomepair_cnt + 1;
         name1 := genomes[g1];
         name2 := genomes[g2];
-        # skip if 1-chunk archive already present (import from OMA AxA)
-        fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
-        if FileExists(fn1chunk) then
-            printf('Pair %s/%s already computed (probably imported). Skipped.\n',
-                name1, name2 );
-            next;
-        fi;
 
         # Phase 0
         db1 := DBs[g1];
@@ -309,6 +302,15 @@ for g1 to NG do
             t := name1;  name1 := name2;  name2 := t;
             t := n1;  n1 := n2;  n2 := t;
         fi:
+
+        # skip if 1-chunk archive already present (import from OMA AxA)
+        fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
+        if FileExists(fn1chunk) then
+            printf('Pair %s/%s already computed (probably imported). Skipped.\n',
+                name1, name2 );
+            next;
+        fi;
+
         Seqs1 := CreateArray(1..n1):
         Seqs2 := CreateArray(1..n2):
         DB := db1:
