@@ -6,6 +6,19 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 1.0.2 to 1.0.3
+======================================
+This is a bugfix release only
+
+Bug Fixes
+---------
+- fixes a bug introduced in 1.0.2 that does not respect genome order
+  when looking for exported genomes AllAll files
+
+- include these release_notes in install tarball
+
+
+
 Summary of Changes from 1.0.1 to 1.0.2
 ======================================
 This is a bugfix release only.
