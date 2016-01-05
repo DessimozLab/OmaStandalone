@@ -196,7 +196,7 @@ for g in G do
     printf('<KINGDOM>Unknown</KINGDOM>\n');
     printf('<FASTACHECKSUM>%s</FASTACHECKSUM>\n', checksum);
     if FileExists(spliceFn) then
-        printf('<SPLICEMAP>%A</SPLICEMAP>', splicemap);
+        printf('<SPLICEMAP>%A</SPLICEMAP>\n', splicemap);
     fi:
     for i to length(input[1]) do
         printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', input[2,i], input[1,i]);

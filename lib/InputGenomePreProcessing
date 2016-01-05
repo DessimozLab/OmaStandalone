@@ -92,7 +92,7 @@ CleanID := proc(id)
     tmpID := ReplaceString('\t','', id);
     tmpID := ReplaceString('<','',tmpID);
     tmpID := ReplaceString('>','',tmpID);
-    return(tmpID);
+    return(trim(tmpID));
 end:
 
 EstablishSpliceMap := proc(spliceFn, ids, rem)
@@ -134,7 +134,7 @@ EstablishSpliceMap := proc(spliceFn, ids, rem)
             fi:
         od:
         if length(geneMap)>1 then 
-            splicemap := append(splicemap, geneMap);
+            splicemap := append(splicemap, {op(geneMap)});
         fi:
     fi od:
     return(splicemap);
