@@ -6,8 +6,16 @@
  :Contact: contact@omabrowser.org
 
 
-Summary of Changes from 1.0.3 to XXX
+Summary of Changes from 1.0.3 to 1.0.4
 ======================================
+This is a bugfix release only
+
+Bug Fixes
+---------
+- fixes a bug with the splicing variant data format in the .splice files
+  which was not fully compatible with the expected format.
+  There is now also an example .splice file for the ToyExample database
+  of human.
 
 
 Summary of Changes from 1.0.2 to 1.0.3
@@ -45,7 +53,7 @@ Bug Fixes
 ---------
 - fixed listing of unfinished AllAll jobs in cases when the list is long.
 
-- too many unknown AA in a sequence will properly skip the sequence with 
+- too many unknown AA in a sequence will properly skip the sequence with
   a warning message on stderr.
 
 
@@ -53,15 +61,15 @@ Bug Fixes
 Summary of Changes from 0.99v to 1.0.0
 ======================================
 
-With the release of OmaStandalone 1.x series we switch from a 
-beta to a stable software product. 
+With the release of OmaStandalone 1.x series we switch from a
+beta to a stable software product.
 
 Additional features
 -------------------
 - Support of alternative splicing variants as in public OMA database.
   The strategy is described in OMA NAR 2010.
 
-- Additional support of HPC schedulers: 
+- Additional support of HPC schedulers:
   - SLURM
   - PBS
 
@@ -84,13 +92,13 @@ Improvements
 - possibility to avoid storing output files that are not needed
   and can take a lot of time to compute.
 
-- extended documentation 
+- extended documentation
 
 - moved to some more sane release numbers :-)
 
 Bug Fixes
 ---------
-- stable genome order accross filesystems 
+- stable genome order accross filesystems
 
 - skip duplicated entries in AllAll files
 
