@@ -6,6 +6,12 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 1.0.4 to XXX
+======================================
+
+
+
+
 Summary of Changes from 1.0.3 to 1.0.4
 ======================================
 This is a bugfix release only
