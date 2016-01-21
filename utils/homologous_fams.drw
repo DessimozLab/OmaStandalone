@@ -1,0 +1,111 @@
+Set(printgc=false): Set(gc=5e6);
+ReadProgram('lib/darwinit');
+ReadProgram('parameters.drw');
+
+################################################
+# overwrite min-length-tolerance from parameters
+LengthTol := .80;
+
+
+G := TimedCallSystem('find -L DB -name "*.fa" -print')[2];
+G := sort(SearchDelim('\n', G));
+
+DBs := genomes := isContig := []:
+GS := table():
+for g in G do 
+    gname := SearchDelim('/',g)[-1];
+    gname := gname[1..SearchString('.', gname)];
+    genomes := append(genomes, gname);
+    DB := ReadDb('Cache/DB/'.gname.'.db');
+    DBs := append(DBs, DB);
+    GS[gname] := GenomeSummary(DB);
+    isContig := append(isContig, false);
+od:
+
+
+NG := length(genomes):
+ns := [seq(DBs[i,TotEntries], i=1..NG)]:
+Goff := CreateArray(1..NG+1):
+for i to NG do Goff[i+1] := Goff[i]+ns[i] od:
+Lengths := [seq(GS[g, EntryLengths], g=genomes)]:
+
+NumberOfAlignments := proc(name1:string,name2:string)
+    if name1=name2 then
+        nrAlignments := GS[name1,TotEntries]*(GS[name1,TotEntries]-1)/2;
+    else
+        nrAlignments := GS[name1,TotEntries]*GS[name2,TotEntries];
+    fi:
+    return(nrAlignments);
+end:
+
+NumberOfChunks := proc(name1, name2)
+    return(ceil(NumberOfAlignments(name1, name2)/AlignBatchSize));
+end:
+
+####
+# Logging datasets and special parameters
+printf('\n\nBuilding gene families:\n  parameters.drw (sha2: %s)\n'.
+       '  LengthTol = %f\n  Nr Genomes: %d\n  Nr of Sequences: %d\n'.
+       '  started on %s at %s\n\n\n',
+       sha2(ReadRawFile('parameters.drw')),
+       LengthTol, NG, Goff[NG+1], hostname(), date());
+
+t1 := Counter('RefinedMatches structures read'):
+t2 := Counter('Matches read'):
+t3 := Counter('files read'):
+t4 := Counter('Matches of genomes against themselves'):
+t5 := Counter('Matches above parameters');
+t6 := Counter('empty all-all'):
+t7 := Counter('Number of matches discarded below MinSeqLen');
+
+
+uf := UnionFind([seq(i,i=1..Goff[NG+1])]):
+for X to NG do for Y from X to NG do 
+    if ns[X]<ns[Y] or ns[X]=ns[Y] and genomes[X]<genomes[Y] then
+        g1 := X; g2 := Y; else g1 := Y; g2 := X; fi:
+    BestMatch1 := CreateArray(1..ns[g1],[]):
+    BestMatch2 := CreateArray(1..ns[g2],[]):
+    db1 := DBs[g1]; db2 := DBs[g2];
+    Exclude1 := Exclude2 := {};
+
+    fn1chunk := sprintf('Cache/AllAll/%s/%s.gz',genomes[g1],genomes[g2]);
+    if FileExists(fn1chunk) then
+        fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2.gz', genomes[g1], genomes[g2]);
+        if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
+        ReadProgram(fn1chunk);
+    else
+        nrChunks := NumberOfChunks(genomes[g1],genomes[g2]);
+        for part to nrChunks do
+            fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
+                part, nrChunks);
+            ReadProgram( fn );
+        od:
+    fi;
+    
+    g1_off := Goff[g1]; g2_off := Goff[g2];
+    for x1 to ns[g1] do for pair in BestMatch1[x1] do
+        union(uf, [x1+g1_off, g2_off+pair[Entry]]);
+    od od:
+od od:
+
+ids := CreateArray(1..Goff[NG+1],''):
+for i to NG do DB := DBs[i]; for x1 to ns[i] do
+    ids[Goff[i]+x1] := SearchTag('ID', Entry(x1)):
+od od:
+
+famNr := 0;
+fnOut := OutputFolder.'/gene_families.txt';
+CallSystem('mkdir -p '.OutputFolder);
+OpenWriting(fnOut);
+printf('FamNr\tGeneNr\tID\n');
+for fam in uf[Clusters] do
+    if length(fam)>1 then 
+        famNr := famNr+1;
+        for memb in fam do 
+            printf('%d\t%d\t%s\n', famNr, memb, ids[memb]);
+        od 
+    fi:
+od:
+OpenWriting(previous);
+
+
