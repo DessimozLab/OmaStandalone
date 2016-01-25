@@ -133,6 +133,8 @@ EOC
 )
 
 cat $OMA_PATH/lib/splashscreen.txt
+rm -f Cache/conversion.done
+
 if [ -n "$interactive" ] ; then
     # run interactive, i.e. no background 
     $OMA_PATH/bin/omadarwin ${darwin_flag} << EOA
