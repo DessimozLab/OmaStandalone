@@ -80,6 +80,7 @@ StableIdsForGroups := false;
 #WriteOutput_OrthologousPairs_orthoxml := false;  #this file requires lots of time.
 #WriteOutput_OrthologousGroupsFasta := false;
 #WriteOutput_HOGFasta := false;
+#WriteOutput_Paralogs := false; 
 
 
 ##############################################################
