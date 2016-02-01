@@ -87,13 +87,14 @@ OrthologousMatrix := proc( MinScore:positive, LengthTol:positive,
     StablePairTol:positive, VerifiedPairTol:positive, UseEsprit:boolean)
 global CliqueIterFactor, histog, triangle_analysis, StablePairs, VPairs, 
        BreakingStatsG,witnesses, PossContigHits, DefContigHits, ContigHits,
-       DB, ParamSet;
+       DB, ParamSet, ParalogPairs;
 
 # Boundary scores for stable pairs
 starttime := time();
 
     totpairs := rempairs := 0;
     StablePairs := CreateArray(1..NG,1..NG):
+    ParalogPairs := CreateArray(1..NG,1..NG):
     for X to NG do for Y to NG do if X <> Y then
         if assigned(ContigStablePairTol) and (isContig[X] or isContig[Y]) then
             Tol := ContigStablePairTol;
@@ -101,6 +102,7 @@ starttime := time();
             Tol := StablePairTol;
         fi;
         StablePairs[X,Y] := CreateArray(1..ns[X],{});
+        ParalogPairs[X,Y] := CreateArray(1..ns[X],{});
         for x1 to ns[X] do
             if BestMatch[X,Y,x1] <> [] then
                 t := sort(decompress(BestMatch[X,Y,x1]),x->-x[PamDist10000]);
@@ -119,6 +121,9 @@ starttime := time();
                             sqrt(1000*(t[i1,PamVar100000] + t[i2,PamVar100000])) or
                             diff > Tol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP') 
                             then
+                    if diff / StdDiff10000(X,Y,x1,t[i1],t[i2],'SP') > 2.5*Tol then
+                        ParalogPairs[X,Y,x1] := append(ParalogPairs[X,Y,x1], t[i1]);
+                    fi:
                             if t[i1,PamDist10000] > t[i2,PamDist10000] then
                                 active[i1] := false;
                                 break;
@@ -132,7 +137,8 @@ starttime := time();
                 StablePairs[X,Y,x1] := { seq( If(active[i1],t[i1,Entry],NULL),
                             i1=1..lt ) };
                 rempairs := rempairs + lt - length(StablePairs[X,Y,x1]);
-            StablePairs[X,Y,x1] := compress(StablePairs[X,Y,x1]);
+                StablePairs[X,Y,x1] := compress(StablePairs[X,Y,x1]);
+                ParalogPairs[X,Y,x1] := compress(ParalogPairs[X,Y,x1]);
             fi;
         od;
         printf( '%d stable pairs found for %s vs %s\n',
