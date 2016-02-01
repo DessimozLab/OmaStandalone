@@ -57,7 +57,7 @@ t4 := Counter('Matches of genomes against themselves'):
 t5 := Counter('Matches above parameters');
 t6 := Counter('empty all-all'):
 t7 := Counter('Number of matches discarded below MinSeqLen');
-
+t8 := Counter('GenomePairs read');
 
 uf := UnionFind([seq(i,i=1..Goff[NG+1])]):
 for X to NG do for Y from X to NG do 
@@ -81,12 +81,17 @@ for X to NG do for Y from X to NG do
             ReadProgram( fn );
         od:
     fi;
+    t8+1;
     
     g1_off := Goff[g1]; g2_off := Goff[g2];
     for x1 to ns[g1] do for pair in BestMatch1[x1] do
         union(uf, [x1+g1_off, g2_off+pair[Entry]]);
     od od:
+    printf('%s/%s (%d/%d; %.1f%%) done\n', genomes[g1], genomes[g2], g1, g2, 
+        100*t8['value']/(NG*(NG+1)/2));
+        
 od od:
+print(t1,t2,t3,t4,t5,t6,t7,t8);
 
 ids := CreateArray(1..Goff[NG+1],''):
 for i to NG do DB := DBs[i]; for x1 to ns[i] do
