@@ -43,6 +43,13 @@ LengthTol := 0.61;
 # discarded.
 StablePairTol := 1.81;
 
+# During the stable pair formation, if the within species evolutionary distance 
+# difference is more than InparalogTol standard deviations closer than the 
+# distance to the other species, a pair is still considered inparalog even 
+# if they don't fullfil the StablePairTol criterion
+InparalogTol := 3.00;
+
+
 # For the verification of stable pairs, there is also a tolerance parameter 
 # (for details, see Dessimoz et al, Nucl Acids Res 2006)
 VerifiedPairTol := 1.53;
@@ -107,7 +114,6 @@ SpeciesTree := 'estimate';
 # The cutoff of 'average reachability within two steps' defines up to what 
 # point a cluster is split into sub-clusters.
 ReachabilityCutoff := 0.65;
-
 
 
 ###############################################################################
