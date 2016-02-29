@@ -6,6 +6,15 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 1.0.5 to 1.0.6
+======================================
+This is a bugfix release only
+
+Bug Fixes
+---------
+- ignore .DS_store files in Cache folder
+
+
 Summary of Changes from 1.0.4 to 1.0.5
 ======================================
 This is a bugfix release only
