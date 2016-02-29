@@ -418,7 +418,7 @@ fi:
 ## Parallel version:
 ## At this point, check whether all files are ready. If not
 ## exit (another process will pick from there on!)
-f := TimedCallSystem('find Cache/AllAll -type f | grep -v ".gz"')[2]:
+f := TimedCallSystem('find Cache/AllAll -type f | grep -v ".gz" | grep -v ".DS_store"')[2]:
 if length(f) > 0 then
     print('** At least 1 process appears to be still computing the all-vs-all.');
     print('** The following file(s) is (are) not yet completed:');
