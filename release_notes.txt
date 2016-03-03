@@ -13,6 +13,7 @@ This is a bugfix release only
 Bug Fixes
 ---------
 - ignore .DS_store files in Cache folder
+- improve a few messages to be easier to understand
 
 
 Summary of Changes from 1.0.4 to 1.0.5
