@@ -428,7 +428,10 @@ if length(f) > 0 then
 fi:
 
 if only_run_allall=true then
-    print('\n\n*** terminating after AllAll phase due to user flag. ***');
+    print('\n\n*** All all-vs-all jobs successfully terminated.     ***');
+    print('*** terminating after AllAll phase due to "-s" flag. ***');
+    print('*** if you see this message at the end of one job,   ***'); 
+    print('*** this means that all jobs successfully finished.  ***\n');
     quit;
 fi:
 
