@@ -215,8 +215,15 @@ if NG < 2 then
           .'%d genome found... make sure that your genomes (in fasta format)\n'
           .'are located in a directory called "DB", itself located in\n'
           .'the present directory.\n\n', NG);
-    quit;
+    exit(1);
 fi;
+
+if only_run_dbconv=true then 
+    printf('\n\n*******\n');
+    printf('*** You specified to stop after the database conversion step (i.e. you ***\n');
+    printf('*** set the "-c" flag). Database conversion successfully finished.     ***\n');
+    done
+fi:
 
 
 ##############################################################################

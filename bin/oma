@@ -35,6 +35,9 @@ options:
                 memory for the later phases of OMA. It allows to stop after the 
                 parallelized step and restart again a single process with more
                 memory.
+  -c            stop after database conversion. This option is useful if you 
+                work with a large dataset and/or the filesystem you use is 
+                slow. 
   -h/?          this help
 
 paramfile       path to the parameter file. it defaults to ./parameters.drw
@@ -56,7 +59,8 @@ localParallel="0"
 darwin_flag="-E -q"
 interactive=""
 earlyStop="false"
-while getopts "hn:vd:is" opt ; do
+convOnly="false"
+while getopts "hn:vd:isc" opt ; do
     case $opt in 
     h) usage
          exit 0
@@ -83,6 +87,8 @@ while getopts "hn:vd:is" opt ; do
          interactive="1"
          ;;
     s)   earlyStop="true;"
+         ;;
+    c)   convOnly="true;"
          ;;
     \?)  echo "invalid option" >&2
          usage
@@ -128,6 +134,7 @@ if e=lasterror then print('$paramerror'): exit(1): fi:
 printlevel := $dbglevel: 
 OMA_STANDALONE_VERSION := '[VERSIONNR]':
 only_run_allall := $earlyStop:
+only_run_dbconv := $convOnly;
 ReadProgram('$OMA_PATH/OMA.drw'):
 EOC
 )
