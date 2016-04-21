@@ -1,0 +1,213 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 2.0
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 2.0 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/2.0/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is OMA standalone.
+#
+# The Initial Developer of the Original Code is CBRG Research Group; 
+# ETH Zurich; Switzerland.
+# Portions created by the Initial Developer are Copyright (C) 2005-2015
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#   Christophe Dessimoz <cdessimoz@ucl.ac.uk>
+#   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
+#   Stefan Zoller <stefan.zoller@inf.ethz.ch>
+#   Adrian Schneider <adrian.schneider@inf.ethz.ch>
+#   Alexander Roth <alexander.roth@inf.ethz.ch>
+#   Gaston Gonnet <gonnet@inf.ethz.ch>
+#
+# ***** END LICENSE BLOCK *****
+
+module external ConvertGenomes;
+
+RestartAsSingleStep := proc(pinf)
+    msg := sprintf('*********************************************************************\n'.
+                   'Job %d [pid %d]: waiting for too long. abort.\n\n'.
+                   'It seems that your parallelisation framework hasn''t launched the \n'. 
+                   'master job properly, or you are using a very slow filesystem.\n'.
+                   'Please restart a single process of OMA with the command line \n'.
+                   'option "-c" to just convert the databases. Once this job successfully\n'.
+                   'finished, you can restart OMA with many parallel jobs.\n', 
+                   pinf['ProcNr'], getpid());
+    prints(msg);
+end:
+
+ComputeDatasetHash := proc(dataset)
+    buf := []:
+    for file in dataset do
+        fs := FileStat(file):
+        buf := append(buf, file, string(fs['st_mtime']));
+    od:
+    return(sha2(ConcatStrings(buf,' ')));
+end:
+
+convRunning := proc(isRunning):
+    fn := 'Cache/conversion.running':
+    if nargs=0 then
+        return(FileExists(fn));
+    elif isRunning then
+        OpenWriting(fn):
+        printf('# dataset conversion started at %s on %s (pid %d), time %f\n', date(),
+            hostname(), getpid(), time());
+        OpenWriting(previous);
+    else
+        CallSystem('rm '.fn);
+    fi:
+end: 
+
+convDone := proc(dataset_hash, signal_flag)
+    global __DATASETHASH;
+    filename := 'Cache/conversion.done';
+    if nargs=1 then
+        if FileExists(filename) then
+            ReadProgram(filename);
+            return(dataset_hash = __DATASETHASH);
+        fi:
+        return(false);
+    elif nargs=2 and args[2] then
+        OpenWriting(filename);
+        printf('# finished at %s on %s (pid %d), time %f\n', date(), hostname(),
+            getpid(), time());
+        printf('__DATASETHASH := %A:\n', dataset_hash);
+        OpenWriting(previous);
+        convRunning(false):
+    fi:
+end:
+
+WaitUntilConversionDone := proc(dataset_hash, pinf):
+    tested_if_running := false; tot_sleep := 0:
+    for k to min(5*length(G), 100) do
+        if convDone(dataset_hash) then 
+             if printlevel>1 then
+                 printf('job %d [pid %d]: conversion done; waited for %d sec\n', 
+                        pinf['ProcNr'], getpid(), tot_sleep);
+             fi:
+             return();
+        fi:
+        if printlevel>1 then 
+            printf('job %d [pid %d]: waited for %d sec, conversion status: %s\n', 
+                   pinf['ProcNr'], getpid(), tot_sleep, 
+                   If(tested_if_running,'is running', 'waiting'));
+        fi:
+        next_amount_of_sleep := min(20, ceil(Rand()*2^k));
+        sleep(next_amount_of_sleep);
+        tot_sleep := tot_sleep + next_amount_of_sleep;
+        if k > 2 and not tested_if_running then
+            if convRunning() then 
+                tested_if_running := true;
+            elif k > 10 then
+                RestartAsSingleStep(pinf);
+                exit(1);
+            fi:
+        fi:
+    od:
+    RestartAsSingleStep(pinf);;
+    exit(1);
+end:
+
+
+# convert the list of genomes. args are G (list of fasta file names)
+# and pinf (the ParallelInfo datastructure)
+# the function will assign the results in global variables
+ConvertGenomes := proc(G, pinf)
+    global DB, GS, DBs, genomes, isContig:
+
+    dataset_hash := ComputeDatasetHash(G);
+    # if not job nr 1, wait until conversion of DBs are done.
+    if pinf['ProcNr']>1 then
+        WaitUntilConversionDone(dataset_hash, pinf);
+    fi:
+    
+    GS := table();
+    DBs := genomes := isContig := [];
+    if pinf['ProcNr']=1 and not ReuseCachedResults then
+        CallSystem('rm -rf Cache');
+    fi;
+    CallSystem('mkdir -p Cache/DB');
+    if pinf['ProcNr']=1 and not convDone(dataset_hash) then convRunning(true); fi:
+    for g in G do
+        off := SearchAllString('/', g);
+        gname := g[off[-1]+1..-1];
+        if SearchString('contig',gname) > -1 then
+            isContig := append(isContig,true);
+        else
+            isContig := append(isContig,false);
+        fi;
+        off := SearchString('.',gname);
+        gname := gname[1..off];
+        if SearchArray(gname,genomes) <> 0 then
+            error('More than one genome labelled '.gname);
+            quit;
+        fi;
+        if length(genomes) = 9999 then
+            print('too many genomes');
+        fi;
+        genomes := append(genomes,gname);
+    
+        # compute sha2 of fasta file.
+        checksum := sha2(ReadRawFile(g))[1..16]:
+        spliceFn := g[1..-3].'splice';
+    
+        # test if cached:
+        if FileExists('Cache/DB/'.gname.'.db') then
+            DB := ReadDb('Cache/DB/'.gname.'.db');
+            if type(DB,database) then
+                fcheck := SearchTag('FASTACHECKSUM', DB['string']);
+                if fcheck<>'' and checksum<>fcheck then
+                    error('cached genome ('.gname.') differs from fasta file');
+                fi:
+                if FileExists(spliceFn) and SearchTag('SPLICEMAP', DB[string])='' then
+                    warning('cached genome ('.gname.') contains no splicing map. Will rebuild cache.');
+                    CallSystem('rm -f Cache/DB/'.gname.'.db');
+                else
+                    GS[gname] := GenomeSummary(DB);
+                    DBs := append(DBs,DB);
+                    # genome is ready, continue with next one.
+                    next;
+                fi:
+            else error('cannot load database for '.gname);
+            fi;
+        fi;
+    
+        ##
+        code := 'S'.sprintf('%04d',length(genomes));
+        input := ReadFastaWithNames(g);
+        ML := If(isContig[-1], MinSeqLenContig, MinSeqLen);
+        input := CleanupSequences(input, gname, ML);
+    
+        if FileExists(spliceFn) then
+            splicemap := EstablishSpliceMap(spliceFn, input[2], input[3]);
+        fi:
+    
+        OpenWriting('Cache/DB/'.gname.'.db');
+        printf('<5LETTERNAME>%s</5LETTERNAME>\n',code);
+        printf('<OS>Unknown</OS>\n');
+        printf('<KINGDOM>Unknown</KINGDOM>\n');
+        printf('<FASTACHECKSUM>%s</FASTACHECKSUM>\n', checksum);
+        if FileExists(spliceFn) then
+            printf('<SPLICEMAP>%A</SPLICEMAP>\n', splicemap);
+        fi:
+        for i to length(input[1]) do
+            printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', input[2,i], input[1,i]);
+        od:
+        OpenWriting(previous);
+        DB := ReadDb('Cache/DB/'.gname.'.db');
+        GS[gname] := GenomeSummary(DB);
+        DBs := append(DBs,DB);
+    od:
+    if pinf['ProcNr']=1 and not convDone(dataset_hash) then
+        convDone(dataset_hash, true); # signal other processes to start.
+    fi:
+end:
+
+end: #module

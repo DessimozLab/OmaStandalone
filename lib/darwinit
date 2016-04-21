@@ -58,7 +58,7 @@ IdentifyPosition := noeval(ReadLibrary (OrthologsLib.'IdentifyPosition.drw',
 DistBounds := noeval(ReadLibrary(OrthologsLib.'IdentifyPosition.drw',
     DistBounds));
 
-
+ConvertGenomes := noeval(ReadLibrary(OrthologsLib.'GenomeConversion', ConvertGenomes));
 CleanupSequences := noeval(ReadLibrary(OrthologsLib.'InputGenomePreProcessing', CleanupSequences));
 EstablishSpliceMap := noeval(ReadLibrary(OrthologsLib.'InputGenomePreProcessing', EstablishSpliceMap));
 FilterBestSplicingMatches := noeval(ReadLibrary(OrthologsLib.'AltSplicing', FilterBestSplicingMatches));
