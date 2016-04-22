@@ -14,8 +14,9 @@ Bug Fixes
 ---------
 - ignore .DS_store files in Cache folder
 - improve a few messages to make problem better understandable.
-- fixes a bug introduced in 1.0.5 that ended up in deadlocks in
-  some situations on HPC systems.
+- fixes a critical bug introduced in 1.0.5 that ended up in 
+  deadlocks in some situations on HPC systems.
+- fixes a slurm specific problem with jobarrays  
 
 
 Summary of Changes from 1.0.4 to 1.0.5
