@@ -202,6 +202,13 @@ OMA')),
         could ', TT('cd'), ' into the ', TT('ToyExample'), ' directory, 
         have a look at ', TT('parameters.drw'), ' and run ', TT('OMA'),
         ' to process our example files.'),
+
+        Anchor(TextBlock('a', name='commandlineoptions', 
+            SectionHeader(2, 'Command-line options'))),
+        Paragraph(0, 'OMA standalone has a few commandline options you can set. 
+        The available options together with a brief description is available using 
+        the "-h" option, i.e. ',TT('OMA -h'),
+        Code('OMA -h\n'.ReplaceString('''', '''''', trim(TimedCallSystem('bin/oma -h')[2])))),
         
         Anchor(TextBlock('a', name='parallelization', 
             SectionHeader(2, 'Parallelization'))
@@ -320,7 +327,7 @@ OMA'), 'Note that this staging is mostly useful on computing clusters where
         Likewise, it is possible to update a genome by deleting the old genome
         from the DB/ directory, and adding a new file. ', Bold('Important: '), 
         'to avoid clashes with previously computed results, the updated genome 
-        must use a different filename than the any previously computed 
+        must use a different filename than any previously computed 
         result.') 
         ,
         
@@ -590,6 +597,13 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         ids might require a substantial amount of time. The ids are stored in the OrthoXML
                         files only.'),
                         TT('false')),
+                    Row(TT('GuessIdType'),
+                       Paragraph(0, 'Enable/disable guessing of the id types while generating the orthoxml
+                       file. In this context we refer to ID type guessing as the task to
+                       gussing whether an ID should be stored in the geneId, protId or
+                       transcriptId tag. If the flag is set to false, the whole fasta header
+                       is used and stored as is in the protId tag.'),
+                       TT('false')),
                     Row(TT('DoHierarchicalGroups'),
                        Paragraph(0, 'Enables/disables the computation of the 
                        hierarchical groups. This steps requires substantial 
