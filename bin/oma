@@ -16,10 +16,15 @@ $0 - runs OMA standalone
 
 $0 [options] [paramfile]
 
+Runs the standalone version of the Orthologous MAtrix (OMA) pipeline
+to infer orthologs among complete genomes. A highlevel description
+of its algorithm is available here: http://omabrowser.org/oma/about
+
 The all-against-all Smith-Waterman alignment step of OMA requires 
 a lot of CPU time. OMA standalone can therefore be run in parallel.
-If you intend to use OMA standalone on a HPC cluster with a LSF 
-or SunGridEngine scheduler, you should use the jobarray option,
+If you intend to use OMA standalone on a HPC cluster with a scheduler
+such as LSF, PBS Pro, Slurm or SunGridEngine, you should use the 
+jobarray option of those systems,
 e.g. bsub -J "oma[1-500]" $0 (on LSF).
      qsub -t 1-500 $0 (on SunGridEngine)
 In case you run OMA on a single computer with several cores, use 
@@ -29,7 +34,8 @@ options:
   -n <number>   number of parallel jobs to be started on this computer
   -v            version
   -d <level>    increase debug info to <level>. By default level is set to 1.
-  -i            interactive session, don't quit in case of error and at end.
+  -i            interactive session, do not quit in case of error and at the end
+                of the run.
   -s            stop after the AllAll phase. This is the part which is parallelized.
                 The option can be useful on big datasets that require lot of 
                 memory for the later phases of OMA. It allows to stop after the 
