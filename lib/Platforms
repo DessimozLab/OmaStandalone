@@ -58,8 +58,6 @@ SunGrid_Platform := proc()
 end:
 
 Slurm_Platform := proc()
-    sleep(3);
-    # wait for a while to let slurm give the full squeue
     jobidx := getenv('SLURM_ARRAY_TASK_ID');
     # if not a jobarray, assume single process and warn user.
     if jobidx = '' then
@@ -68,21 +66,22 @@ Slurm_Platform := proc()
         warning('not run as job-array. Will assume it is a single process.');
     else
         jobidx := parse(jobidx);
-        jobId := getenv('SLURM_ARRAY_JOB_ID');
-        jobsum := TimedCallSystem('scontrol show jobid -dd '.jobId);
-        if jobsum[1]<>0 then
-            error('cannot call ''scontrol'' command successfully');
+        jobmax := getenv('SLURM_ARRAY_TASK_MAX');
+        if jobmax='' then
+            slurm_version := TimedCallSystem('scontol --version');
+            printf('\n\n*******************************************************************\n');
+            printf('Your slurm installation (version: %s) does not yet support our\n', 
+                   If(slurm_version[1]=0, trim(slurm_version[2]), 'n/a'));
+            printf('way to synchronize processes. At least SLURM version 15.08 is\n');
+            printf('required.\n\n');
+            printf('You can mimic the behaviour by manually setting an environment\n'); 
+            printf('variable that stores the number of jobs you want to run in parallel,\n');
+            printf('i.e. the size of the job array:\n');
+            printf('  export SLURM_ARRAY_TASK_MAX=5;\n');
+            printf('You can add this directly to the script you use to launch OMA.\n');
+            exit(1);
         fi:
-        re := MatchRegex('ArrayTaskId=\([[:digit:]]\+\)-\([[:digit:]]\+\)', jobsum[2]);
-        if length(re)<3 then
-            error('Cannot determine total number of jobs in jobarray. requires a range from 1-x');
-        fi:
-        if parse(re[2]) <> 1 then
-            warning(sprintf('ArrayTaskId doesn''t start from 1, but %a instead. Verify that you '.
-                            'started the array with a range from 1-x. If you started a relatively '.
-                            'large array, this warning can probably be ignored.', re[2]));
-        fi:
-        NrParallelProc := parse(re[3]);
+        NrParallelProc := parse(jobmax);
     fi;
     if jobidx < 1 or jobidx > NrParallelProc then
         error('require range from 1-x of jobarray.');
