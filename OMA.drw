@@ -469,7 +469,9 @@ else
         DB := DBs[i];
         tmp := CreateArray(1..ns[i]);
         for j to DB[TotEntries] do
-            tmp[j] := SearchTag('ID',Entry(j));
+            e := Entry(j):
+            tmp[j] := SearchTag('FASTAHEADER', e); 
+            if tmp[j]='' then tmp[j] := SearchTag('ID', e); fi:
             printf('%s\t%d\t%s\n',genomes[i],j,tmp[j]);
         od;
         IDtable[i] := tmp;

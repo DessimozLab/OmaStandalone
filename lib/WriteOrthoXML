@@ -88,7 +88,11 @@ WriteGeneRefs := proc()
         DB := DBs[gNr];
         for i to GS[g,TotEntries] do 
             id := id+1;
-            refs := GetBestIDs(Entry(i));
+            if not GuessIdType=false then 
+                refs := GetBestIDs(Entry(i));
+            else
+                refs := [IDtable[gNr,i], '', '']:
+            fi:
             printf('    <gene id="%d" protId="%s"%s%s/>\n', id, 
                 refs[1], 
                 If(refs[2]<>'',sprintf(' transcriptId="%s"',refs[2]),''), 
@@ -200,7 +204,7 @@ getParamsAsNotes := proc()
     return(ConcatStrings(params, '; '));
 end:
 
-WriteOrthoXML := proc(data, fn:string ; (stableGroupIDs=false):boolean )
+WriteOrthoXML := proc(data, fn:string ; (stableGroupIDs=false):boolean)
     
     NS := length(genomes):
     Goff := CreateArray(1..NS+1):
