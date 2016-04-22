@@ -84,6 +84,13 @@ UseExperimentalHomologousClusters := false;
 # are stored in the OrthoXML files only.
 StableIdsForGroups := false;
 
+# Enable/disable guessing of the id types while generating the orthoxml
+# file. In this context we refer to ID type guessing as the task to 
+# gussing whether an ID should be stored in the geneId, protId or 
+# transcriptId tag. If the flag is set to false, the whole fasta header 
+# is used and stored as is in the protId tag.
+GuessIdType := false;
+
 # Avoid producing some of the output files. This can reduce computing time
 # and especially avoids the generation of many files in large analysis. By 
 # default all the output files are generated. Uncomment certain lines to 
