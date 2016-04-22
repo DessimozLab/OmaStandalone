@@ -107,116 +107,24 @@ elif not assigned(InputDataType) or InputDataType='AA' then
 else error('unexpected value for ''InputDataType'': '.str(InputDataType));
 fi:
 
+# this assinges DBs, GS, genomes, isContig and DB
+ConvertGenomes(G, pinf);
 
-# if not job nr 1, wait until conversion of DBs are done.
-convDone := proc()
-    filename := 'Cache/conversion.done';
-    if nargs=0 then
-        return(FileExists(filename));
-    elif nargs=1 and args[1] then
-        OpenWriting(filename);
-        printf('# finished at %s on %s (pid %d), time %f\n', date(), hostname(),
-            getpid(), time());
-        OpenWriting(previous);
-    fi:
-end:
-if pinf['ProcNr']>1 then
-    for k to 5*length(G) while not convDone() do
-        sleep(min(20, ceil(Rand()*2^k)))
-    od:
-    if not convDone() then
-        printf('job %d [pid %d]: waiting for too long. abort.\n', pinf['ProcNr'], getpid());
-        exit(1);
-    fi:
-fi:
-
-GS := table();
-DBs := genomes := isContig := [];
-if pinf['ProcNr']=1 and not ReuseCachedResults then
-    CallSystem('rm -rf Cache');
-fi;
-CallSystem('mkdir -p Cache/DB');
-for g in G do
-    off := SearchAllString('/', g);
-    gname := g[off[-1]+1..-1];
-    if SearchString('contig',gname) > -1 then
-        isContig := append(isContig,true);
-    else
-        isContig := append(isContig,false);
-    fi;
-    off := SearchString('.',gname);
-    gname := gname[1..off];
-    if SearchArray(gname,genomes) <> 0 then
-        error('More than one genome labelled '.gname);
-        quit;
-    fi;
-    if length(genomes) = 9999 then
-        print('too many genomes');
-    fi;
-    genomes := append(genomes,gname);
-
-    # compute sha2 of fasta file.
-    checksum := sha2(ReadRawFile(g))[1..16]:
-    spliceFn := g[1..-3].'splice';
-
-    # test if cached:
-    if FileExists('Cache/DB/'.gname.'.db') then
-        DB := ReadDb('Cache/DB/'.gname.'.db');
-        if type(DB,database) then
-            fcheck := SearchTag('FASTACHECKSUM', DB['string']);
-            if fcheck<>'' and checksum<>fcheck then
-                error('cached genome ('.gname.') differs from fasta file');
-            fi:
-            if FileExists(spliceFn) and SearchTag('SPLICEMAP', DB[string])='' then
-                warning('cached genome ('.gname.') contains no splicing map. Will rebuild cache.');
-                CallSystem('rm -f Cache/DB/'.gname.'.db');
-            else
-                GS[gname] := GenomeSummary(DB);
-                DBs := append(DBs,DB);
-                # genome is ready, continue with next one.
-                next;
-            fi:
-        else error('cannot load database for '.gname);
-        fi;
-    fi;
-
-    ##
-    code := 'S'.sprintf('%04d',length(genomes));
-    input := ReadFastaWithNames(g);
-    ML := If(isContig[-1], MinSeqLenContig, MinSeqLen);
-    input := CleanupSequences(input, gname, ML);
-
-    if FileExists(spliceFn) then
-        splicemap := EstablishSpliceMap(spliceFn, input[2], input[3]);
-    fi:
-
-    OpenWriting('Cache/DB/'.gname.'.db');
-    printf('<5LETTERNAME>%s</5LETTERNAME>\n',code);
-    printf('<OS>Unknown</OS>\n');
-    printf('<KINGDOM>Unknown</KINGDOM>\n');
-    printf('<FASTACHECKSUM>%s</FASTACHECKSUM>\n', checksum);
-    if FileExists(spliceFn) then
-        printf('<SPLICEMAP>%A</SPLICEMAP>\n', splicemap);
-    fi:
-    for i to length(input[1]) do
-        printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', input[2,i], input[1,i]);
-    od:
-    OpenWriting(previous);
-    DB := ReadDb('Cache/DB/'.gname.'.db');
-    GS[gname] := GenomeSummary(DB);
-    DBs := append(DBs,DB);
-od:
-if pinf['ProcNr']=1 and not convDone() then
-    convDone(true); # signal other processes to start.
-fi:
 NG := length(genomes):
 if NG < 2 then
     printf('\n\n'
           .'%d genome found... make sure that your genomes (in fasta format)\n'
           .'are located in a directory called "DB", itself located in\n'
           .'the present directory.\n\n', NG);
-    quit;
+    exit(1);
 fi;
+
+if only_run_dbconv=true then 
+    printf('\n\n*******\n');
+    printf('*** You specified to stop after the database conversion step (i.e. you ***\n');
+    printf('*** set the "-c" flag). Database conversion successfully finished.     ***\n');
+    done
+fi:
 
 
 ##############################################################################
