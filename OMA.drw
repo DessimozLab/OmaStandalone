@@ -548,11 +548,13 @@ else
             printf('#nr1\tnr2\tid1\tid2\tScore\tPamDist\n');
             for x1 to ns[g1] do 
                 pp := decompress(ParalogPairs[g1,g2,x1]);
-                for y2 in pp do 
-                    printf('%d\t%d\t%s\t%s\t%.2f\t%.2f\n',
-                        x1, y2['Entry'], IDtable[g1,x1], IDtable[g2, y2['Entry']],
-                        y2['Score100']/100, y2['PamDist10000']/10000);
-                od:
+                if length(pp)>0 then for bm in decompress(BestMatch[g1,g2,x1]) do
+                    if member(bm['Entry'], pp) then 
+                    	printf('%d\t%d\t%s\t%s\t%.2f\t%.2f\n',
+                               x1, bm['Entry'], IDtable[g1,x1], IDtable[g2, bm['Entry']],
+                               bm['Score100']/100, bm['PamDist10000']/10000);
+                    fi:
+                od fi:
             od:
             OpenWriting(previous);
         od;od:

@@ -126,6 +126,7 @@ for X to NG do for Y to NG do if X <> Y then
             t := sort(decompress(BestMatch[X,Y,x1]),x->-x[PamDist10000]);
             lt := length(t);
             active := CreateArray(1..lt,true);
+            paralogs := []:
             if X > Y then for i1 to lt do
                 if member(x1,decompress(StablePairs[Y,X,t[i1,Entry]])) then break;
                 else active[i1] := false fi 
@@ -166,7 +167,7 @@ for X to NG do for Y to NG do if X <> Y then
                         if not active[i1] then 
                             if diff > ParalogTol * sqrt(1000*(t[i1,PamVar100000] + t[i2,PamVar100000])) or 
                                     diff > ParalogTol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP')  then
-                                ParalogPairs[X,Y,x1] := append(ParalogPairs[X,Y,x1], t[i1]);
+                                paralogs := append(paralogs, t[i1, 'Entry']);
                             fi:
                         fi:
                     fi:
@@ -181,7 +182,7 @@ for X to NG do for Y to NG do if X <> Y then
                         i1=1..lt ) };
             rempairs := rempairs + lt - length(StablePairs[X,Y,x1]);
             StablePairs[X,Y,x1] := compress(StablePairs[X,Y,x1]);
-            ParalogPairs[X,Y,x1] := compress(ParalogPairs[X,Y,x1]);
+            ParalogPairs[X,Y,x1] := compress({op(paralogs)});
         fi;
     od;
     printf( '%d stable pairs found for %s vs %s\n',
