@@ -37,7 +37,7 @@ XMLEscape := proc(s:string)
     # Search for escape characters in string.
     escape_chars := [['&', '&amp;'],
                      ['"', '&quot;'],
-                     #['\'', '&apos;'],
+                     ['''', '&apos;'],
                      ['<', '&lt;'],
                      ['>', '&gt;']]:
 
