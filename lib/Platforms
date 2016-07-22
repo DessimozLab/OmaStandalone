@@ -128,7 +128,16 @@ PBS_Platform := proc()
 end:
 
 DetectParallelInfo := proc()
-    if getenv('LSB_JOBID')<>'' then
+    if getenv('NR_PROCESSES')<>'' and getenv('THIS_PROC_NR')<>0 then
+        NR_PROCESSES := parse(getenv('NR_PROCESSES')):
+        THIS_PROC_NR := parse(getenv('THIS_PROC_NR')):
+    fi:
+    if type(NR_PROCESSES,posint) then
+        if not type(THIS_PROC_NR,posint) then 
+            error('oma standalone is not propperly started. bye.');
+        fi:
+        return(ParallelInfo(NR_PROCESSES,THIS_PROC_NR));
+    elif getenv('LSB_JOBID')<>'' then
         return(LSF_Platform());
     elif getenv('SGE_ROOT')<>'' then
         return(SunGrid_Platform());
@@ -136,11 +145,6 @@ DetectParallelInfo := proc()
         return(Slurm_Platform());
     elif getenv('PBS_ARRAY_INDEX') <> '' then
         return(PBS_Platform());
-    elif type(NR_PROCESSES,posint) then
-        if not type(THIS_PROC_NR,posint) then 
-            error('oma standalone is not propperly started. bye.');
-        fi:
-        return(ParallelInfo(NR_PROCESSES,THIS_PROC_NR));
     else 
         return(ParallelInfo(1,1));
     fi:
