@@ -1,5 +1,5 @@
 ============================================
- Release notes for OMA Standalone 1.x series
+ Release notes for OMA standalone 1.x series
 ============================================
 
  :Author: Oma Developers
@@ -97,7 +97,7 @@ Bug Fixes
 Summary of Changes from 0.99v to 1.0.0
 ======================================
 
-With the release of OmaStandalone 1.x series we switch from a
+With the release of OMA standalone 1.x series we switch from a
 beta to a stable software product.
 
 Additional features

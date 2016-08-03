@@ -53,7 +53,7 @@ end:
 WriteXMLHeader := proc(release:string ; notes:string)
     printf('<?xml version="1.0" encoding="UTF-8"?>\n');
     printf('<orthoXML xmlns="http://orthoXML.org/2011/" version="0.3" '.
-        'origin="OMA Standalone" originVersion="%s">\n', XMLEscape(release));
+        'origin="OMA standalone" originVersion="%s">\n', XMLEscape(release));
     if assigned(notes) then
         printf(' <notes>\n%s\n </notes>\n', notes);
     fi:
