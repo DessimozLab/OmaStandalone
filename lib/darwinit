@@ -35,7 +35,7 @@ fi:
 
 # everything containing 'utildir' will not be part of distributed tarball
 utildir := OrthologsLib.'/../utils/';
-MergeOMAGroups := noeval(ReadLibrary(utildir.'MergeOMAGroups',MergeOMAGroups)):
+MergeOMAGroups := noeval(ReadLibrary( OrthologsLib.'MergeOMAGroups',MergeOMAGroups)):
 
 OrthologousMatrix := noeval(ReadLibrary( OrthologsLib.'OrthologousMatrix',
 	OrthologousMatrix)):
