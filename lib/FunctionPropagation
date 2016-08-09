@@ -1,0 +1,286 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 2.0
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 2.0 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/2.0/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is OMA standalone.
+#
+# The Initial Developer of the Original Code is CBRG Research Group; 
+# ETH Zurich; Switzerland.
+# Portions created by the Initial Developer are Copyright (C) 2005-2013
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#   Christophe Dessimoz <cdessimoz@inf.ethz.ch>
+#   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
+#   Stefan Zoller <stefan.zoller@inf.ethz.ch>
+#   Adrian Schneider <adrian.schneider@inf.ethz.ch>
+#   Alexander Roth <alexander.roth@inf.ethz.ch>
+#   Gaston Gonnet <gonnet@inf.ethz.ch>
+#
+# ***** END LICENSE BLOCK *****
+
+# -- Added to OMA standalone by Alex Warwick Vesztrocy, August 2016.
+module external PropagateFunctionByGroup:
+
+
+# Hard-coded experimental evidence codes, trusted evidence codes 
+# (except IEA) / trusted IEA reference codes
+EXP_EV_CODES := {'EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP'}:
+EV_CODES := {'EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP', 
+             'ISS', 'ISO', 'ISA', 'ISM', 'IGC', 'IBA', 
+             'IBD', 'IKR', 'IRD', 'RCA', 'TAS', 'IEA'}:
+REF_CODES := {'GO_REF:002', 'GO_REF:003', 'GO_REF:004', 
+              'GO_REF:023', 'GO_REF:037', 'GO_REF:038',
+              'GO_REF:039', 'GO_REF:040'}:
+OMA_GROUP_REF_CODE := 'OMA_Fun:001':
+
+
+# Gene Ontology caching
+go_super := proc(id)
+    return(remember(GOsuperclassR(id))):
+end:
+go_sub := proc(id)
+    return(remember(GOsubclassR(id))):
+end:
+
+# Propagation strategy
+prop_strategy := proc(annot_count, group_size)
+    return(annot_count >= min(3, group_size/2)):
+end:
+
+
+# Filter functions
+filter_unreliable_iea := proc(ev, refs)
+    return(member(ev, EV_CODES) and (ev<>'IEA' or length(intersect(REF_CODES, refs)) > 0)):
+end:
+filter_experimental := proc(ev, refs)
+    return(member(ev, EXP_EV_CODES)):
+end:
+
+
+# Annotation parser - also filters them using a proc.
+parse_annots := proc(s, filter:procedure)
+    annots := []:
+    for a in SearchDelim('; ', s) do
+        k := SearchString('@', a):
+        ev_s := parse(a[k+2..-1]):
+        for ev in ev_s do
+            if filter(op(ev)) then
+                annots := append(annots, parse(a[4..k])):
+                break: 
+            fi:
+        od:
+    od:
+    return(annots):
+end:
+
+
+# Encode annotation
+encode_annot := proc(id, ev_s)
+    return(sprintf('GO:%07d@%A', id, ev_s)):
+end:
+
+
+# Add annotations to DB annot string.
+add_annots := proc(s, new_annots)
+    annots := []:
+    # Compress set of annotations
+    for a in SearchDelim('; ', s) do
+        k := SearchDelim('@', a):
+        id := parse(a[4..k]):
+        if not member(id, new_annots) then
+            annots := append(annots, a):
+        else
+            ev_s := parse(a[k+2..-1]):
+            used_in_inf := false:
+            for ev in ev_s do
+                if filter_unreliable_iea(ev[1], ev[2]) then
+                    used_in_inf := true:
+                    break:
+                fi:
+            od:
+            if not used_in_inf then
+                # Add OMA reference codes
+                assert(ev_s[-1,1]='IEA'): # !! Is this requried, or a test?
+                ev_s[-1,2] := append(ev_s[-1,2], OMA_GROUP_REF_CODE):
+                annot := encode_annot(id, ev_s):
+            else:
+                annot := a:
+            fi:
+
+            annots := append(annots, annot):
+            new_annots := minus(new_annots, {id}):
+        fi:
+    od:
+
+    # Add the reset in new_annots
+    for annot in new_annots do
+        annots := append(annots, 
+                         encode_annot(annot, [['IEA', {OMA_GROUP_REF_CODE}]]));
+    od:
+
+    # Return as concatenated string
+    return(ConcatStrings(annots, '; ')):
+end:
+
+
+# Create clade term table
+CLADES := {'Bacteria', 'Archaea', 'Fungi', 'Viridiplantae', 'Nematoda',
+           'Arthropoda', 'Mammalia', 'Sauria', 'Dictyostelium', 
+           'Clupeocephala', 'Amphibia'}:
+# Generate an organism to clade mapping table
+gen_org2clade_map := proc()
+    org2clade := table():
+    for g in genomes do
+        for clade in CLADES do
+            if SearchArray(clade, GS[g, 'Lineage']) > 0 then
+                org2clade[g] := clade:
+                break:
+            fi:
+        od:
+    od:
+    return(org2clade):
+end:
+
+# Generate
+gen_clade_terms := proc(org2clade)
+    global DB:
+    clade_terms := table([], []):
+    c := 0:
+    for i to NG do
+        DB := DBs[i]:
+        clade := org2clade[genomes[i]]:
+        if clade=unassigned then
+            printf('%s does not belong to a valid clade.\n', genomes[i]): 
+        fi:
+
+        for j to GS[genomes[i], 'TotEntries'] do
+            e := Entry(j):
+            exp_annots := parse_annots(SearchTag('GO', e), filter_experimental):
+
+            c := c+1:
+            #if mod(c, 50000)=0 then
+            #    printf('Collected experimental annotations of %d proteins.\n', c):
+            #fi:
+            if length(exp_annots) > 0 then
+                clade_terms[clade] := append(clade_terms[clade], op(exp_annots)):
+                if length(clade_terms[clade]) > 30000 then
+                    clade_terms[clade] := [op({op(clade_terms[clade])})]:
+                fi:
+            fi:
+        od:
+    od:
+    
+    # Add parent GO terms
+    for clade in Indices(clade_terms) do
+        l := []:
+        for term in {op(clade_terms[clade])} do
+            l := append(l, op(go_super(term)), term):
+        od:
+        clade_terms[clade] := {op(l)}:
+    od:
+
+    return(clade_terms):
+end:
+
+
+# GAF writer
+write_to_gaf := proc(fn:string)
+    # TODO: write out to the file in the Output directory as GAF 
+end:
+
+
+# Propagate these annotations
+PropagateFunctionByGroup := proc(Ort:matrix(numeric))
+    global DB:
+
+    org2clade := gen_org2clade_map():
+    clade_terms := gen_clade_terms(org2clade):
+    n_groups := length(Ort):
+    for i to n_groups do
+        printf('Propagating function through group %d/%d\r', i, n_groups):
+        annots := table(0):
+        group_size := 0:
+        cached_entry_annots := table():
+        
+        for j to NG do
+            DB := DBs[j]:
+            e_num := Ort[i,j]:
+            if e_num<>0 then
+                e_annots := parse_annots(SearchTag('GO', Entry(e_num)), 
+                                         filter_unreliable_iea):              
+                impl_annots := {seq(op(go_super(z)), z=e_annots)} minus {op(e_annots)}:
+                for as in [e_annots, impl_annots] do
+                    for a in as do
+                        annots[a] := annots[a] + 1:
+                    od:
+                od:
+                group_size := group_size + 1:
+                cached_entry_annots[j] := e_annots:
+            fi:
+        od:
+        # Find annotations which have enough representation in the group
+        group_annots := {seq(If(prop_strategy(annots[z], group_size), z, NULL), 
+                         z=Indices(annots))}:
+        # Take most specific annotations only
+        specific_annots := []:
+        for a in group_annots do
+            if length(intersect({op(go_sub(a))}, group_annots))=0 then
+                specific_annots := append(specific_annots, a):
+            fi:
+        od:
+        specific_annots := {op(specific_annots)}:
+
+        added := 0:
+        for j to NG do
+            e_num := Ort[i,j]:
+            clade := org2clade[genomes[j]]:
+
+            if e_num<>0 and clade<>unassigned then
+                candidates := minus(specific_annots, {op(cached_entry_annots[j])}):
+                validated := []:
+
+                for candidate in candidates do
+                    if member(candidate, clade_terms(clade)) then
+                        validated := append(validated, candidate):
+                    else
+                        # Find most specific parent terms that are valid for this clade
+                        possible_parents := intersect(clade_terms[clade], 
+                                                      {op(go_super(candidate))}):
+                        for parent in possible_parents do:
+                            if length(intersect({op(go_sub(parent))}, possible_parents))=0 then
+                                validated := append(validated, parent):
+                            fi:
+                        od:
+                    fi:
+                od:
+
+                # Write the annotations to the GAF file here.
+                annots_to_write := minus({op(validated)}, {op(cached_entry_annots[j])}):
+                # TODO: add those from the DB using AddAnnotations OR alter this so that it 
+                # doesn't output text. 
+                
+                ## Count these up
+                #added := added + length(annots_to_write):
+                #if length(annots_to_write)>0 then
+                #    printf('\nAdded to species %d entry %d: %a\n', j, e_num, annots_to_write):
+                #fi:
+            fi:
+        od:
+        #if added<>0 then
+        #    printf('\nAdded %d to group %d.\n', added, i):
+        #fi:
+    od:
+    printf('\n'):
+end:
+
+end: # module

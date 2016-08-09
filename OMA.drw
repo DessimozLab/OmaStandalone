@@ -445,7 +445,7 @@ else
     fi:
 
     if DoHierarchicalGroups=true then
-        if SpeciesTree='estimate' then
+        if SpeciesTree='estimate' then;
             speciesTree := BuildSpeciesTree( Ort );
         elif SpeciesTree='lineage' then
             speciesTree := NULL:
@@ -481,6 +481,10 @@ else
     if DoHomologyFunctionPrediction=true then
         PredictViaHomology();
     fi:
+
+    #if DoGroupFunctionPrediction=true then
+    PropagateFunctionByGroup(Ort);
+    #fi:
 
     ############################################################################
     # Store results
