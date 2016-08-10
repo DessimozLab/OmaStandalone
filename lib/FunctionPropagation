@@ -29,7 +29,7 @@
 # ***** END LICENSE BLOCK *****
 
 # -- Added to OMA standalone by Alex Warwick Vesztrocy, August 2016.
-module external PropagateFunctionByGroup:
+module external PropagateFunctionByGroup, WriteGAF:
 
 
 # Hard-coded experimental evidence codes, trusted evidence codes 
@@ -51,6 +51,22 @@ end:
 go_sub := proc(id)
     return(remember(GOsubclassR(id))):
 end:
+go_aspect := proc(id)
+    return(remember(go_aspect_(id))):
+end:
+go_aspect_ := proc(id)
+    super := {op(go_super(id))}:
+    if length(intersect({8150}, super)) > 0 then
+        # Biological Process
+        return('P'):
+    elif length(intersect({3674}, super)) > 0 then
+        # Molecular Function
+        return('F'):
+    else
+        # Cellular Component
+        return('C')
+    fi:
+end:
 
 # Propagation strategy
 prop_strategy := proc(annot_count, group_size)
@@ -64,6 +80,9 @@ filter_unreliable_iea := proc(ev, refs)
 end:
 filter_experimental := proc(ev, refs)
     return(member(ev, EXP_EV_CODES)):
+end:
+filter_retall := proc(ev, refs)
+    return(true):
 end:
 
 
@@ -84,52 +103,77 @@ parse_annots := proc(s, filter:procedure)
 end:
 
 
-# Encode annotation
-encode_annot := proc(id, ev_s)
-    return(sprintf('GO:%07d@%A', id, ev_s)):
+## Encode annotation
+#encode_annot := proc(id, ev_s)
+#    return(sprintf('GO:%07d@%A', id, ev_s)):
+#end:
+
+
+# Load the evidence structure into a hash table.
+load_ev := proc(evidence)
+    ev_s := table([]):
+    for ev in evidence do
+        if ev[1]<>IEA then
+            NULL:
+        else
+            # Strip OMA evidence code.
+            ev[2] := ev[2] minus {OMA_GROUP_REF_CODE}:
+        fi:
+
+        if length(ev[2]) > 0 then
+            ev_s[ev[1]] := [op(ev[2])]:
+        fi:
+    od:
+    return(ev_s):
 end:
 
 
-# Add annotations to DB annot string.
-add_annots := proc(s, new_annots)
-    annots := []:
+# Combine annotation terms with DB annotation string.
+NEW_TERM_EV := table():
+NEW_TERM_EV[IEA] := [OMA_GROUP_REF_CODE]:
+combine_terms := proc(s, new_terms_)
+    # Ensure new terms is a set.
+    new_terms := {op(new_terms_)}:
+    
     # Compress set of annotations
+    annots := []:
     for a in SearchDelim('; ', s) do
-        k := SearchDelim('@', a):
+        k := SearchString('@', a):
         id := parse(a[4..k]):
-        if not member(id, new_annots) then
-            annots := append(annots, a):
-        else
-            ev_s := parse(a[k+2..-1]):
-            used_in_inf := false:
-            for ev in ev_s do
-                if filter_unreliable_iea(ev[1], ev[2]) then
-                    used_in_inf := true:
-                    break:
+        ev_s := load_ev(parse(a[k+2..-1])):
+        if length(ev_s)>0 then
+            if not member(id, new_terms) then
+                annots := append(annots, [id, ev_s]):
+            else
+                used_in_inf := false:
+                for ev in Indices(ev_s) do
+                    if not filter_unreliable_iea(ev, {op(ev_s[ev])}) then
+                        NULL:
+                    else
+                        used_in_inf := true:
+                        break:
+                    fi:
+                od:
+                if not used_in_inf then
+                    if ev_s[IEA]<>unassigned then
+                        ev_s[IEA] := append(ev_s[IEA], OMA_GROUP_REF_CODE):
+                    else
+                        ev_s[IEA] := [OMA_GROUP_REF_CODE]:
+                    fi:
                 fi:
-            od:
-            if not used_in_inf then
-                # Add OMA reference codes
-                assert(ev_s[-1,1]='IEA'): # !! Is this requried, or a test?
-                ev_s[-1,2] := append(ev_s[-1,2], OMA_GROUP_REF_CODE):
-                annot := encode_annot(id, ev_s):
-            else:
-                annot := a:
+                annots := append(annots, [id, ev_s]):
+                new_terms := new_terms minus {id}:
             fi:
-
-            annots := append(annots, annot):
-            new_annots := minus(new_annots, {id}):
         fi:
     od:
 
-    # Add the reset in new_annots
-    for annot in new_annots do
-        annots := append(annots, 
-                         encode_annot(annot, [['IEA', {OMA_GROUP_REF_CODE}]]));
-    od:
+    # Add the rest in new_annots
 
-    # Return as concatenated string
-    return(ConcatStrings(annots, '; ')):
+    for id in new_terms do
+        annots := append(annots, [id, NEW_TERM_EV]):
+    od:
+    
+    return(annots):
 end:
 
 
@@ -151,15 +195,16 @@ gen_org2clade_map := proc()
     return(org2clade):
 end:
 
-# Generate
+# Generate clade term counts.
 gen_clade_terms := proc(org2clade)
     global DB:
     clade_terms := table([], []):
-    c := 0:
     for i to NG do
         DB := DBs[i]:
         clade := org2clade[genomes[i]]:
-        if clade=unassigned then
+        if clade<>unassigned then
+            NULL:
+        else
             printf('%s does not belong to a valid clade.\n', genomes[i]): 
         fi:
 
@@ -167,13 +212,13 @@ gen_clade_terms := proc(org2clade)
             e := Entry(j):
             exp_annots := parse_annots(SearchTag('GO', e), filter_experimental):
 
-            c := c+1:
-            #if mod(c, 50000)=0 then
-            #    printf('Collected experimental annotations of %d proteins.\n', c):
-            #fi:
-            if length(exp_annots) > 0 then
+            if length(exp_annots)=0 then
+                NULL:
+            else
                 clade_terms[clade] := append(clade_terms[clade], op(exp_annots)):
-                if length(clade_terms[clade]) > 30000 then
+                if length(clade_terms[clade]) < 30000 then
+                    NULL:
+                else
                     clade_terms[clade] := [op({op(clade_terms[clade])})]:
                 fi:
             fi:
@@ -193,19 +238,16 @@ gen_clade_terms := proc(org2clade)
 end:
 
 
-# GAF writer
-write_to_gaf := proc(fn:string)
-    # TODO: write out to the file in the Output directory as GAF 
-end:
-
-
 # Propagate these annotations
 PropagateFunctionByGroup := proc(Ort:matrix(numeric))
     global DB:
 
     org2clade := gen_org2clade_map():
     clade_terms := gen_clade_terms(org2clade):
+    new_terms := eval(CreateArray(1..NG, noeval(table({})))):
     n_groups := length(Ort):
+    count := 0:
+   
     for i to n_groups do
         printf('Propagating function through group %d/%d\r', i, n_groups):
         annots := table(0):
@@ -219,10 +261,8 @@ PropagateFunctionByGroup := proc(Ort:matrix(numeric))
                 e_annots := parse_annots(SearchTag('GO', Entry(e_num)), 
                                          filter_unreliable_iea):              
                 impl_annots := {seq(op(go_super(z)), z=e_annots)} minus {op(e_annots)}:
-                for as in [e_annots, impl_annots] do
-                    for a in as do
-                        annots[a] := annots[a] + 1:
-                    od:
+                for a in [op(e_annots), op(impl_annots)] do
+                    annots[a] := annots[a] + 1:
                 od:
                 group_size := group_size + 1:
                 cached_entry_annots[j] := e_annots:
@@ -240,7 +280,7 @@ PropagateFunctionByGroup := proc(Ort:matrix(numeric))
         od:
         specific_annots := {op(specific_annots)}:
 
-        added := 0:
+
         for j to NG do
             e_num := Ort[i,j]:
             clade := org2clade[genomes[j]]:
@@ -265,22 +305,97 @@ PropagateFunctionByGroup := proc(Ort:matrix(numeric))
                 od:
 
                 # Write the annotations to the GAF file here.
-                annots_to_write := minus({op(validated)}, {op(cached_entry_annots[j])}):
-                # TODO: add those from the DB using AddAnnotations OR alter this so that it 
-                # doesn't output text. 
-                
-                ## Count these up
-                #added := added + length(annots_to_write):
-                #if length(annots_to_write)>0 then
-                #    printf('\nAdded to species %d entry %d: %a\n', j, e_num, annots_to_write):
-                #fi:
+                annots_to_write := {op(validated)} minus {op(cached_entry_annots[j])}:
+                # Keep a record of this enum.
+                new_terms[j,e_num] := annots_to_write:
+                count := count + length(annots_to_write):
             fi:
         od:
-        #if added<>0 then
-        #    printf('\nAdded %d to group %d.\n', added, i):
-        #fi:
     od:
-    printf('\n'):
+    printf('\n  Predicted %d annotations across %d groups.\n', count, n_groups):
+
+    return(new_terms):
 end:
+
+
+# Write the annotations to file
+GAF_DATE := TimedCallSystem('date "+%Y%m%d"', 60)[2][1..-2];
+write_gaf_entry := proc(tax_id, e, go_id, ev_s)
+    id := SearchTag('OMA_ID', e):
+    if length(id) > 0 then
+        database := 'OMA':
+    else
+        # Use ID tag but strip all spaces as invalid
+        id := ConcatStrings(SearchDelim(' ', SearchTag('ID', e)), ''):
+        database := 'OMAStandalone':
+    fi:
+    # GAF 2.1 annotation file fields
+    # 1R  DB
+    f1 := database:
+    # 2R  DB Object ID
+    f2 := id:
+    # 3R  DB Object Symbol
+    f3 := f2: 
+    # 4O  Qualifier
+    f4 := '':
+    # 5R  GO ID
+    f5 := sprintf('GO:%07d', go_id):
+    # 6R  DB:Reference
+    f6 := '': # Assigned below in loop.
+    # 7R  Evidence Code
+    f7 := '': # Assigned below in loop.
+    # 8O  With (or) From
+    f8 := '':
+    # 9R  Aspect
+    f9 := go_aspect(go_id):
+    # 10O DB Object Name
+    f10 := '':
+    # 11O DB Object Synonym (|Synonym)
+    f11 := '':
+    # 12R DB Object Type
+    f12 := 'protein':
+    # 13R Taxon(|taxon)
+    f13 := sprintf('taxon:%s', tax_id):
+    # 14R Date
+    f14 := GAF_DATE:
+    # 15R Assigned By - non-oma vs oma?
+    f15 := database:
+    # 16O Annotation Extension
+    f16 := '':
+    # 17O Gene Product Form ID
+    f17 := '':
+
+    for ev in Indices(ev_s) do
+        for ref in ev_s[ev] do
+            f6 := ref:
+            f7 := ev:
+
+            printf('%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n',
+                   f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17):
+        od:
+    od:
+end:
+WriteGAF := proc(new_terms, fn:string)
+    global DB:
+    OpenWriting(fn):
+    printf('!gaf-version: 2.1\n'):
+    printf('! Functional prediction from OMA standalone using OMA groups.\n'): 
+    for i to NG do
+        DB := DBs[i]:
+        genome := genomes[i]:
+        tax_id := GS[genome, 'TAXONID']:
+        if tax_id = '' then 
+            tax_id := string(-1) 
+        fi:
+        for j to GS[genome, 'TotEntries'] do
+            e := Entry(j):
+            for a in combine_terms(SearchTag('GO', e), new_terms[i,j]) do
+                write_gaf_entry(tax_id, e, op(a)):
+            od:
+        od:
+    od:
+    OpenWriting(previous):
+end:
+
 
 end: # module

@@ -482,9 +482,9 @@ else
         PredictViaHomology();
     fi:
 
-    #if DoGroupFunctionPrediction=true then
-    PropagateFunctionByGroup(Ort);
-    #fi:
+    if DoGroupFunctionPrediction=true then
+        new_annots := PropagateFunctionByGroup(Ort);
+    fi:
 
     ############################################################################
     # Store results
@@ -602,6 +602,10 @@ else
         fi:
     fi:
 
+    # Write out function predictions
+    if DoGroupFunctionPrediction=true then
+        WriteGAF(new_annots, OutputFolder.'/gene_function.gaf'):
+    fi:
 fi:
 
 print('\n\n***\n\nDone!!\n\n');
