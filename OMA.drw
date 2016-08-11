@@ -444,7 +444,7 @@ else
         StoreOrthologMilestone( orthoCacheFile );
     fi:
 
-    if DoHierarchicalGroups=true then
+    if DoHierarchicalGroups=true or DoGroupFunctionPrediction=true then
         if SpeciesTree='estimate' then;
             speciesTree := BuildSpeciesTree( Ort );
         elif SpeciesTree='lineage' then
@@ -453,6 +453,9 @@ else
             speciesTree := ParseNewickTree(SpeciesTree,
                 'defaultBranchLength'=1):
         fi:
+    fi:
+
+    if DoHierarchicalGroups=true then
         # call hierarchical group procedure
         HOG := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));
         if HOG=lasterror then
@@ -483,7 +486,16 @@ else
     fi:
 
     if DoGroupFunctionPrediction=true then
-        new_annots := PropagateFunctionByGroup(Ort);
+        # Start timing
+        t1 := UTCTime():
+        # TODO: what to do if tree is lineage?? - currently try to infer.
+        if SpeciesTree='lineage' then
+            t := BuildSpeciesTree( Ort ):
+        else
+            t := speciesTree:
+        fi:
+        new_annots := PropagateFunctionByGroup(Ort, t): 
+        printf('Took %fs to propagate function through groups.\n', (UTCTime() - t1)):
     fi:
 
     ############################################################################

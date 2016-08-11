@@ -182,7 +182,7 @@ CLADES := {'Bacteria', 'Archaea', 'Fungi', 'Viridiplantae', 'Nematoda',
            'Arthropoda', 'Mammalia', 'Sauria', 'Dictyostelium', 
            'Clupeocephala', 'Amphibia'}:
 # Generate an organism to clade mapping table
-gen_org2clade_map := proc()
+gen_org2clade_map := proc(speciesTree)
     org2clade := table():
     for g in genomes do
         for clade in CLADES do
@@ -192,8 +192,72 @@ gen_org2clade_map := proc()
             fi:
         od:
     od:
+
+    # Map non-mapped genomes
+    for g in genomes do
+        if org2clade[g]=unassigned then
+            clade := infer_clade(g, org2clade, speciesTree):
+            if clade[1]=g and clade[2]<>unassigned then
+                printf('Mapped %s to clade: %s\n', g, clade[2]):
+                org2clade[g] := clade[2]:
+            elif clade[1]<>genome then
+                error('Unable to found genome in species tree.'):
+            else
+                error(sprintf('Unable to map clade to %s.', genome)):
+            fi:
+        fi:
+    od:
+      
     return(org2clade):
 end:
+
+
+# Map non-exported genomes to a clade, using the species tree.
+infer_clade := proc(genome, org2clade, t)
+    if type(t[1])=structure then
+        label_lhs := infer_clade(genome, org2clade, t[Left]):
+        if label_lhs<>genome or label_lhs[2]=unassigned then
+            label_rhs := infer_clade(genome, org2clade, t[Right]):
+
+            if label_lhs[1]<>genome and label_rhs[1]<>genome then
+                # Found a clade but not the genome
+                if label_lhs[2]<>unassigned then
+                    return(label_lhs):
+                else 
+                    return(label_rhs):
+                fi:
+            elif label_lhs[1]=genome then
+                # Found the genome on LHS
+                if label_lhs[2]<>unassigned or label_rhs[2]=unassigned then
+                    # Found clade on LHS as well OR clade not found on RHS
+                    return(label_lhs):
+                else
+                    # Found clade on RHS
+                    return([genome, label_rhs[2]]):
+                fi:
+            else 
+                # Found the genome on RHS
+                if label_rhs[2]<>unassigned or label_lhs[2]=unassigned then
+                    # Found clade on RHS as well OR clade not found on LHS
+                    return(label_rhs):
+                else
+                    return([genome, label_lhs[2]]):
+                fi:
+            fi:
+    
+        else
+            return(label_lhs):
+        fi:
+    else 
+        # Leaf with clade
+        if t[Label]<>genome then
+            return([unassigned, org2clade[t[Label]]]):
+        else
+            return([genome, unassigned]):
+        fi:
+    fi:
+end:
+
 
 # Generate clade term counts.
 gen_clade_terms := proc(org2clade)
@@ -238,11 +302,23 @@ gen_clade_terms := proc(org2clade)
 end:
 
 
+# Find specific set of annotations
+get_specific_set := proc(annots)
+    specific_annots := []:
+    for a in annots do
+        if length(intersect({op(go_sub(a))}, annots))=0 then
+            specific_annots := append(specific_annots, a):
+        fi:
+    od:
+    return({op(specific_annots)}):
+end:
+
+
 # Propagate these annotations
-PropagateFunctionByGroup := proc(Ort:matrix(numeric))
+PropagateFunctionByGroup := proc(Ort:matrix(numeric), speciesTree)
     global DB:
 
-    org2clade := gen_org2clade_map():
+    org2clade := gen_org2clade_map(speciesTree):
     clade_terms := gen_clade_terms(org2clade):
     new_terms := eval(CreateArray(1..NG, noeval(table({})))):
     n_groups := length(Ort):
@@ -268,25 +344,17 @@ PropagateFunctionByGroup := proc(Ort:matrix(numeric))
                 cached_entry_annots[j] := e_annots:
             fi:
         od:
-        # Find annotations which have enough representation in the group
-        group_annots := {seq(If(prop_strategy(annots[z], group_size), z, NULL), 
-                         z=Indices(annots))}:
-        # Take most specific annotations only
-        specific_annots := []:
-        for a in group_annots do
-            if length(intersect({op(go_sub(a))}, group_annots))=0 then
-                specific_annots := append(specific_annots, a):
-            fi:
-        od:
-        specific_annots := {op(specific_annots)}:
-
+        # Find annotations which have enough representation in the group and ensure
+        # that we only have the most specific annotations
+        group_annots := get_specific_set({seq(If(prop_strategy(annots[z], group_size), z, NULL), 
+                                         z=Indices(annots))}):
 
         for j to NG do
             e_num := Ort[i,j]:
             clade := org2clade[genomes[j]]:
 
             if e_num<>0 and clade<>unassigned then
-                candidates := minus(specific_annots, {op(cached_entry_annots[j])}):
+                candidates := minus(group_annots, {op(cached_entry_annots[j])}):
                 validated := []:
 
                 for candidate in candidates do
@@ -305,7 +373,8 @@ PropagateFunctionByGroup := proc(Ort:matrix(numeric))
                 od:
 
                 # Write the annotations to the GAF file here.
-                annots_to_write := {op(validated)} minus {op(cached_entry_annots[j])}:
+                annots_to_write := get_specific_set({op(validated)} minus {op(cached_entry_annots[j])}):
+                
                 # Keep a record of this enum.
                 new_terms[j,e_num] := annots_to_write:
                 count := count + length(annots_to_write):
