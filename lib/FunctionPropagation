@@ -213,8 +213,8 @@ end:
 
 
 # Map non-exported genomes to a clade, using the species tree.
-infer_clade := proc(genome, org2clade, t)
-    if type(t[1])=structure then
+infer_clade := proc(genome, org2clade, t:Tree)
+    if not type(t, Leaf) then
         label_lhs := infer_clade(genome, org2clade, t[Left]):
         if label_lhs<>genome or label_lhs[2]=unassigned then
             label_rhs := infer_clade(genome, org2clade, t[Right]):
@@ -318,6 +318,8 @@ end:
 PropagateFunctionByGroup := proc(Ort:matrix(numeric), speciesTree)
     global DB:
 
+    t1 := UTCTime():
+
     org2clade := gen_org2clade_map(speciesTree):
     clade_terms := gen_clade_terms(org2clade):
     new_terms := eval(CreateArray(1..NG, noeval(table({})))):
@@ -382,22 +384,23 @@ PropagateFunctionByGroup := proc(Ort:matrix(numeric), speciesTree)
         od:
     od:
     printf('\n  Predicted %d annotations across %d groups.\n', count, n_groups):
-
+    printf('  Prediction took %.2f seconds.\n', (UTCTime() - t1)):
     return(new_terms):
 end:
 
 
 # Write the annotations to file
 GAF_DATE := TimedCallSystem('date "+%Y%m%d"', 60)[2][1..-2];
-write_gaf_entry := proc(tax_id, e, go_id, ev_s)
-    id := SearchTag('OMA_ID', e):
-    if length(id) > 0 then
+write_gaf_entry := proc(tax_id, e, id_, go_id, ev_s)
+    oma_id := SearchTag('OMA_ID', e):
+    if length(oma_id) > 0 then
         database := 'OMA':
+        id := oma_id:
     else
-        # Use ID tag but strip all spaces as invalid
-        id := ConcatStrings(SearchDelim(' ', SearchTag('ID', e)), ''):
         database := 'OMAStandalone':
+        id := id_:
     fi:
+    
     # GAF 2.1 annotation file fields
     # 1R  DB
     f1 := database:
@@ -458,8 +461,9 @@ WriteGAF := proc(new_terms, fn:string)
         fi:
         for j to GS[genome, 'TotEntries'] do
             e := Entry(j):
+            id := sprintf('%s:%05d', genome, j):
             for a in combine_terms(SearchTag('GO', e), new_terms[i,j]) do
-                write_gaf_entry(tax_id, e, op(a)):
+                write_gaf_entry(tax_id, e, id, op(a)):
             od:
         od:
     od:

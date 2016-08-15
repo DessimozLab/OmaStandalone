@@ -486,16 +486,11 @@ else
     fi:
 
     if DoGroupFunctionPrediction=true then
-        # Start timing
-        t1 := UTCTime():
-        # TODO: what to do if tree is lineage?? - currently try to infer.
-        if SpeciesTree='lineage' then
-            t := BuildSpeciesTree( Ort ):
+        if SpeciesTree<>'lineage' then
+            new_annots := PropagateFunctionByGroup(Ort, speciesTree): 
         else
-            t := speciesTree:
+            error('Annotation propagation is not implemented for parameter SpeciesTree := lineage'):
         fi:
-        new_annots := PropagateFunctionByGroup(Ort, t): 
-        printf('Took %fs to propagate function through groups.\n', (UTCTime() - t1)):
     fi:
 
     ############################################################################
