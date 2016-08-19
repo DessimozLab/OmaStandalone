@@ -119,6 +119,8 @@ if NG < 2 then
     exit(1);
 fi;
 
+ValidateParameters():
+
 if only_run_dbconv=true then 
     printf('\n\n*******\n');
     printf('*** You specified to stop after the database conversion step (i.e. you ***\n');
