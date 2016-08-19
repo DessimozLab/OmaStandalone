@@ -127,7 +127,7 @@ end:
 # and pinf (the ParallelInfo datastructure)
 # the function will assign the results in global variables
 ConvertGenomes := proc(G, pinf)
-    global DB, GS, DBs, genomes, isContig:
+    global DB, GS, DBs, genomes, isContig, DBhashes:
 
     dataset_hash := ComputeDatasetHash(G);
     # if not job nr 1, wait until conversion of DBs are done.
@@ -136,7 +136,7 @@ ConvertGenomes := proc(G, pinf)
     fi:
     
     GS := table();
-    DBs := genomes := isContig := [];
+    DBs := genomes := isContig := DBhashes := [];
     if pinf['ProcNr']=1 and not ReuseCachedResults then
         CallSystem('rm -rf Cache');
     fi;
@@ -179,6 +179,7 @@ ConvertGenomes := proc(G, pinf)
                 else
                     GS[gname] := GenomeSummary(DB);
                     DBs := append(DBs,DB);
+                    DBhashes := append(DBhashes, sha2(DB['string'])[1..16]);
                     # genome is ready, continue with next one.
                     next;
                 fi:
@@ -211,6 +212,7 @@ ConvertGenomes := proc(G, pinf)
         DB := ReadDb('Cache/DB/'.gname.'.db');
         GS[gname] := GenomeSummary(DB);
         DBs := append(DBs,DB);
+        DBhashes := append(DBhashes, sha2(DB['string'])[1..16]);
     od:
     DownloadGeneOntologyIfNeeded();
 

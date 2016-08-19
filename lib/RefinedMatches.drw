@@ -93,11 +93,11 @@ RefinedMatches := proc(
 end:
 
 AssertDatabaseVersionsInSync := proc(hash1, hash2)
-    if hash1<>sha2(db1['string'])[1..16] then 
+    if hash1<>DBhashes[g1] then 
         error('Matches between '.genomes[g1].'/'.genomes[g2].' have been computed for different version of '.genomes[g1]);
     fi:
 
-    if hash2<>sha2(db2['string'])[1..16] then 
+    if hash2<>DBhashes[g2] then 
         error('Matches between '.genomes[g1].'/'.genomes[g2].' have been computed for different version of '.genomes[g2]);
     fi:
 end:
