@@ -19,6 +19,7 @@ webpath=linneus78.ethz.ch:${DARWIN_BROWSER_SHARE}/standalone
 
 mkdir -p $instpath/bin
 mkdir -p $instpath/DB
+mkdir -p $instpath/data
 
 # clone darwin repo, stripe .git folder and copy lib to $instpath
 git clone --depth 1 git@cbrg-git.ethz.ch:darwin
@@ -34,12 +35,6 @@ cp /home/darwin/v2/source/macintel64/darwin $instpath/bin/omadarwin.mac64
 
 # copy oma library to $1/OMA$versionnr/lib
 cp -r lib $instpath/
-
-# copy parsed GO ontology 
-mkdir $instpath/data
-gopath=$(readlink /home/darwin/DB/GOdata.drw.gz)
-cp gopath $instpath/data/
-ln -s $instpath/data/
 
 # copy OMA files to $1/OMA$versionnr
 cp OMA.drw parameters.drw install.sh README.oma LICENSE release_notes.txt $instpath/
@@ -61,12 +56,12 @@ then
     sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
  $instpath/install.sh $instpath/README.oma $instpath/bin/oma
     sed -i '' "/utildir/d" $instpath/lib/darwinit
-    sed -i '' "s/datadirname.*/datadirname := libname.'/../data';/" $instpath/lib/darwinit
+    sed -i '' "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
 else
     sed -i -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
  $instpath/install.sh $instpath/README.oma $instpath/bin/oma
     sed -i "/utildir/d" $instpath/lib/darwinit
-    sed -i "s/datadirname.*/datadirname := libname.'/../data';/" $instpath/lib/darwinit
+    sed -i "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
 fi
 
 # create tarball
