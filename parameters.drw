@@ -117,6 +117,16 @@ ReachabilityCutoff := 0.65;
 
 
 
+##############################################################
+# Function Prediction
+##############################################################
+# Compute predictions using Orthologous groups?
+# You can either set it to 'true', which will enable the computation or 
+# disable it by setting it to 'false'. Writing the output takes a long time. 
+DoGroupFunctionPrediction := true;
+
+
+
 ###############################################################################
 # ESPRIT -- Detection of split genes
 ###############################################################################

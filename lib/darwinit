@@ -69,6 +69,8 @@ StoreOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
 LoadOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
     LoadOrthologMilestone));
 
+PropagateFunctionByGroup := noeval(ReadLibrary(OrthologsLib.'FunctionPropagation', PropagateFunctionByGroup));
+
 WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
 WriteMatrix := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteMatrix));

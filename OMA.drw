@@ -444,8 +444,8 @@ else
         StoreOrthologMilestone( orthoCacheFile );
     fi:
 
-    if DoHierarchicalGroups=true then
-        if SpeciesTree='estimate' then
+    if DoHierarchicalGroups=true or DoGroupFunctionPrediction=true then
+        if SpeciesTree='estimate' then;
             speciesTree := BuildSpeciesTree( Ort );
         elif SpeciesTree='lineage' then
             speciesTree := NULL:
@@ -453,6 +453,9 @@ else
             speciesTree := ParseNewickTree(SpeciesTree,
                 'defaultBranchLength'=1):
         fi:
+    fi:
+
+    if DoHierarchicalGroups=true then
         # call hierarchical group procedure
         HOG := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));
         if HOG=lasterror then
@@ -480,6 +483,14 @@ else
 
     if DoHomologyFunctionPrediction=true then
         PredictViaHomology();
+    fi:
+
+    if DoGroupFunctionPrediction=true then
+        if SpeciesTree<>'lineage' then
+            new_annots := PropagateFunctionByGroup(Ort, speciesTree): 
+        else
+            error('Annotation propagation is not implemented for parameter SpeciesTree := lineage'):
+        fi:
     fi:
 
     ############################################################################
@@ -598,6 +609,10 @@ else
         fi:
     fi:
 
+    # Write out function predictions
+    if DoGroupFunctionPrediction=true then
+        WriteGAF(new_annots, OutputFolder.'/gene_function.gaf'):
+    fi:
 fi:
 
 print('\n\n***\n\nDone!!\n\n');
