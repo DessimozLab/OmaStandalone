@@ -197,14 +197,14 @@ gen_org2clade_map := proc(speciesTree)
     for g in genomes do
         if org2clade[g]=unassigned then
             clade := infer_clade(g, org2clade, speciesTree):
-            if clade[1]=g and clade[2]<>unassigned then
+            if clade[1]<>g then
+                error('Unable to find genome in species tree.'):
+            elif clade[2]<>unassigned then
                 printf('Mapped %s to clade: %s\n', g, clade[2]):
-                org2clade[g] := clade[2]:
-            elif clade[1]<>genome then
-                error('Unable to found genome in species tree.'):
             else
-                error(sprintf('Unable to map clade to %s.', genome)):
+                warning(sprintf('Unable to map %s to a clade. Will not propage function.', g)):
             fi:
+            org2clade[g] := clade[2]:
         fi:
     od:
       
