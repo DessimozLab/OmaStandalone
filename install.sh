@@ -54,24 +54,29 @@ then
 fi
 echo "Installing oma..."
 
-if [ $os = "Darwin" ]
-then
-    sed -i '' "s:OMA_PATH=.*\$:OMA_PATH=\$(dirname \$0)/../OMA.${versionnr}:g" $omadir/bin/oma
-else
-    sed -i "s:OMA_PATH=.*\$:OMA_PATH=\$(dirname \$0)/../OMA.${versionnr}:g" $omadir/bin/oma
-fi
+sed -i.se  "s:OMA_PATH=.*\$:OMA_PATH=\$(dirname \$0)/../OMA.${versionnr}:g" $omadir/bin/oma && rm $omadir/bin/oma.se
 
 cp $current_dir/OMA.drw $current_dir/README.oma $current_dir/parameters.drw $omadir/
 echo "Installing libraries..."
 cp -rf $current_dir/lib $omadir/
 cp -rf $current_dir/darwinlib $omadir/
-echo "Creating symlinks to current version..."
-if [ -s $linkdir/OMA ]
-then
-    rm $linkdir/OMA
+
+echo "installing package data..."
+mkdir -p ~/.oma 
+[ -d $current_dir/data ] && cp -r $current_dir/data/ ~/.oma/
+if [ "$USER" == "root" ] ; then
+    chown -R $SUDO_USER ~/.oma
 fi
+sed -i.se "s|datadirname := .*|datadirname := '$HOME/.oma/';|" $omadir/darwinlib/darwinit && rm $omadir/darwinlib/darwinit.se
+
+echo "Creating symlinks to current version..."
+[ -L $linkdir/OMA ] && unlink $linkdir/OMA
+[ -L $linkdir/oma ] && unlink $linkdir/oma
+[ -L $linkdir/OMA.$versionnr ] && unlink $linkdir/OMA.$versionnr
 ln -s $omadir/bin/oma $linkdir/OMA.$versionnr
 ln -s $omadir/bin/oma $linkdir/OMA
+ln -s $omadir/bin/oma $linkdir/oma 2>/dev/null  #osx is caseinsensitive
+
 echo "Installation complete."
 echo "Make sure $linkdir is in your PATH, e.g by adding the line"
 echo "  export PATH=\$PATH:$linkdir"
