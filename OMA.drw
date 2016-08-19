@@ -560,13 +560,15 @@ else
     WriteOrthoXML(Ort, OutputFolder.'/OrthologousGroups.orthoxml',
         StableIdsForGroups=true);
 
-    # developpment code
-    if type(MergeOMAGroups, procedure) then
-        mergedOMAGroups := MergeOMAGroups(Ort, VPairs);
+    if type(QuasiCliquesCutoff, numeric) and QuasiCliquesCutoff<1 then
+        mergedOMAGroups := MergeOMAGroups(Ort, VPairs, QuasiCliquesCutoff);
         WriteOrthoXML( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.orthoxml',
             StableIdsForGroups=true);
         WriteMatrix( mergedOMAGroups, OutputFolder.'/MergedOMAMatrix.txt');
         WriteGroups( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.txt');
+        if not WriteOutput_OrthologousGroupsFasta=false then
+            WriteFastaGroups(OutputFolder.'/MergedOMAGroupsFasta', mergedOMAGroups);
+        fi:
     fi:
 
     # store all orthologous groups in fasta format
