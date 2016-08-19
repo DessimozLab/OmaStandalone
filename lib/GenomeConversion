@@ -115,6 +115,13 @@ WaitUntilConversionDone := proc(dataset_hash, pinf):
     exit(1);
 end:
 
+DownloadGeneOntologyIfNeeded := proc()
+    lnk := datadirname.'/GOdata.drw.gz':
+    src := TimedCallSystem('readlink '.lnk);
+    if src[1]<>0 or (not FileExists(trim(src[2])) and not FileExists(datadirname.'/'.trim(src[2]))) then 
+        GOdownload():
+    fi:
+end:
 
 # convert the list of genomes. args are G (list of fasta file names)
 # and pinf (the ParallelInfo datastructure)
@@ -205,6 +212,8 @@ ConvertGenomes := proc(G, pinf)
         GS[gname] := GenomeSummary(DB);
         DBs := append(DBs,DB);
     od:
+    DownloadGeneOntologyIfNeeded();
+
     if pinf['ProcNr']=1 and not convDone(dataset_hash) then
         convDone(dataset_hash, true); # signal other processes to start.
     fi:
