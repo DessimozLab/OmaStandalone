@@ -29,6 +29,8 @@ Bug Fixes
 
 - short sequences will not be discarded a priori
 
+- won't break with very long splicing maps (thanks to Javier Herrero)
+
 
 Summary of Changes from 1.0.5 to 1.0.6
 ======================================

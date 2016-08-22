@@ -28,6 +28,18 @@
 #
 # ***** END LICENSE BLOCK *****
 
+LoadSpliceMap := proc(genome)
+    smap := GS[genome, 'SPLICEMAP'];
+    if smap<>'' then return(parse(smap)): fi:
+    map := []:
+    for i do
+       smap := GS[genome, sprintf('SPLICEMAP%d',i)];
+       if smap='' then break fi:
+       map := append(map, parse(smap))
+    od:
+    return(map);
+end:
+
 FilterBestSplicingMatches := proc()
     global BestMatch;
 
@@ -37,8 +49,8 @@ FilterBestSplicingMatches := proc()
     S2 := Stat('matches of kept splice variants'):
     remove := CreateArray(1..NG,[]):
     for i to NG do
-        if GS[genomes[i],'SPLICEMAP']='' then next fi;
-        for alt in parse(GS[genomes[i],'SPLICEMAP']) do
+        splicemap := LoadSpliceMap(genomes[i]);
+        for alt in splicemap do
             NM := [seq(sum(length(decompress(BestMatch[i,j,k])),j=1..NG),k=alt)];
             best := SearchArray(max(NM),NM);
             remove[i] := append(remove[i], op(alt minus {alt[best]}));

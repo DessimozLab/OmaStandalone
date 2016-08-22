@@ -173,7 +173,7 @@ ConvertGenomes := proc(G, pinf)
                 if fcheck<>'' and checksum<>fcheck then
                     error('cached genome ('.gname.') differs from fasta file');
                 fi:
-                if FileExists(spliceFn) and SearchTag('SPLICEMAP', DB[string])='' then
+                if FileExists(spliceFn) and SearchTag('SPLICEMAP', DB[string])='' and SearchTag('SPLICEMAP1', DB[string])='' then
                     warning('cached genome ('.gname.') contains no splicing map. Will rebuild cache.');
                     CallSystem('rm -f Cache/DB/'.gname.'.db');
                 else
@@ -203,7 +203,12 @@ ConvertGenomes := proc(G, pinf)
         printf('<KINGDOM>Unknown</KINGDOM>\n');
         printf('<FASTACHECKSUM>%s</FASTACHECKSUM>\n', checksum);
         if FileExists(spliceFn) then
-            printf('<SPLICEMAP>%A</SPLICEMAP>\n', splicemap);
+            setNr := 0: step := 1000:
+            for start to length(splicemap) by step do
+                 setNr := setNr+1:
+                 end_pos := min(length(splicemap), start+step-1);
+                 printf('<SPLICEMAP%d>%A</SPLICEMAP%d>\n', setNr, splicemap[start..end_pos], setNr);
+            od:
         fi:
         for i to length(input[1]) do
             printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', input[2,i], input[1,i]);

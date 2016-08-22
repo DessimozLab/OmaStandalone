@@ -597,8 +597,8 @@ else
         used_variants := []:
         for i to NG do
             g := genomes[i];
-            if GS[g,'SPLICEMAP'] = '' then next fi:
-            for alt in parse(GS[g,'SPLICEMAP']) do
+            splicemap := LoadSpliceMap(g);
+            for alt in splicemap do
                 NM := [seq(sum(length(decompress(BestMatch[i,j,k])),j=1..NG),k=alt)];
                 best := SearchArray(max(NM), NM);
                 used_variants := append(used_variants, [g, IDtable[i,alt[best]]]);
