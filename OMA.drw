@@ -384,13 +384,19 @@ for i to NG do for j from i to NG do
     if FileExists(fn1chunk) then
         fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2.gz', genomes[g1], genomes[g2]);
         if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
-        ReadProgram(fn1chunk);
+        err := traperror(ReadProgram(fn1chunk));
+        if err=lasterror then error('corrupted AllAll file: '.fn1chunk.' Please remove and restart') fi;
     else
         nrChunks := NumberOfChunks(genomes[g1],genomes[g2]);
         for part to nrChunks do
             fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
                 part, nrChunks);
-            ReadProgram( fn );
+            err := traperror(ReadProgram( fn ));
+            if err=lasterror then
+               if lasterror='syntax error' then 
+                   error('corrupted AllAll file: '.fn1chunk.' Please remove and restart');
+               else error(lasterror) fi:
+            fi:
         od:
     fi;
     # no Pairs should be cut for being below the Scoretol, as those
