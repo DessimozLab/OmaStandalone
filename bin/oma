@@ -135,8 +135,9 @@ cleanup() {
 
 drw_cmds=$(cat << EOC
 libdir := '$OMA_PATH/lib/': 
-e := traperror(eval(parse(ReadRawFile('$pfile')))): 
+e := traperror(ReadProgram('$pfile')): 
 if e=lasterror then print('$paramerror'): exit(1): fi: 
+loaded_params := [e]:
 printlevel := $dbglevel: 
 OMA_STANDALONE_VERSION := '[VERSIONNR]':
 only_run_allall := $earlyStop:
