@@ -47,6 +47,7 @@ RefinedMatches := noeval(ReadLibrary( OrthologsLib.'RefinedMatches.drw',
 AssertDatabaseVersionsInSync := noeval(ReadLibrary(OrthologsLib.'RefinedMatches.drw', 
     AssertDatabaseVersionsInSync)):
 WriteMatches := noeval(ReadLibrary(OrthologsLib.'RefinedMatches.drw', WriteMatches));
+AssertMinScoreParam := noeval(ReadLibrary(OrthologsLib.'RefinedMatches.drw', AssertMinScoreParam));
 ReadProgram( OrthologsLib.'Pair');
 
 WriteEspritResults := noeval(ReadLibrary( OrthologsLib.'Esprit.drw',

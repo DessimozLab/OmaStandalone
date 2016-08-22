@@ -102,11 +102,24 @@ AssertDatabaseVersionsInSync := proc(hash1, hash2)
     fi:
 end:
 
+AssertMinScoreParam := proc(used_min_score)
+    if used_min_score > MinScore then 
+        printf('Matches between %s/%s have been computed with a higher\n'.
+               '  MinScore (%f) than set in the paramerters file (%f).\n'.
+               '  Either increase MinScore or recompute the genome pairs\n'.
+               '  with higher MinScore parameter. \n'.
+               '  Note: exported genome pairs have a minimum score of 130.',
+               genomes[g1], genomes[g2], used_min_score, MinScore);
+        error('MinScore smaller than used in cached AllAll file of '.genomes[g1].'/'.genomes[g2]);
+    fi:
+end:
+
 WriteMatches:= proc(fn:string, ms:list)
     verb := Set(printgc=false):
     OpenAppending(fn):
     printf('AssertDatabaseVersionsInSync(%A,%A):\n', 
         sha2(db1['string'])[1..16], sha2(db2['string'])[1..16]);
+    printf('AssertMinScoreParam(%A):\n', MinScore);
 
     lprint('RefinedMatches(');
     if ms=[] then lprint( ms,'):');
