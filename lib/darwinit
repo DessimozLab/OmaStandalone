@@ -46,6 +46,7 @@ RefinedMatches := noeval(ReadLibrary( OrthologsLib.'RefinedMatches.drw',
         RefinedMatches)):
 AssertDatabaseVersionsInSync := noeval(ReadLibrary(OrthologsLib.'RefinedMatches.drw', 
     AssertDatabaseVersionsInSync)):
+WriteMatches := noeval(ReadLibrary(OrthologsLib.'RefinedMatches.drw', WriteMatches));
 ReadProgram( OrthologsLib.'Pair');
 
 WriteEspritResults := noeval(ReadLibrary( OrthologsLib.'Esprit.drw',
@@ -73,7 +74,6 @@ LoadOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
 
 PropagateFunctionByGroup := noeval(ReadLibrary(OrthologsLib.'FunctionPropagation', PropagateFunctionByGroup));
 
-WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
 WriteMatrix := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteMatrix));
 WriteGroups := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteGroups));
