@@ -6,8 +6,8 @@
  :Contact: contact@omabrowser.org
 
 
-Summary of Changes from 1.0.6 to XXX
-====================================
+Summary of Changes from 1.0.6 to 1.1.0
+======================================
 This release contains a few new features and several bug fixes.
 Analysis of previous OMA standalone versions are still fully compatible.
 
@@ -20,6 +20,7 @@ New Features
 
 - new parameter consistency checks for fast abort and detection 
   of cache inconsistencies.
+  
 
 Bug Fixes
 ---------
@@ -30,6 +31,7 @@ Bug Fixes
 - short sequences will not be discarded a priori
 
 - won't break with very long splicing maps (thanks to Javier Herrero)
+
 
 
 Summary of Changes from 1.0.5 to 1.0.6
