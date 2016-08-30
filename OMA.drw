@@ -504,7 +504,7 @@ else
     ############################################################################
     # Store results
     Set('printgc'=false);
-    print('\n\n****\n\nStoring results\n');
+    printf('\n\n%s\n\nStoring results\n', CreateString(80,'*'));
 
     if lasterror <> 'lasterror' then
         warning('An error occured during inference: '.string(lasterror));
@@ -623,6 +623,19 @@ else
     if DoGroupFunctionPrediction=true then
         WriteGAF(new_annots, OutputFolder.'/gene_function.gaf'):
     fi:
+
+    ###
+    # Final comments to user
+    printf('\n\n%s\n', CreateString(80, '*'));
+    if SpeciesTree='estimate' and DoHierarchicalGroups=true then
+        printf('NOTE: The HOGs OMA computed depend strongly on the correct species tree.\n');
+        printf('      OMA estimated a species tree based on some marker genes, and stored\n');
+        printf('      it in %s.\n', OutputFolder.'/EstimatedSpeciesTree.nwk');
+        printf('      Please verify that it is in agreement with your expectations, especially\n');
+        printf('      that it is rooted correctly. If not, please modify it and put the\n');
+        printf('      corrected tree in the parameter file and rerun OMA. You can visualize and\n');
+        printf('      reroot the tree for example with http://phylo.io\n');
+    fi:
 fi:
 
-print('\n\n***\n\nDone!!\n\n');
+printf('\n\n%s\n\nDone!!\n\n', CreateString(80, '*'));
