@@ -32,6 +32,8 @@ Bug Fixes
 
 - won't break with very long splicing maps (thanks to Javier Herrero)
 
+- fixing several spelling errors
+
 
 
 Summary of Changes from 1.0.5 to 1.0.6
