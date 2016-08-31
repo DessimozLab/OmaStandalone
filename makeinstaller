@@ -19,6 +19,7 @@ webpath=linneus78.ethz.ch:${DARWIN_BROWSER_SHARE}/standalone
 
 mkdir -p $instpath/bin
 mkdir -p $instpath/DB
+mkdir -p $instpath/data
 
 # clone darwin repo, stripe .git folder and copy lib to $instpath
 git clone --depth 1 git@cbrg-git.ethz.ch:darwin
@@ -55,10 +56,12 @@ then
     sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
  $instpath/install.sh $instpath/README.oma $instpath/bin/oma
     sed -i '' "/utildir/d" $instpath/lib/darwinit
+    sed -i '' "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
 else
     sed -i -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
  $instpath/install.sh $instpath/README.oma $instpath/bin/oma
     sed -i "/utildir/d" $instpath/lib/darwinit
+    sed -i "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
 fi
 
 # create tarball

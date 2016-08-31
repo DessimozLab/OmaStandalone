@@ -35,6 +35,7 @@ StoreOrthologMilestone := proc(fn_)
     od:
     printf('_genomes_order := %A:\n', genomes):
     printf('_hash_DBs := %A:\n', HashDBs()):
+    printf('_params := %A:\n', OrthologMilestoneParams()):
     printf('# Milestone created on %s on %s\n', date(), hostname());
     OpenWriting(previous);
     if fn_<>fn then
@@ -47,15 +48,22 @@ HashDBs := proc()
     return(hashes)
 end:
 
+OrthologMilestoneParams := proc()
+    return([MinScore, LengthTol, StablePairTol, VerifiedPairTol, MinSeqLen,
+            UseOnlyOneSplicingVariant]);
+end:
+
 
 LoadOrthologMilestone := proc(fn)
-    global Ort, VPairs, StablePairs, _genomes_order, _hash_DBs;
-    _genomes_order := _hash_DBs := 0;
+    global Ort, VPairs, StablePairs, _genomes_order, _hash_DBs, _params;
+    _genomes_order := _hash_DBs := _params := 0;
     cur_DB_hashes := HashDBs():
+    cur_params := OrthologMilestoneParams():
     err := traperror(ReadProgram(fn)):
     
     if err=lasterror or (_genomes_order<>0 and _genomes_order<>genomes) or 
-        (_hash_DBs<>0 and _hash_DBs<>cur_DB_hashes) then
+        (_hash_DBs<>0 and _hash_DBs<>cur_DB_hashes) or
+        (_params<>0 and _params<>cur_params) then
         warning(fn.' could not be used due to inconsistencies with current dataset.');
         if _genomes_order<>0 and _genomes_order<>genomes then
             warning(sprintf('genome order differ: %A <--> %A\n', 
@@ -64,6 +72,8 @@ LoadOrthologMilestone := proc(fn)
             for i to NG do if _hash_DBs[i]<>cur_DB_hashes[i] then
                 warning(sprintf('DB for "%s" differs', genomes[i]));
             fi od:
+        elif _params<>0 and _params<>cur_params then
+            warning(sprintf('relevant parameters changed: %A <--> %A', cur_params, _params));
         fi: 
         warning('  Will redo now orthology inference');    
 

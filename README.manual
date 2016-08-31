@@ -1,4 +1,4 @@
-Manual for OMA Stand-alone
+Manual for OMA standalone
 --------------------------
 
 Generating output files for HTML and LaTeX
@@ -7,7 +7,7 @@ Generating output files for HTML and LaTeX
 If you run 'makeinstaller', all this stuff is done automagically
 for you. Else, read on:
 
-The manual for OMA Stand-alone is contained in a darwin script
+The manual for OMA standalone is contained in a darwin script
 under 'manual/manual.drw' . To generate the HTML file and the
 LaTeX output, just pipe 'manual.drw' into darwin:
 
@@ -32,8 +32,8 @@ parts in 'manual.drw' and rerun 'darwin < manual.drw' to
 regenerate the output files.
 
 
-Download links for OMA Stand-alone
-----------------------------------
+Download links for OMA standalone
+---------------------------------
 
 If you don't change anything in 'manual.drw', the darwin script
 tries to create the download links according to the current tag

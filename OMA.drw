@@ -119,6 +119,8 @@ if NG < 2 then
     exit(1);
 fi;
 
+ValidateParameters():
+
 if only_run_dbconv=true then 
     printf('\n\n*******\n');
     printf('*** You specified to stop after the database conversion step (i.e. you ***\n');
@@ -382,13 +384,19 @@ for i to NG do for j from i to NG do
     if FileExists(fn1chunk) then
         fnSepHash := sprintf('Cache/AllAll/%s/%s.sha2.gz', genomes[g1], genomes[g2]);
         if FileExists(fnSepHash) then ReadProgram(fnSepHash) fi:
-        ReadProgram(fn1chunk);
+        err := traperror(ReadProgram(fn1chunk));
+        if err=lasterror then error('corrupted AllAll file: '.fn1chunk.' Please remove and restart') fi;
     else
         nrChunks := NumberOfChunks(genomes[g1],genomes[g2]);
         for part to nrChunks do
             fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d',genomes[g1],genomes[g2],
                 part, nrChunks);
-            ReadProgram( fn );
+            err := traperror(ReadProgram( fn ));
+            if err=lasterror then
+               if lasterror='syntax error' then 
+                   error('corrupted AllAll file: '.fn1chunk.' Please remove and restart');
+               else error(lasterror) fi:
+            fi:
         od:
     fi;
     # no Pairs should be cut for being below the Scoretol, as those
@@ -444,8 +452,8 @@ else
         StoreOrthologMilestone( orthoCacheFile );
     fi:
 
-    if DoHierarchicalGroups=true then
-        if SpeciesTree='estimate' then
+    if DoHierarchicalGroups=true or DoGroupFunctionPrediction=true then
+        if SpeciesTree='estimate' then;
             speciesTree := BuildSpeciesTree( Ort );
         elif SpeciesTree='lineage' then
             speciesTree := NULL:
@@ -453,6 +461,9 @@ else
             speciesTree := ParseNewickTree(SpeciesTree,
                 'defaultBranchLength'=1):
         fi:
+    fi:
+
+    if DoHierarchicalGroups=true then
         # call hierarchical group procedure
         HOG := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));
         if HOG=lasterror then
@@ -482,10 +493,18 @@ else
         PredictViaHomology();
     fi:
 
+    if DoGroupFunctionPrediction=true then
+        if SpeciesTree<>'lineage' then
+            new_annots := PropagateFunctionByGroup(Ort, speciesTree): 
+        else
+            error('Annotation propagation is not implemented for parameter SpeciesTree := lineage'):
+        fi:
+    fi:
+
     ############################################################################
     # Store results
     Set('printgc'=false);
-    print('\n\n****\n\nStoring results\n');
+    printf('\n\n%s\n\nStoring results\n', CreateString(80,'*'));
 
     if lasterror <> 'lasterror' then
         warning('An error occured during inference: '.string(lasterror));
@@ -509,8 +528,7 @@ else
         for i to NG do for j from i+1 to NG do
             if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
                 g1 := i;  g2 := j else g2 := i;  g1 := j fi;
-                OpenWriting(OutputFolder.'/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2]
-                    .'.txt');
+            OpenWriting(OutputFolder.'/PairwiseOrthologs/'.genomes[g1].'-'.genomes[g2].'.txt');
             printf('\# Format: Protein 1<tab>Protein 2<tab>Protein ID1<tab>ProteinID2'
                  .'<tab>Orthology type<tab>OMA group (if any)\n');
             printf('\# Every pair is listed only once, and in no particular order.\n');
@@ -550,13 +568,15 @@ else
     WriteOrthoXML(Ort, OutputFolder.'/OrthologousGroups.orthoxml',
         StableIdsForGroups=true);
 
-    # developpment code
-    if type(MergeOMAGroups, procedure) then
-        mergedOMAGroups := MergeOMAGroups(Ort, VPairs);
+    if type(QuasiCliquesCutoff, numeric) and QuasiCliquesCutoff<1 then
+        mergedOMAGroups := MergeOMAGroups(Ort, VPairs, QuasiCliquesCutoff);
         WriteOrthoXML( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.orthoxml',
             StableIdsForGroups=true);
         WriteMatrix( mergedOMAGroups, OutputFolder.'/MergedOMAMatrix.txt');
         WriteGroups( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.txt');
+        if not WriteOutput_OrthologousGroupsFasta=false then
+            WriteFastaGroups(OutputFolder.'/MergedOMAGroupsFasta', mergedOMAGroups);
+        fi:
     fi:
 
     # store all orthologous groups in fasta format
@@ -583,8 +603,8 @@ else
         used_variants := []:
         for i to NG do
             g := genomes[i];
-            if GS[g,'SPLICEMAP'] = '' then next fi:
-            for alt in parse(GS[g,'SPLICEMAP']) do
+            splicemap := LoadSpliceMap(g);
+            for alt in splicemap do
                 NM := [seq(sum(length(decompress(BestMatch[i,j,k])),j=1..NG),k=alt)];
                 best := SearchArray(max(NM), NM);
                 used_variants := append(used_variants, [g, IDtable[i,alt[best]]]);
@@ -599,6 +619,23 @@ else
         fi:
     fi:
 
+    # Write out function predictions
+    if DoGroupFunctionPrediction=true then
+        WriteGAF(new_annots, OutputFolder.'/gene_function.gaf'):
+    fi:
+
+    ###
+    # Final comments to user
+    printf('\n\n%s\n', CreateString(80, '*'));
+    if SpeciesTree='estimate' and DoHierarchicalGroups=true then
+        printf('NOTE: The HOGs OMA computed depend strongly on the correct species tree.\n');
+        printf('      OMA estimated a species tree based on some marker genes, and stored\n');
+        printf('      it in %s.\n', OutputFolder.'/EstimatedSpeciesTree.nwk');
+        printf('      Please verify that it is in agreement with your expectations, especially\n');
+        printf('      that it is rooted correctly. If not, please modify it and put the\n');
+        printf('      corrected tree in the parameter file and rerun OMA. You can visualize and\n');
+        printf('      reroot the tree for example with http://phylo.io\n');
+    fi:
 fi:
 
-print('\n\n***\n\nDone!!\n\n');
+printf('\n\n%s\n\nDone!!\n\n', CreateString(80, '*'));

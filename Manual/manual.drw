@@ -71,13 +71,13 @@ binaryLink := 'http://omabrowser.org/standalone/'.binaryName:
 folderName := ConcatStrings(SearchDelim('.', binaryName)[1..-2], '.'):
 
 # PAGETITLE
-pagetitle := 'OMA stand-alone':
+pagetitle := 'OMA standalone':
 
 # INTRO
 intro := [  Anchor(TextBlock('a', name='introduction', 
                 SectionHeader(1, 'Introduction')
             )),
-            Paragraph(0, 'You can run OMA as a stand-alone program.
+            Paragraph(0, 'You can run OMA as a standalone program.
             Included are the algorithms for OMA itself plus its 
             addition ESPRIT. The software can be installed on Linux (x86, 
             both 64bit and 32bit) and MacOSX (x86, both 32bit and 64bit).'),
@@ -105,7 +105,7 @@ intro := [  Anchor(TextBlock('a', name='introduction',
 downloads := [ Anchor(TextBlock('a', name='downloads',
                     SectionHeader(1, 'Downloads')
                 )),
-                Paragraph(0, 'The current version of OMA stand-alone can be 
+                Paragraph(0, 'The current version of OMA standalone can be 
                 found here:'),
                 
                 Paragraph(0, Link(TextBlock('a',href=binaryLink, binaryName)))
@@ -115,13 +115,13 @@ downloads := [ Anchor(TextBlock('a', name='downloads',
 install := [
             Anchor(TextBlock('a', name='installation', SectionHeader(1, 'Installation'))),
 
-            Paragraph(0, 'You do not need to install OMA stand-alone on your
+            Paragraph(0, 'You do not need to install OMA standalone on your
             system; the script will also run if you just call it by using 
             the complete path to ', TT('bin/oma'), ' in the installer folder. 
             But we still encourage you to run the installer script, since it 
             makes working with OMA considerably more convenient.'),
 
-            Paragraph(0, 'To install OMA stand-alone on your system, download
+            Paragraph(0, 'To install OMA standalone on your system, download
             the installer, untar the package and run the included installer
             script:'),
             

@@ -35,7 +35,7 @@ fi:
 
 # everything containing 'utildir' will not be part of distributed tarball
 utildir := OrthologsLib.'/../utils/';
-MergeOMAGroups := noeval(ReadLibrary(utildir.'MergeOMAGroups',MergeOMAGroups)):
+MergeOMAGroups := noeval(ReadLibrary( OrthologsLib.'MergeOMAGroups',MergeOMAGroups)):
 
 OrthologousMatrix := noeval(ReadLibrary( OrthologsLib.'OrthologousMatrix',
 	OrthologousMatrix)):
@@ -46,6 +46,8 @@ RefinedMatches := noeval(ReadLibrary( OrthologsLib.'RefinedMatches.drw',
         RefinedMatches)):
 AssertDatabaseVersionsInSync := noeval(ReadLibrary(OrthologsLib.'RefinedMatches.drw', 
     AssertDatabaseVersionsInSync)):
+WriteMatches := noeval(ReadLibrary(OrthologsLib.'RefinedMatches.drw', WriteMatches));
+AssertMinScoreParam := noeval(ReadLibrary(OrthologsLib.'RefinedMatches.drw', AssertMinScoreParam));
 ReadProgram( OrthologsLib.'Pair');
 
 WriteEspritResults := noeval(ReadLibrary( OrthologsLib.'Esprit.drw',
@@ -63,13 +65,16 @@ CleanupSequences := noeval(ReadLibrary(OrthologsLib.'InputGenomePreProcessing', 
 EstablishSpliceMap := noeval(ReadLibrary(OrthologsLib.'InputGenomePreProcessing', EstablishSpliceMap));
 FilterBestSplicingMatches := noeval(ReadLibrary(OrthologsLib.'AltSplicing', FilterBestSplicingMatches));
 
+ValidateParameters := noeval(ReadLibrary(OrthologsLib.'CheckParamCompability', ValidateParameters));
+
 FileExists := noeval(ReadLibrary(OrthologsLib.'FileExists',FileExists));
 StoreOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
     StoreOrthologMilestone));
 LoadOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
     LoadOrthologMilestone));
 
-WriteMatches := noeval(ReadLibrary(OrthologsLib.'WriteMatches', WriteMatches));
+PropagateFunctionByGroup := noeval(ReadLibrary(OrthologsLib.'FunctionPropagation', PropagateFunctionByGroup));
+
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
 WriteMatrix := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteMatrix));
 WriteGroups := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteGroups));

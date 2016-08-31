@@ -115,12 +115,19 @@ WaitUntilConversionDone := proc(dataset_hash, pinf):
     exit(1);
 end:
 
+DownloadGeneOntologyIfNeeded := proc()
+    lnk := datadirname.'/GOdata.drw.gz':
+    src := TimedCallSystem('readlink '.lnk);
+    if src[1]<>0 or (not FileExists(trim(src[2])) and not FileExists(datadirname.'/'.trim(src[2]))) then 
+        GOdownload():
+    fi:
+end:
 
 # convert the list of genomes. args are G (list of fasta file names)
 # and pinf (the ParallelInfo datastructure)
 # the function will assign the results in global variables
 ConvertGenomes := proc(G, pinf)
-    global DB, GS, DBs, genomes, isContig:
+    global DB, GS, DBs, genomes, isContig, DBhashes:
 
     dataset_hash := ComputeDatasetHash(G);
     # if not job nr 1, wait until conversion of DBs are done.
@@ -129,7 +136,7 @@ ConvertGenomes := proc(G, pinf)
     fi:
     
     GS := table();
-    DBs := genomes := isContig := [];
+    DBs := genomes := isContig := DBhashes := [];
     if pinf['ProcNr']=1 and not ReuseCachedResults then
         CallSystem('rm -rf Cache');
     fi;
@@ -166,12 +173,13 @@ ConvertGenomes := proc(G, pinf)
                 if fcheck<>'' and checksum<>fcheck then
                     error('cached genome ('.gname.') differs from fasta file');
                 fi:
-                if FileExists(spliceFn) and SearchTag('SPLICEMAP', DB[string])='' then
+                if FileExists(spliceFn) and SearchTag('SPLICEMAP', DB[string])='' and SearchTag('SPLICEMAP1', DB[string])='' then
                     warning('cached genome ('.gname.') contains no splicing map. Will rebuild cache.');
                     CallSystem('rm -f Cache/DB/'.gname.'.db');
                 else
                     GS[gname] := GenomeSummary(DB);
                     DBs := append(DBs,DB);
+                    DBhashes := append(DBhashes, sha2(DB['string'])[1..16]);
                     # genome is ready, continue with next one.
                     next;
                 fi:
@@ -195,7 +203,12 @@ ConvertGenomes := proc(G, pinf)
         printf('<KINGDOM>Unknown</KINGDOM>\n');
         printf('<FASTACHECKSUM>%s</FASTACHECKSUM>\n', checksum);
         if FileExists(spliceFn) then
-            printf('<SPLICEMAP>%A</SPLICEMAP>\n', splicemap);
+            setNr := 0: step := 1000:
+            for start to length(splicemap) by step do
+                 setNr := setNr+1:
+                 end_pos := min(length(splicemap), start+step-1);
+                 printf('<SPLICEMAP%d>%A</SPLICEMAP%d>\n', setNr, splicemap[start..end_pos], setNr);
+            od:
         fi:
         for i to length(input[1]) do
             printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', input[2,i], input[1,i]);
@@ -204,7 +217,10 @@ ConvertGenomes := proc(G, pinf)
         DB := ReadDb('Cache/DB/'.gname.'.db');
         GS[gname] := GenomeSummary(DB);
         DBs := append(DBs,DB);
+        DBhashes := append(DBhashes, sha2(DB['string'])[1..16]);
     od:
+    DownloadGeneOntologyIfNeeded();
+
     if pinf['ProcNr']=1 and not convDone(dataset_hash) then
         convDone(dataset_hash, true); # signal other processes to start.
     fi:

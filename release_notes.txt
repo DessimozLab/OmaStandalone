@@ -1,9 +1,39 @@
 ============================================
- Release notes for OMA Standalone 1.x series
+ Release notes for OMA standalone 1.x series
 ============================================
 
  :Author: Oma Developers
  :Contact: contact@omabrowser.org
+
+
+Summary of Changes from 1.0.6 to 1.1.0
+======================================
+This release contains a few new features and several bug fixes.
+Analysis of previous OMA standalone versions are still fully compatible.
+
+New Features
+------------
+- option to merge Quasi-cliques into bigger OMA Groups
+
+- gene ontology function annotation based on OMA group membership and 
+  functions from exported genomes.
+
+- new parameter consistency checks for fast abort and detection 
+  of cache inconsistencies.
+  
+
+Bug Fixes
+---------
+- properly escape IDs in orthoxml files
+
+- sequences longer than 100k residues/nucs can now be analysed
+
+- short sequences will not be discarded a priori
+
+- won't break with very long splicing maps (thanks to Javier Herrero)
+
+- fixing several spelling errors
+
 
 
 Summary of Changes from 1.0.5 to 1.0.6
@@ -35,6 +65,7 @@ Bug Fixes
 ---------
 - avoid potential dataraces in situations where oma is started after 
   changes of cached databases by removing a possible signaling file.
+
 
 Summary of Changes from 1.0.3 to 1.0.4
 ======================================
@@ -91,7 +122,7 @@ Bug Fixes
 Summary of Changes from 0.99v to 1.0.0
 ======================================
 
-With the release of OmaStandalone 1.x series we switch from a
+With the release of OMA standalone 1.x series we switch from a
 beta to a stable software product.
 
 Additional features

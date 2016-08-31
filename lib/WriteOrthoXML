@@ -32,10 +32,28 @@ local Grp2Id;
 
 Grp2Id:=0;
 
+
+XMLEscape := proc(s:string)
+    # Search for escape characters in string.
+    escape_chars := [['&', '&amp;'],
+                     ['"', '&quot;'],
+                     ['''', '&apos;'],
+                     ['<', '&lt;'],
+                     ['>', '&gt;']]:
+
+    r := s:
+    for e in escape_chars do
+        r := ConcatStrings(SearchDelim(e[1], r), e[2]):
+    od:
+
+    return(r):
+end:
+
+
 WriteXMLHeader := proc(release:string ; notes:string)
     printf('<?xml version="1.0" encoding="UTF-8"?>\n');
     printf('<orthoXML xmlns="http://orthoXML.org/2011/" version="0.3" '.
-        'origin="OMA Standalone" originVersion="%s">\n', release);
+        'origin="OMA standalone" originVersion="%s">\n', XMLEscape(release));
     if assigned(notes) then
         printf(' <notes>\n%s\n </notes>\n', notes);
     fi:
@@ -82,8 +100,8 @@ WriteGeneRefs := proc()
         if tax='' then tax := string(-1) fi;
         rel := GS[g,'DBRELEASE'];
         if rel='' then rel := GS[g,'FileName'] fi:
-        printf(' <species name="%s" NCBITaxId="%s">\n', g, tax);
-        printf('  <database name="%s" version="%s">\n', g, rel);
+        printf(' <species name="%s" NCBITaxId="%s">\n', XMLEscape(g), tax);
+        printf('  <database name="%s" version="%s">\n', XMLEscape(g), XMLEscape(rel));
         printf('   <genes>\n');
         DB := DBs[gNr];
         for i to GS[g,TotEntries] do 
@@ -94,9 +112,9 @@ WriteGeneRefs := proc()
                 refs := [IDtable[gNr,i], '', '']:
             fi:
             printf('    <gene id="%d" protId="%s"%s%s/>\n', id, 
-                refs[1], 
-                If(refs[2]<>'',sprintf(' transcriptId="%s"',refs[2]),''), 
-                If(refs[3]<>'',sprintf(' geneId="%s"',refs[3]),''));
+                XMLEscape(refs[1]), 
+                XMLEscape(If(refs[2]<>'',sprintf(' transcriptId="%s"',refs[2]),'')), 
+                XMLEscape(If(refs[3]<>'',sprintf(' geneId="%s"',refs[3]),'')));
         od:
         printf('   </genes>\n  </database>\n </species>\n');
     od:
@@ -150,7 +168,7 @@ WriteOMAHClusterR := proc( grp; id:string, (indent=2):posint )
         printf('%s<orthologGroup %s>\n', inS,
             If(assigned(id),sprintf('id="%a"',id),''));
         printf('%s <property name="TaxRange" value="%s" taxid="%d"/>\n', 
-            inS, grp[1], TaxonomyIdFromLevel(grp[1]));
+            inS, XMLEscape(grp[1]), TaxonomyIdFromLevel(grp[1]));
         for z in grp[2..-1] do
             WriteOMAHClusterR( z, indent+1);
         od:

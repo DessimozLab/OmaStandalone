@@ -1,0 +1,66 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 2.0
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 2.0 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/2.0/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is OMA standalone.
+#
+# The Initial Developer of the Original Code is CBRG Research Group; 
+# ETH Zurich; Switzerland.
+# Portions created by the Initial Developer are Copyright (C) 2005-2013
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#   Christophe Dessimoz <cdessimoz@inf.ethz.ch>
+#   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
+#   Stefan Zoller <stefan.zoller@inf.ethz.ch>
+#   Adrian Schneider <adrian.schneider@inf.ethz.ch>
+#   Alexander Roth <alexander.roth@inf.ethz.ch>
+#   Gaston Gonnet <gonnet@inf.ethz.ch>
+#
+# ***** END LICENSE BLOCK *****
+
+module external ValidateParameters;
+
+# checks for inconsistentency
+ValidateParameters := proc()
+    _check_species_tree_param();
+    _check_quasi_clique_cutoff();
+end:
+
+_check_species_tree_param := proc()
+    if lowercase(SpeciesTree)='estimate' then return();
+    elif lowercase(SpeciesTree)='lineage' then
+        for g in genomes do if GS[g,Lineage]=['Unknown'] then 
+            error('SpeciesTree cannot be "lineage" if lineage is not known for '.g);
+        fi od:
+    else
+        t := traperror(ParseNewickTree(SpeciesTree)):
+        if t=lasterror then
+            error('SpeciesTree is not a valid newick tree');
+        fi:
+        leaves := {seq(z['Label'], z=indets(t, Leaf))}:
+        gset := {op(genomes)}:
+        if leaves<>gset then 
+           error(sprintf('SpeciesTree does not contain the same leaves as species:\n'.
+                         'Differences: %A <--> %A', minus(leaves, gset), 
+                         minus(gset, leaves)));
+        fi:
+    fi:
+end:
+
+_check_quasi_clique_cutoff := proc()
+    if type(QuasiCliquesCutoff,numeric) and QuasiCliquesCutoff <= 0 then
+       error('QuasiCliquesCutoff must be a positive value');
+    fi:
+end:
+
+end: # module
