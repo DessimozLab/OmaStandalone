@@ -35,7 +35,7 @@ LoadSpliceMap := proc(genome)
     for i do
        smap := GS[genome, sprintf('SPLICEMAP%d',i)];
        if smap='' then break fi:
-       map := append(map, parse(smap))
+       map := append(map, op(parse(smap)))
     od:
     return(map);
 end:
