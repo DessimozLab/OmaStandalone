@@ -61,6 +61,15 @@ UseOnlyOneSplicingVariant := true;
 # clusters instead of full All-against-all. 
 UseExperimentalHomologousClusters := false;
 
+# OMA groups are cliques on the pairwise ortholog graph. By specifying 
+# a QuasiCliquesCutoff of less than 1, OMA groups that do not share any
+# species and N/(n*m) >= QuasiCliquesCutoff where N is the number of 
+# orthologous relations between the two OMA groups of sizes n and m, 
+# will be merged. The merged groups will be written to seperate output
+# files.
+QuasiCliquesCutoff := 1.0:
+
+
 ##############################################################
 # Output parameters
 ##############################################################
@@ -114,6 +123,16 @@ SpeciesTree := 'estimate';
 # The cutoff of 'average reachability within two steps' defines up to what 
 # point a cluster is split into sub-clusters.
 ReachabilityCutoff := 0.65;
+
+
+
+##############################################################
+# Function Prediction
+##############################################################
+# Compute predictions using Orthologous groups?
+# You can either set it to 'true', which will enable the computation or 
+# disable it by setting it to 'false'. Writing the output takes a long time. 
+DoGroupFunctionPrediction := true;
 
 
 
