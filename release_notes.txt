@@ -6,6 +6,18 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 1.1.0 to XXX
+====================================
+
+Bug Fixes
+---------
+- downloading files uses either wget or curl. if non of the two available,
+  OMA ends with a clearer error message
+
+- MinLength parameter does not discard short sequences
+
+
+
 Summary of Changes from 1.0.6 to 1.1.0
 ======================================
 This release contains a few new features and several bug fixes.
