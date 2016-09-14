@@ -51,13 +51,6 @@ CleanupSequences := proc(seqs_ids_tuple, gname, minLen)
     for i to length(seqs_ids_tuple[1]) do
         s := uppercase(seqs_ids_tuple[1,i]):
         # minimal check of sequences
-        if length(s) < minLen then
-            warning( sprintf( 
-                'Sequence %s (%s) is shorter (%d) than MinSeqLen=%d AA long. Ignored.\n',
-                seqs_ids_tuple[2,i], gname, length(s), minLen));
-            rem := append(rem, CleanID(seqs_ids_tuple[2,i]));
-            next;
-        fi;
         c_toX := 0;
         if InputDataType = 'DNA' then
             s := ReplaceDNAambigousWithAA(s);
