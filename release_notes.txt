@@ -16,6 +16,8 @@ Bug Fixes
 
 - MinLength parameter does not discard short sequences
 
+- improve support on HPC platforms that all children jobs get killed if 
+  job gets terminated
 
 
 Summary of Changes from 1.0.6 to 1.1.0
