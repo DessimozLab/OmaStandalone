@@ -46,6 +46,7 @@ mkdir $instpath/Manual
 cp Manual/manual.pdf $instpath/Manual/
 cp Manual/manual.css $instpath/Manual/
 cp Manual/manual.html $instpath/Manual/
+cp release_notes.txt $instpath/Manual/
 
 # copy toy example to $1/OMA$versionnr
 cp -r ToyExample $instpath/ToyExample
@@ -71,3 +72,4 @@ $(cd `dirname $instpath`; tar -cvzf `basename $instpath`.tgz `basename $instpath
 scp $(dirname $instpath)/$(basename $instpath).tgz ${webpath}
 scp $(dirname $0)/Manual/manual.css ${webpath}
 scp $(dirname $0)/Manual/manual.html ${webpath}/index.html
+scp $(dirname $0)/release_notes.txt ${webpath}
