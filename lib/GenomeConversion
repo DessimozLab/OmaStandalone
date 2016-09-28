@@ -116,6 +116,7 @@ WaitUntilConversionDone := proc(dataset_hash, pinf):
 end:
 
 DownloadGeneOntologyIfNeeded := proc()
+    if not DoGroupFunctionPrediction=true then return() fi:
     lnk := datadirname.'/GOdata.drw.gz':
     src := TimedCallSystem('readlink '.lnk);
     if src[1]<>0 or (not FileExists(trim(src[2])) and not FileExists(datadirname.'/'.trim(src[2]))) then 
