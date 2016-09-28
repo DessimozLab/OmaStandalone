@@ -2,7 +2,7 @@
  Release notes for OMA standalone 1.x series
 ============================================
 
- :Author: Oma Developers
+ :Author: OMA Developers
  :Contact: contact@omabrowser.org
 
 
@@ -11,17 +11,17 @@ Summary of Changes from 1.1.0 to XXX
 
 Bug Fixes
 ---------
-- downloading files uses either wget or curl. if non of the two available,
-  OMA ends with a clearer error message
+- Downloading files uses either wget or curl. If none of the two available,
+  OMA ends with a clearer error message.
 
-- MinLength parameter does not discard short sequences
+- MinLength parameter does not discard short sequences.
 
 
 
 Summary of Changes from 1.0.6 to 1.1.0
 ======================================
 This release contains a few new features and several bug fixes.
-Analysis of previous OMA standalone versions are still fully compatible.
+Analyses obtained from previous OMA standalone versions are still fully compatible, so it is safe to carry over the Cache/ (and of course also DB/) folders.
 
 New Features
 ------------
@@ -50,7 +50,7 @@ Bug Fixes
 
 Summary of Changes from 1.0.5 to 1.0.6
 ======================================
-This is a bugfix release only
+This is a bugfix release only.
 
 Bug Fixes
 ---------
@@ -71,7 +71,7 @@ Bug Fixes
 
 Summary of Changes from 1.0.4 to 1.0.5
 ======================================
-This is a bugfix release only
+This is a bugfix release only.
 
 Bug Fixes
 ---------
@@ -81,7 +81,7 @@ Bug Fixes
 
 Summary of Changes from 1.0.3 to 1.0.4
 ======================================
-This is a bugfix release only
+This is a bugfix release only.
 
 Bug Fixes
 ---------
@@ -93,7 +93,7 @@ Bug Fixes
 
 Summary of Changes from 1.0.2 to 1.0.3
 ======================================
-This is a bugfix release only
+This is a bugfix release only.
 
 Bug Fixes
 ---------
