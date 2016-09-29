@@ -124,7 +124,7 @@ if [[ -n "$interactive" && $localParallel == "1" && $NProc -gt "1" ]]; then
 fi
 
 set -o monitor
-trap cleanup EXIT
+trap cleanup EXIT INT
 
 cleanup() {
     children=$(jobs -lp)
@@ -147,9 +147,9 @@ EOC
 )
 
 cat $OMA_PATH/lib/splashscreen.txt
-if [ -n "$interactive" ] ; then
+if [ -n "$interactive" ] || [ "${NProc}" = "1" ] ; then
     # run interactive, i.e. no background 
-    $OMA_PATH/bin/omadarwin ${darwin_flag} << EOA
+    exec $OMA_PATH/bin/omadarwin ${darwin_flag} << EOA
     $drw_cmds
 EOA
 else
