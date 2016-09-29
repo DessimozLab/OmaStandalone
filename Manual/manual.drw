@@ -400,7 +400,7 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
             changed by changing the ', TT('OutputFolder'), ' parameter, There are 
             text files and directories organized as described in Table 1.'),
             
-            Table( hastitlerow, ColAlign('l', 'p{10cm}'),
+            Table( hastitlerow, long, ColAlign('l', 'p{10cm}'),
                     title = 'Table 1: Contents of the OMA output files',
                     Row(Bold('Filename or Directory'), Bold('Contents')),
                     Rule,
@@ -531,7 +531,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                 will not have an effect unless you set the boolean variable ',
                 TT('UseEsprit'), ' to ', TT('true'), '.'),
                 
-                Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
+                Table( hastitlerow, long, ColAlign('l', 'p{9cm}', 'p{2cm}'),
                     title = 'Table 3: General parameters in OMA',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
                     Rule,
@@ -783,6 +783,7 @@ OpenWriting('Manual/manual.tex'):
     prints('% created from manual.drw');
     prints( LaTeXC(DocEl('documentclass', 'scrartcl') ) ):
     prints( LaTeXC(DocEl('usepackage', 'hyperref') ) ):
+    prints( LaTeXC(DocEl('usepackage', 'longtable') ) ):
     prints( LaTeXC(DocEl('hypersetup', 'colorlinks,
 citecolor=blue,
 filecolor=blue,
