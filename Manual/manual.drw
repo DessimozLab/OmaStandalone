@@ -522,12 +522,17 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                 set in a parameters file. There is an example file in the
                 OMA installer package; we encourage you to copy this file
                 into your working directory and change it to your needs.'),
-                Paragraph(0, 'The parameter file consists of two main parts:
+
+                Paragraph(0, 'The parameter file consists of three main parts:
                 First, general parameters for OMA are set; see Table 3 for
-                detailed explanations. Second, more specific parameters 
-                that only affect the ESPRIT algorithm can be changed. 
-                These parameters are explained in Table 4.
-                Note that changing the ESPRIT parameters
+                detailed explanations. Next, there are a number of optional
+                parameters, listed in Table 4, to avoid producing particular 
+                output files. For very big analyses, disabling the generation 
+                of unused output might save a substantial amount of computing 
+                time and might drastically reduce the number of produced 
+                files. Third, more specific parameters that only affect the 
+                ESPRIT algorithm can be changed.  These parameters are 
+                explained in Table 5.  Note that changing the ESPRIT parameters
                 will not have an effect unless you set the boolean variable ',
                 TT('UseEsprit'), ' to ', TT('true'), '.'),
                 
@@ -642,17 +647,37 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        based on the OMA Groups assignments. The predictions are
                        then stored in a gaf file. Computing these predictions 
                        can take a substantial amount of time.'),
+                       TT('true'))
+                    ),
+
+                Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
+                    title = 'Table 4: Output file parameters',
+                    Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
+                    Rule,
+                    Row(TT('WriteOutput_PairwiseOrthologs'),
+                       Paragraph(0,'Switches to disable the generation of 
+                       pairwise ortholog output files if set to ',
+                       TT('false'), '.'),
                        TT('true')),
-                    Row(TT('WriteOutput_*'),
-                       Paragraph(0,'Switches to disable the generation of certain 
-                       output files if set to ',TT('false'),'. For very big analyses, 
-                       disabling the generation of unused output might save a 
-                       substantial amount of computing time and might drastically 
-                       reduce the number of produced files.'),
+                    Row(TT('WriteOutput_OrthologousPairs_orthoxml'),
+                       Paragraph(0,'Switches to disable the generation of the 
+                       pairwise ortholog output file in OrthoXML format if set 
+                       to ',TT('false'),'.'),
+                       TT('true')),
+                    Row(TT('WriteOutput_OrthologousGroupsFasta'),
+                       Paragraph(0,'Switches to disable the generation of 
+                       orthologous group output files (Fasta format, one 
+                       file per group) if set to ',TT('false'),'.'),
+                       TT('true')),
+                    Row(TT('WriteOutput_HOGFasta'),
+                       Paragraph(0,'Switches to disable the generation of 
+                       hierarchical orthologous group files (Fasta format, one 
+                       file per group) if set to ',TT('false'),'.'),
                        TT('true'))
                 ),
+
                 Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
-                    title = 'Table 4: ESPRIT parameters',
+                    title = 'Table 5: ESPRIT parameters',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
                     Rule,
                     Row(TT('UseEsprit'), 
@@ -781,7 +806,9 @@ formats := [ Anchor(TextBlock('a', name='fileformats',
 OpenWriting('Manual/manual.tex'):
     prints('% Do not modify this file. It has been automatically ');
     prints('% created from manual.drw');
-    prints( LaTeXC(DocEl('documentclass', 'scrartcl') ) ):
+    prints('\\documentclass[a4paper,10pt]{scrartcl}');
+    prints('\\usepackage[margin=2cm]{geometry}');
+    #prints( LaTeXC(DocEl('documentclass', 'scrartcl') ) ):
     prints( LaTeXC(DocEl('usepackage', 'hyperref') ) ):
     prints( LaTeXC(DocEl('usepackage', 'longtable') ) ):
     prints( LaTeXC(DocEl('hypersetup', 'colorlinks,
