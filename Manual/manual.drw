@@ -539,8 +539,9 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                 Paragraph(0, 'And third, more specific parameters that only 
                 affect the ESPRIT algorithm can be changed.  These parameters 
                 are explained in Table 5.  Note that changing the ESPRIT 
-                parameters
-                will not have an effect unless you set the boolean variable ',
+                parameters will not have an effect unless you set the boolean 
+                variable ',
+
                 TT('UseEsprit'), ' to ', TT('true'), '.'),
                 
                 Table( hastitlerow, long, ColAlign('l', 'p{9cm}', 'p{2cm}'),
