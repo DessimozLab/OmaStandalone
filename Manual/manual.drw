@@ -400,7 +400,7 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
             changed by changing the ', TT('OutputFolder'), ' parameter, There are 
             text files and directories organized as described in Table 1.'),
             
-            Table( hastitlerow, ColAlign('l', 'p{10cm}'),
+            Table( hastitlerow, long, ColAlign('l', 'p{10cm}'),
                     title = 'Table 1: Contents of the OMA output files',
                     Row(Bold('Filename or Directory'), Bold('Contents')),
                     Rule,
@@ -454,7 +454,7 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     the hierarchical groups inference procedure is based,
                     in Newick format.')),
                     Row(TT('HOGFasta/'), 
-                    Paragraph(0, 'For each toplevel HOG group we provide a
+                    Paragraph(0, 'For each top-level HOG group we provide a
                     separate Fasta file with all protein sequences clustered
                     to it. This format is particularly suitable as starting 
                     point for a phylogenetic reconstruction of a gene tree.')),
@@ -462,8 +462,13 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     Paragraph(0, 'If ',TT('UseOnlyOneSplicingVariant'), 'is activated and
                     splicing information is available, the variant which has been used 
                     for calling the orthologous relations is stored in this file.
-                    The format is a tab-delimitted text file with the species in the 
+                    The format is a tab-delimited text file with the species in the 
                     first column and the id of the used splicing variant in the second column.')),
+                    Row(TT('gene_function.gaf'),
+                       Paragraph(0, 'The predicted Gene Ontology function assignments
+                    as a gaf formatted file. The file is only created if ',
+                    TT('DoGroupFunctionPrediction'), ' is set to ',TT('true'),' in the 
+                    parameter file.')),
                     NULL
             ) ,
             
@@ -526,7 +531,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                 will not have an effect unless you set the boolean variable ',
                 TT('UseEsprit'), ' to ', TT('true'), '.'),
                 
-                Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
+                Table( hastitlerow, long, ColAlign('l', 'p{9cm}', 'p{2cm}'),
                     title = 'Table 3: General parameters in OMA',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
                     Rule,
@@ -632,6 +637,12 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        two steps" defines up to what point a cluster is split 
                        into sub-clusters.'), 
                        TT('0.65')),
+                    Row(TT('DoGroupFunctionPrediction'),
+                       Paragraph(0, 'Compute Gene Ontology function predictions 
+                       based on the OMA Groups assignments. The predictions are
+                       then stored in a gaf file. Computing these predictions 
+                       can take a substantial amount of time.'),
+                       TT('true')),
                     Row(TT('WriteOutput_*'),
                        Paragraph(0,'Switches to disable the generation of certain 
                        output files if set to ',TT('false'),'. For very big analyses, 
@@ -772,6 +783,7 @@ OpenWriting('Manual/manual.tex'):
     prints('% created from manual.drw');
     prints( LaTeXC(DocEl('documentclass', 'scrartcl') ) ):
     prints( LaTeXC(DocEl('usepackage', 'hyperref') ) ):
+    prints( LaTeXC(DocEl('usepackage', 'longtable') ) ):
     prints( LaTeXC(DocEl('hypersetup', 'colorlinks,
 citecolor=blue,
 filecolor=blue,
