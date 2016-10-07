@@ -6,8 +6,18 @@
  :Contact: contact@omabrowser.org
 
 
-Summary of Changes from 1.1.1 to XXX
-====================================
+Summary of Changes from 1.1.1 to 1.1.2
+======================================
+
+Bug Fixes
+---------
+- Avoid printing warning when downloading Gene Ontology hierarchy
+  for the first time.
+
+- Fixing a bug occuring on ubuntu with downloading data files.
+
+- Properly terminate OMA standalone runs at end except if run in 
+  interactive mode.
 
 
 Summary of Changes from 1.1.0 to 1.1.1
