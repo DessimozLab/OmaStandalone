@@ -90,7 +90,7 @@ while getopts "hn:vd:isc" opt ; do
          exit 0
          ;;
     i)   darwin_flag=""
-         interactive="1"
+         interactive="interactive"
          ;;
     s)   earlyStop="true;"
          ;;
@@ -147,11 +147,16 @@ EOC
 )
 
 cat $OMA_PATH/lib/splashscreen.txt
-if [ -n "$interactive" ] || [ "${NProc}" = "1" ] ; then
-    # run interactive, i.e. no background 
+if [ -n "$interactive" ] ; then
+    # run interactive, i.e. no background, no done stmt 
     exec $OMA_PATH/bin/omadarwin ${darwin_flag} << EOA
     $drw_cmds
 EOA
+elif [ "${NProc}" = "1" ] ; then
+    exec $OMA_PATH/bin/omadarwin ${darwin_flag} << EOB
+    $drw_cmds
+    done;
+EOB
 else
     for pNr in $(eval echo {1..${NProc}}) ; do
         if [ "$localParallel" -gt 0 ] ; then
