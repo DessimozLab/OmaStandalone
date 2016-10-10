@@ -19,6 +19,8 @@ Bug Fixes
 - Properly terminate OMA standalone runs at end except if run in 
   interactive mode.
 
+- Extended documentation with more details about the ouput files.
+
 
 Summary of Changes from 1.1.0 to 1.1.1
 ======================================
