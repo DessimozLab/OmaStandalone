@@ -190,6 +190,14 @@ IsMyJob := proc(name1, name2, chunk)
     return( evalb(mod(nr, pinf['NrParallelProc']) = pinf['ProcNr']-1) );
 end:
 
+CheckRemainingTimeAndQuitIfOver := proc(fn_chunk)
+    if stop_at_time - UTCTime() < 10 then 
+        printf('\n\n%s\nReached timelimit. Quitting now...\n', CreateString(34,'*')):
+        CallSystem('rm -f '.fn_chunk):
+        exit(3):
+    fi:
+end:    
+
 if UseExperimentalHomologousClusters=true then
     ReadProgram(If(not assigned(libdir),'lib',libdir).'/HomologousClustering'):
 else
@@ -276,6 +284,7 @@ for g1 to NG do
                 len1 := length(Seqs1[i1]);
                 len2 := length(Seqs2[i2]);
                 c2 := c2+1;
+                if mod(c2,1009)=0 then CheckRemainingTimeAndQuitIfOver(fn) fi:
                 if mod(c2,50000)=0 then
                     printf('   [pid %6d]: %.2f%% complete, time left for this '.
                         'part=%.2fh, %.1f%% of AllAll done. Mem: %.3fGB\n',

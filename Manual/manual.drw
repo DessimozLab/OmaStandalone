@@ -320,7 +320,6 @@ OMA -s
 OMA'), 'Note that this staging is mostly useful on computing clusters where 
         often memory and cpu time has to be reserved at job submission.'
         ),
-        
 
         Anchor(TextBlock('a', name='Adding/Updating new genomes', 
             SectionHeader(2, 'Adding/Updating new genomes'))
@@ -332,9 +331,29 @@ OMA'), 'Note that this staging is mostly useful on computing clusters where
         from the DB/ directory, and adding a new file. ', Bold('Important: '), 
         'to avoid clashes with previously computed results, the updated genome 
         must use a different filename than any previously computed 
-        result.') 
-        ,
+        result.'),
+ 
+        Anchor(TextBlock('a', name='advanced optimisations', 
+            SectionHeader(2, 'Advanced usages of OMA standalone'))
+        ),
+        Paragraph(0, 'In this section we collect a few ideas to push the limits of 
+        OMA standalone.'),
+ 
+        Anchor(TextBlock('a', name='maximum time', 
+            SectionHeader(3, 'Specifying the maximum amount of computing time'))
+        ),
+        Paragraph(0, 'Often it is desirable to have many short jobs than a few
+        long running ones, especially in a HPC environment. There, usually each
+        job is limited to a certain amount of time, where short jobs usually 
+        get a higher priority assigned. With the ', TT('-W'), ' command line 
+        option, one can inform OMA of the maximum amount of time (in seconds) it should use
+        before exiting in a clean way. Once this time limit is reached, OMA terminates
+        with an exit value of 3, which can be used on many schedulers to re-queue the job
+        automatically. On LSF, you can use for example -Q "3". Sensible values
+        for ',TT('-W'), ' are usually between 3600 (1 hour) or higher. Note that 
+        this flag does not replace any resource allocation option from the scheduler.'),
         
+       
         NULL]:
 
 # INPUT FORMATS

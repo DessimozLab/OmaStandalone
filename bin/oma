@@ -30,7 +30,7 @@ e.g. bsub -J "oma[1-500]" $0 (on LSF).
 In case you run OMA on a single computer with several cores, use 
 the -n option.
 
-options:
+Options:
   -n <number>   number of parallel jobs to be started on this computer
   -v            version
   -d <level>    increase debug info to <level>. By default level is set to 1.
@@ -44,9 +44,21 @@ options:
   -c            stop after database conversion. This option is useful if you 
                 work with a large dataset and/or the filesystem you use is 
                 slow. 
+  -W <secs>     maximum amount of Wall-clock time (in secs) that the job should
+                run before terminating in a clean way. This option has only an 
+                effect in the all-against-all phase. If the job terminates
+                because it reaches the time limit, it quits with the exit
+                code 3.
   -h/?          this help
 
 paramfile       path to the parameter file. it defaults to ./parameters.drw
+
+
+EXIT
+   0            normal exit
+   1            a general error (i.e. configuration problem) occured
+   3            reached timelimit (provided with -W flag)
+
 EOF
 }
 
@@ -66,7 +78,7 @@ darwin_flag="-E -q"
 interactive=""
 earlyStop="false"
 convOnly="false"
-while getopts "hn:vd:isc" opt ; do
+while getopts "hn:vd:isc-W:" opt ; do
     case $opt in 
     h) usage
          exit 0
@@ -96,6 +108,13 @@ while getopts "hn:vd:isc" opt ; do
          ;;
     c)   convOnly="true;"
          ;;
+    W)   maxtime="$OPTARG"
+         if ! [[ $maxtime =~ ^[1-9][0-9]*$ ]] ; then
+              echo "-$opt requires a positive integer value as argument" >&2
+              usage
+              exit 1
+         fi
+         ;;
     \?)  echo "invalid option" >&2
          usage
          exit 1
@@ -123,6 +142,8 @@ if [[ -n "$interactive" && $localParallel == "1" && $NProc -gt "1" ]]; then
     exit 1
 fi
 
+if [ -z "$maxtime" ] ;then maxtime="DBL_MAX"; fi
+
 set -o monitor
 trap cleanup EXIT INT
 
@@ -141,7 +162,8 @@ loaded_params := [e]:
 printlevel := $dbglevel: 
 OMA_STANDALONE_VERSION := '[VERSIONNR]':
 only_run_allall := $earlyStop:
-only_run_dbconv := $convOnly;
+only_run_dbconv := $convOnly:
+stop_at_time := UTCTime() + $maxtime:
 ReadProgram('$OMA_PATH/OMA.drw'):
 EOC
 )

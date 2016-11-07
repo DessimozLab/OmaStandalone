@@ -9,6 +9,11 @@
 Summary of Changes from 1.1.2 to XXX
 ====================================
 
+New Features:
+-------------
+- Allow to specify a timelimit for the AllAll computations with a special
+  exit code.
+
 
 Summary of Changes from 1.1.1 to 1.1.2
 ======================================
