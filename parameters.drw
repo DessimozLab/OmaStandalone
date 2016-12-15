@@ -43,6 +43,18 @@ LengthTol := 0.61;
 # discarded.
 StablePairTol := 1.81;
 
+# During the stable pair formation, if the within species evolutionary distance 
+# difference is more than InparalogTol standard deviations closer than the 
+# distance to the other species, a pair is still considered inparalog even 
+# if they don't fullfil the StablePairTol criterion
+InparalogTol := 3.00;
+
+# The ParalogTol is used to identify clear paralogous pairs, which can be 
+# used in further analysis. If set to a value larger than StablePairTol,
+# homologous matches for which the difference in their evolutionary distance
+# is larger than ParalogTol * std(distance) will be stored.
+ParalogTol := 2.5*StablePairTol;
+
 # For the verification of stable pairs, there is also a tolerance parameter 
 # (for details, see Dessimoz et al, Nucl Acids Res 2006)
 VerifiedPairTol := 1.53;
@@ -96,6 +108,7 @@ GuessIdType := false;
 #WriteOutput_OrthologousPairs_orthoxml := false;  #this file requires lots of time.
 #WriteOutput_OrthologousGroupsFasta := false;
 #WriteOutput_HOGFasta := false;
+#WriteOutput_Paralogs := false; 
 
 
 ##############################################################
@@ -123,7 +136,6 @@ SpeciesTree := 'estimate';
 # The cutoff of 'average reachability within two steps' defines up to what 
 # point a cluster is split into sub-clusters.
 ReachabilityCutoff := 0.65;
-
 
 
 ##############################################################

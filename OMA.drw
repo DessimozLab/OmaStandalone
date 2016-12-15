@@ -563,6 +563,26 @@ else
                 od;
             od:
             OpenWriting(previous);
+        od od:
+    fi:
+
+    if not WriteOutput_Paralogs=false then
+        CallSystem('mkdir '.OutputFolder.'/PairwiseParalogs');
+        for i to NG do for j from i+1 to NG do
+            if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+                g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+
+            OpenWriting(OutputFolder.'/PairwiseParalogs/'.genomes[g1].'-'.genomes[g2].'.txt');
+            printf('#nr1\tnr2\tid1\tid2\tScore\tPamDist\n');
+            for x1 to ns[g1] do 
+                pp := decompress(ParalogPairs[g1,g2,x1]);
+                for y2 in pp do 
+                    printf('%d\t%d\t%s\t%s\t%.2f\t%.2f\n',
+                        x1, y2['Entry'], IDtable[g1,x1], IDtable[g2, y2['Entry']],
+                        y2['Score100']/100, y2['PamDist10000']/10000);
+                od:
+            od:
+            OpenWriting(previous);
         od;od:
     fi:
     # store the pairwise orthologs in orthoxml format
