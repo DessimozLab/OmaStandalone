@@ -163,7 +163,7 @@ for X to NG do for Y to NG do if X <> Y then
                         else 
                             active[i1] := false;
                         fi:
-                        if not active[i1] then 
+                        if not active[i1] and ParalogTol>0 then 
                             if diff > ParalogTol * sqrt(1000*(t[i1,PamVar100000] + t[i2,PamVar100000])) or 
                                     diff > ParalogTol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP')  then
                                 ParalogPairs[X,Y,x1] := append(ParalogPairs[X,Y,x1], t[i1]);

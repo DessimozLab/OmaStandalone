@@ -566,7 +566,7 @@ else
         od od:
     fi:
 
-    if not WriteOutput_Paralogs=false then
+    if not WriteOutput_Paralogs=false and ParalogTol>0 then
         CallSystem('mkdir '.OutputFolder.'/PairwiseParalogs');
         for i to NG do for j from i+1 to NG do
             if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
