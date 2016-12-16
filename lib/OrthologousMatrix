@@ -372,8 +372,9 @@ for X to NG do for Y from X+1 to NG do
                     #   d(x1, y2) + d(z3, z4) ~ d(x1,z4) + d(y2, z3)
                     #
                     found_z3_z4 := false;
-                    for c4 in decompress(BestMatch[Z,Z,z3]) do
-                        if c4[Entry]=z4 then 
+                    z3_1 := z3; z4_1 := z4; if z3>z4 then z3_1 := z4; z4_1:=z3 fi:
+                    for c4 in decompress(BestMatch[Z,Z,z3_1]) do
+                        if c4[Entry]=z4_1 then 
                             found_z3_z4 := true: 
                             break: 
                         fi:
