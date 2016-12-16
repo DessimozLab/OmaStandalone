@@ -14,6 +14,12 @@ New Features:
 - Allow to specify a timelimit for the AllAll computations with a special
   exit code.
 
+- Improve rescuing of inparalogs where one copy evolves significantly 
+  faster than the other copy
+
+- Add an additional check for additivity of the distances when checking 
+  for hidden paralogy
+
 
 Summary of Changes from 1.1.1 to 1.1.2
 ======================================
