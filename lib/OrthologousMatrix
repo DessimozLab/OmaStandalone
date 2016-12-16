@@ -379,11 +379,24 @@ for X to NG do for Y from X+1 to NG do
                             break: 
                         fi:
                     od:
-                    if not found_z3_z4 then next fi;  # a weired case, don't use to break x1-x2
+                    if not found_z3_z4 then
+                         # a weired case, don't use to break (x1,x2)
+                         if printlevel > 3 then 
+                             printf(' VP check: %s/%05d vs %s/%05d by %s/(%05d,%05d): (z3,z4) not BestMatch\n',
+                                    genomes[X], x1, genomes[Y], y2, genomes[Z], z3, z4);
+                         fi:
+                         next 
+                    fi;
 
                     if abs(a4[PamDist10000]+b3[PamDist10000]-a1[PamDist10000]-c4[PamDist10000]) / 
                        sqrt(1000*(a3[PamVar100000]+b4[PamVar100000] + a1[PamVar100000]+c4[PamVar100000])) > 2 then
-                            next:  # case that vialotes additivity check
+                         if printlevel > 3 then 
+                             printf(' VP check additivity: %s/%05d vs %s/%05d by %s/(%05d,%05d): %f>2\n',
+                                    genomes[X], x1, genomes[Y], y2, genomes[Z], z3, z4,
+                                    abs(a4[PamDist10000]+b3[PamDist10000]-a1[PamDist10000]-c4[PamDist10000]) /
+                                    sqrt(1000*(a3[PamVar100000]+b4[PamVar100000] + a1[PamVar100000]+c4[PamVar100000])));
+                         fi:
+                         next:  # case that vialotes additivity check
                     fi:
 
                     if GetStats=true then
