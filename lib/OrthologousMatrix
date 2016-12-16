@@ -38,24 +38,30 @@
 #            y2
 
 # return 10000*StdDiff to allow direct comparison with PamDist10000
-StdDiff10000 := proc(X,Y,x1,M1,M2,context:{'SP','VP'})
+StdDiff10000 := proc(X,Y,x1,M1,M2,context:{'SP','VP','SPinp'})
     y1 := M1[Entry]; 
     D1 := M1[PamDist10000]/10000; V1 := M1[PamVar100000]/100000;
     y2 := M2[Entry]; 
     D2 := M2[PamDist10000]/10000; V2 := M2[PamVar100000]/100000;   
-    if y1 > y2 then t := y1;  y1 := y2;  y2 := t fi;
+
+    M3 := GetMatch(Y,Y,y1,y2);
 
     # in case we cannot compute the variance, we are conservative,
-    # meaning that the tolerance is very small in case of SP
+    # meaning that the tolerance is very small in case of SP or SPinp
     # formation, and the required difference is as large as independent
     # distances in case of verification of SP:
-    bm := decompress(BestMatch[Y,Y,y1]);
-    found := false;
-    for M3 in bm do if M3[Entry]=y2 then found := true;  break fi od:
-    if not found then
-        return( If(context='SP',1000,10000*sqrt(V1+V2)) )
+    if M3=0 then
+        return( If(context[1..2]='SP', 1000, 10000*sqrt(V1+V2)) )
     else
-	D3 := M3[PamDist10000]/10000; V3 := M3[PamVar100000]/100000;   
+        D3 := M3[PamDist10000]/10000; V3 := M3[PamVar100000]/100000;
+        if context='SPinp' then
+            # we change the assignment of the distances and variances
+            # M1: (y1,y2) M2: shorter distance match of (x1, y1), (x1,y2)
+            #             M3: longer distance match of (x1,y1), (x1, y2)
+            t := D1; D1 := D3; D3 := t;
+            t := V1; V1 := V3; V3 := t;
+            if D2 > D3 then t := D2; D2 := D3; D3 := t; t := V2; V2 := V3; V3 := t fi: 
+        fi:
         r := 0.5*(D1+D2-D3);
         s := D1 - r;
         t := D2 - r;
@@ -65,20 +71,32 @@ StdDiff10000 := proc(X,Y,x1,M1,M2,context:{'SP','VP'})
         if t < 0 then return(10000*sqrt(V2+V3)); fi;
         
         if V3>V1+V2 then
-            return( If(context='SP',1000,10000*sqrt(V1+V2)) )
+            return( If(context[1..2]='SP',1000,10000*sqrt(V1+V2)) )
         fi;
 
 
-	# 10000 * triplet covariance estimation from Dessimoz et. al 2006
+        # 10000 * triplet covariance estimation from Dessimoz et. al 2006
         return( 10000 *
             (D1+D2)^(-1.308966/2) *
             (V1+V2)^(1.043483/2) *
             D3^(0.689524) *
             V3^(-0.333925/2) *
             (V1*V2)^(0.159016/2) )
-    fi;
+     fi;
 end:
 
+# helper function to retrieve a match between gene x from genome X and 
+# gene y from genome Y. If not a bestmatch, 0 is returned.
+GetMatch := proc(X,Y,x,y)
+    if X=Y and x>y then
+        x1 := y; y2 := x;
+    else x1 := x; y2 := y fi;
+
+    bm := decompress(BestMatch[X,Y,x1]);
+    found := false; 
+    for m in bm do if m[Entry]=y2 then found := true; break fi od:
+    if found then return(m) else return(0) fi:
+end:
 
 ####################################
 # Orthologous matrix using cliques #
@@ -87,62 +105,109 @@ OrthologousMatrix := proc( MinScore:positive, LengthTol:positive,
     StablePairTol:positive, VerifiedPairTol:positive, UseEsprit:boolean)
 global CliqueIterFactor, histog, triangle_analysis, StablePairs, VPairs, 
        BreakingStatsG,witnesses, PossContigHits, DefContigHits, ContigHits,
-       DB, ParamSet;
+       DB, ParamSet, ParalogPairs;
 
 # Boundary scores for stable pairs
 starttime := time();
-
-    totpairs := rempairs := 0;
-    StablePairs := CreateArray(1..NG,1..NG):
-    for X to NG do for Y to NG do if X <> Y then
-        if assigned(ContigStablePairTol) and (isContig[X] or isContig[Y]) then
-            Tol := ContigStablePairTol;
-        else
-            Tol := StablePairTol;
-        fi;
-        StablePairs[X,Y] := CreateArray(1..ns[X],{});
-        for x1 to ns[X] do
-            if BestMatch[X,Y,x1] <> [] then
-                t := sort(decompress(BestMatch[X,Y,x1]),x->-x[PamDist10000]);
-                lt := length(t);
-                active := CreateArray(1..lt,true);
-                if X > Y then for i1 to lt do
-                    if member(x1,decompress(StablePairs[Y,X,t[i1,Entry]]))
-            then break;
-                    else active[i1] := false fi 
-                od fi;   
-            for i1 to lt do if active[i1] then
-                    for i2 from lt by -1 to i1 + 1 do if active[i2] then
-                # diff is 10000* difference of D1 and D2
-                        diff := abs(t[i1,PamDist10000] - t[i2,PamDist10000]);
-                        if diff > Tol * 
-                            sqrt(1000*(t[i1,PamVar100000] + t[i2,PamVar100000])) or
-                            diff > Tol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP') 
-                            then
-                            if t[i1,PamDist10000] > t[i2,PamDist10000] then
-                                active[i1] := false;
-                                break;
-                            else
-                                active[i2] := false
-                            fi;
-                        fi:
-                    fi od;
-                fi od;
-                totpairs := totpairs + lt;
-                StablePairs[X,Y,x1] := { seq( If(active[i1],t[i1,Entry],NULL),
-                            i1=1..lt ) };
-                rempairs := rempairs + lt - length(StablePairs[X,Y,x1]);
-            StablePairs[X,Y,x1] := compress(StablePairs[X,Y,x1]);
-            fi;
-        od;
-        printf( '%d stable pairs found for %s vs %s\n',
-            sum(length(decompress(z)),z=StablePairs[X,Y]),
-        genomes[X], genomes[Y] );
-    fi od od:
-    if printlevel >= 3 then printf( 
-        'OrthologousMatrix: SP formation done, %d removed from %d BestMatches\n', 
-        rempairs, totpairs);
+totpairs := rempairs := inparalogpairs := 0;
+StablePairs := CreateArray(1..NG,1..NG):
+ParalogPairs := CreateArray(1..NG,1..NG):
+for X to NG do for Y to NG do if X <> Y then
+    if assigned(ContigStablePairTol) and (isContig[X] or isContig[Y]) then
+        Tol := ContigStablePairTol;
+    else
+        Tol := StablePairTol;
     fi;
+    StablePairs[X,Y] := CreateArray(1..ns[X],{});
+    ParalogPairs[X,Y] := CreateArray(1..ns[X],{});
+    for x1 to ns[X] do
+        if BestMatch[X,Y,x1] <> [] then
+            t := sort(decompress(BestMatch[X,Y,x1]),x->-x[PamDist10000]);
+            lt := length(t);
+            active := CreateArray(1..lt,true);
+            if X > Y then for i1 to lt do
+                if member(x1,decompress(StablePairs[Y,X,t[i1,Entry]])) then break;
+                else active[i1] := false fi 
+            od fi;   
+            for i1 to lt do if active[i1] then
+                for i2 from lt by -1 to i1 + 1 do if active[i2] then
+                    # diff is 10000* difference of D1 and D2
+                    diff := abs(t[i1,PamDist10000] - t[i2,PamDist10000]);
+                    if diff > Tol * sqrt(1000*(t[i1,PamVar100000] + t[i2,PamVar100000])) or
+                             diff > Tol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP') then
+                        # distance to y1 is significantly bigger than to y2. Most likely a paralog
+                        # no we check whether the distance between x1y2 is significantly 
+                        # larger than between y1y2 in which case we still keep x1y2 *and* x1y2 
+                        # as stable pairs
+                        if t[i1,PamDist10000] <= t[i2,PamDist10000] then 
+                            error('this must not happen, since matches are ordered') 
+                        fi:
+                        yy := GetMatch(Y,Y,t[i1,'Entry'], t[i2,'Entry']);
+                        if printlevel>3 then
+                            logmsg := [sprintf('\n Triplet X=%5s/%05d ; Y1=%5s/%05d ; Y2=%5s/%05d', genomes[X], x1, 
+                                               genomes[Y], t[i1, 'Entry'], genomes[Y], t[i2, 'Entry']), 
+                                       sprintf('%7s %11s   %11s   %11s', ' ', 'X/Y1','X/Y2','Y1/Y2'),
+                                       sprintf('%7s %11.2f   %11.2f   %11.2f', 'Dist', t[i1, PamDist10000]/10000,
+                                               t[i2,PamDist10000]/10000, If(yy=0, 0, yy[PamDist10000]/10000)),
+                                       sprintf('%7s %11.2f   %11.2f   %11.2f', 'std(D)', 
+                                               sqrt(t[i1, PamVar100000]/100000),
+                                               sqrt(t[i2, PamVar100000]/100000), 
+                                               If(yy=0, -1, sqrt(yy[PamVar100000]/100000))),
+                                       CreateString(8+11+3+11+3+11, '-')];
+                        fi:
+                        if yy<>0 then 
+                            diff2 := t[i2,PamDist10000] - yy[PamDist10000];
+                            if diff2 < 0 or  
+                               diff2 < InparalogTol * StdDiff10000(X, Y, x1, t[i1], t[i2], 'SPinp') then 
+                                active[i1] := false;
+                            else inparalogpairs := inparalogpairs + 1;
+                            fi:
+                            if printlevel>3 then 
+                                logmsg := append(logmsg, 
+                                     sprintf('%7s %11.4f   %11s   %11.4f', 'diff', diff/10000, ' ', diff2/10000),
+                                     sprintf('%7s %11.4f   %11s   %11.4f', 'StdDiff', 
+                                          InparalogTol * StdDiff10000(X, Y, x1, t[i1], t[i2], 'SPinp')/10000, ' ',
+                                          Tol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP')/10000));
+                            fi:
+                        else 
+                            active[i1] := false;
+                        fi:
+                        if printlevel>3 then 
+                            logmsg := append(logmsg, sprintf('%7s %11s   %11s', 'RelType', 
+                                          If(active[i1], 'SP', 'Paralog'), 'SP'));
+                            prints('  '.ConcatStrings(logmsg,'\n  '));
+                        fi:
+                        if not active[i1] and ParalogTol>0 then 
+                            if diff > ParalogTol * sqrt(1000*(t[i1,PamVar100000] + t[i2,PamVar100000])) or 
+                                    diff > ParalogTol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP')  then
+                                ParalogPairs[X,Y,x1] := append(ParalogPairs[X,Y,x1], t[i1]);
+                            fi:
+                        fi:
+                    fi:
+                    if t[i1,PamDist10000] > t[i2,PamDist10000] then
+                        break;
+                    fi:
+                fi od:
+            fi od:
+                        
+            totpairs := totpairs + lt;
+            StablePairs[X,Y,x1] := { seq( If(active[i1],t[i1,Entry],NULL),
+                        i1=1..lt ) };
+            rempairs := rempairs + lt - length(StablePairs[X,Y,x1]);
+            StablePairs[X,Y,x1] := compress(StablePairs[X,Y,x1]);
+            ParalogPairs[X,Y,x1] := compress(ParalogPairs[X,Y,x1]);
+        fi;
+    od;
+    printf( '%d stable pairs found for %s vs %s\n',
+        sum(length(decompress(z)),z=StablePairs[X,Y]),
+    genomes[X], genomes[Y] );
+fi od od:
+if printlevel >= 3 then 
+    printf('OrthologousMatrix: SP formation done, %d removed from %d BestMatches\n', 
+        rempairs, totpairs);
+    printf('                   %d inparalog pairs kept due to InparalogTol parameter.\n',
+        inparalogpairs);
+fi;
 
 ###########################
 # Thinning of StablePairs #
@@ -303,6 +368,30 @@ for X to NG do for Y from X+1 to NG do
                                 sqrt(1000*(b3[PamVar100000]+a4[PamVar100000]));
                     if scorebal > 2 then next fi;
                     
+                    # additional check for additivity (introduced in Dec 2016)
+                    #   d(x1, y2) + d(z3, z4) ~ d(x1,z4) + d(y2, z3)
+                    #
+                    c4 := GetMatch(Z,Z,z3,z4);
+                    if c4=0 then
+                         # a weired case, don't use to break (x1,x2)
+                         if printlevel > 3 then 
+                             printf(' VP check: %s/%05d vs %s/%05d by %s/(%05d,%05d): (z3,z4) not BestMatch\n',
+                                    genomes[X], x1, genomes[Y], y2, genomes[Z], z3, z4);
+                         fi:
+                         next 
+                    fi;
+
+                    if abs(a4[PamDist10000]+b3[PamDist10000]-a1[PamDist10000]-c4[PamDist10000]) / 
+                       sqrt(1000*(a3[PamVar100000]+b4[PamVar100000] + a1[PamVar100000]+c4[PamVar100000])) > 2 then
+                         if printlevel > 3 then 
+                             printf(' VP check additivity: %s/%05d vs %s/%05d by %s/(%05d,%05d): %f>2\n',
+                                    genomes[X], x1, genomes[Y], y2, genomes[Z], z3, z4,
+                                    abs(a4[PamDist10000]+b3[PamDist10000]-a1[PamDist10000]-c4[PamDist10000]) /
+                                    sqrt(1000*(a3[PamVar100000]+b4[PamVar100000] + a1[PamVar100000]+c4[PamVar100000])));
+                         fi:
+                         next:  # case that vialotes additivity check
+                    fi:
+
                     if GetStats=true then
                       witnesses:=append(witnesses,
                       Row('broken',a3[Score100]/100,   a4[Score100]/100,
