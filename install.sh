@@ -67,7 +67,7 @@ mkdir -p ~/.oma
 if [ "$USER" == "root" ] ; then
     chown -R $SUDO_USER ~/.oma
 fi
-sed -i.se "s|datadirname := .*|datadirname := '$HOME/.oma/';|" $omadir/darwinlib/darwinit && rm $omadir/darwinlib/darwinit.se
+sed -i.se "s|datadirname := .*|datadirname := '$HOME/.oma/':|" $omadir/darwinlib/darwinit && rm $omadir/darwinlib/darwinit.se
 
 echo "Creating symlinks to current version..."
 [ -L $linkdir/OMA ] && unlink $linkdir/OMA
