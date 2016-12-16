@@ -368,6 +368,23 @@ for X to NG do for Y from X+1 to NG do
                                 sqrt(1000*(b3[PamVar100000]+a4[PamVar100000]));
                     if scorebal > 2 then next fi;
                     
+                    # additional check for additivity (introduced in Dec 2016)
+                    #   d(x1, y2) + d(z3, z4) ~ d(x1,z4) + d(y2, z3)
+                    #
+                    found_z3_z4 := false;
+                    for c4 in decompress(BestMatch[Z,Z,z3]) do
+                        if c4[Entry]=z4 then 
+                            found_z3_z4 := true: 
+                            break: 
+                        fi:
+                    od:
+                    if not found_z3_z4 then next fi;  # a weired case, don't use to break x1-x2
+
+                    if abs(a4[PamDist10000]+b3[PamDist10000]-a1[PamDist10000]-c4[PamDist10000]) / 
+                       sqrt(1000*(a3[PamVar100000]+b4[PamVar100000] + a1[PamVar100000]+c4[PamVar100000])) > 2 then
+                            next:  # case that vialotes additivity check
+                    fi:
+
                     if GetStats=true then
                       witnesses:=append(witnesses,
                       Row('broken',a3[Score100]/100,   a4[Score100]/100,
