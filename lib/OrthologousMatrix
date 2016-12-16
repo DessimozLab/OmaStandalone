@@ -61,7 +61,6 @@ StdDiff10000 := proc(X,Y,x1,M1,M2,context:{'SP','VP','SPinp'})
             t := D1; D1 := D3; D3 := t;
             t := V1; V1 := V3; V3 := t;
             if D2 > D3 then t := D2; D2 := D3; D3 := t; t := V2; V2 := V3; V3 := t fi: 
-            lprint('  D1:',D1,'D2:',D2,'D3:',D3);
         fi:
         r := 0.5*(D1+D2-D3);
         s := D1 - r;
@@ -134,7 +133,6 @@ for X to NG do for Y to NG do if X <> Y then
                 for i2 from lt by -1 to i1 + 1 do if active[i2] then
                     # diff is 10000* difference of D1 and D2
                     diff := abs(t[i1,PamDist10000] - t[i2,PamDist10000]);
-                    lprint(X,Y,x1,t[i1,Entry],t[i2,Entry]);
                     if diff > Tol * sqrt(1000*(t[i1,PamVar100000] + t[i2,PamVar100000])) or
                              diff > Tol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP') then
                         # distance to y1 is significantly bigger than to y2. Most likely a paralog
@@ -146,7 +144,16 @@ for X to NG do for Y to NG do if X <> Y then
                         fi:
                         yy := GetMatch(Y,Y,t[i1,'Entry'], t[i2,'Entry']);
                         if printlevel>3 then
-                            lprint(' i1:',t[i1,PamDist10000]/10000, 'i2:', t[i2,PamDist10000]/10000, 'yy:',If(yy=0,0,yy[PamDist10000]/10000));
+                            logmsg := [sprintf('\n Triplet X=%5s/%05d ; Y1=%5s/%05d ; Y2=%5s/%05d', genomes[X], x1, 
+                                               genomes[Y], t[i1, 'Entry'], genomes[Y], t[i2, 'Entry']), 
+                                       sprintf('%7s %11s   %11s   %11s', ' ', 'X/Y1','X/Y2','Y1/Y2'),
+                                       sprintf('%7s %11.2f   %11.2f   %11.2f', 'Dist', t[i1, PamDist10000]/10000,
+                                               t[i2,PamDist10000]/10000, If(yy=0, 0, yy[PamDist10000]/10000)),
+                                       sprintf('%7s %11.2f   %11.2f   %11.2f', 'std(D)', 
+                                               sqrt(t[i1, PamVar100000]/100000),
+                                               sqrt(t[i2, PamVar100000]/100000), 
+                                               If(yy=0, -1, sqrt(yy[PamVar100000]/100000))),
+                                       CreateString(8+11+3+11+3+11, '-')];
                         fi:
                         if yy<>0 then 
                             diff2 := t[i2,PamDist10000] - yy[PamDist10000];
@@ -156,12 +163,19 @@ for X to NG do for Y to NG do if X <> Y then
                             else inparalogpairs := inparalogpairs + 1;
                             fi:
                             if printlevel>3 then 
-                                lprint(' diff2:', diff2/10000, 
-                                   ' std_3le:', InparalogTol * StdDiff10000(X, Y, x1, t[i1], t[i2], 'SPinp')/10000,
-                                   If(active[i1], 'SP','Paralog'));
+                                logmsg := append(logmsg, 
+                                     sprintf('%7s %11.4f   %11s   %11.4f', 'diff', diff/10000, ' ', diff2/10000),
+                                     sprintf('%7s %11.4f   %11s   %11.4f', 'StdDiff', 
+                                          InparalogTol * StdDiff10000(X, Y, x1, t[i1], t[i2], 'SPinp')/10000, ' ',
+                                          Tol * StdDiff10000(X,Y,x1,t[i1],t[i2],'SP')/10000));
                             fi:
                         else 
                             active[i1] := false;
+                        fi:
+                        if printlevel>3 then 
+                            logmsg := append(logmsg, sprintf('%7s %11s   %11s', 'RelType', 
+                                          If(active[i1], 'SP', 'Paralog'), 'SP'));
+                            prints('  '.ConcatStrings(logmsg,'\n  '));
                         fi:
                         if not active[i1] and ParalogTol>0 then 
                             if diff > ParalogTol * sqrt(1000*(t[i1,PamVar100000] + t[i2,PamVar100000])) or 
