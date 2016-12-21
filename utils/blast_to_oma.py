@@ -182,7 +182,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser("Convert a blast AllAll run into OMA standalone AllAll")
     p.add_argument('--out', '-o', default="Cache", help="path to OMA Cache directory. defaults to 'Cache/'")
     p.add_argument('--format', '-f', default='xml', help="format of allall file, either 'xml' or 'tab'")
-    p.add_argument('--dist', '-d', default="kernel", help="used distance estimation, eiterh 'kernel' or 'ML'",
+    p.add_argument('--dist', '-d', default="ML", help="used distance estimation, eiterh 'kernel' or 'ML'",
                    choices=['ML', 'kernel'])
     p.add_argument('allall_file', help="path to blast allall file.")
     p.add_argument('genomes', nargs="+", help="Fasta formatted input genome")
