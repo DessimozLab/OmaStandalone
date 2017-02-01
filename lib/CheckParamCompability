@@ -34,6 +34,7 @@ module external ValidateParameters;
 ValidateParameters := proc()
     _check_species_tree_param();
     _check_quasi_clique_cutoff();
+    _check_HOG_params();
 end:
 
 _check_species_tree_param := proc()
@@ -61,6 +62,22 @@ _check_quasi_clique_cutoff := proc()
     if type(QuasiCliquesCutoff,numeric) and QuasiCliquesCutoff <= 0 then
        error('QuasiCliquesCutoff must be a positive value');
     fi:
+end:
+
+_check_HOG_params := proc() global DoHierarchicalGroups;
+    if type(DoHierarchicalGroups, boolean) then
+        if DoHierarchicalGroups then 
+            warning('(DEPRECATION) DoHierarchicalGroups should now be set to either ''top-down'' or ''bottom-up''.');
+            DoHierarchicalGroups := 'top-down';
+        fi:
+    elif type(DoHierarchicalGroups, string) then
+        DoHierarchicalGroups := lowercase(DoHierarchicalGroups);
+        if not member(DoHierarchicalGroups, {'top-down','bottom-up'}) then 
+            error(sprintf('DoHierarchicalGroups should be ''top-down'' or ''bottom-up'', not ''%s''.', DoHierarchicalGroups)):
+        fi:
+    else
+        error('Invalid value for ''DoHierarchicalGroups'' parameter');
+    fi
 end:
 
 end: # module

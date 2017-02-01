@@ -645,11 +645,14 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        transcriptId tag. If the flag is set to false, the whole fasta header
                        is used and stored as is in the protId tag.'),
                        TT('false')),
+
                     Row(TT('DoHierarchicalGroups'),
-                       Paragraph(0, 'Enables/disables the computation of the 
-                       hierarchical groups. This steps requires substantial 
-                       computating power.'), 
-                       TT('true')),
+                       Paragraph(0, 'Enables/disables and selects the algorithm to compute the 
+                       hierarchical orthologous groups (HOGs). Valid parameters are ',TT('false'),', ', 
+                       TT('''top-down'''),' and ', TT('''bottom-up'''), '. The top-down approach was the 
+                       only algorithm until OMA standalone 2.0. The bottom-up approach is as of now still
+                       an experimental feature, but will become the default choice in the future.'), 
+                       TT('''top-down''')),
                     Row(TT('MaxTimePerLevel'),
                        Paragraph(0, 'Define maximum amount of time (in sec) spent by 
                        the program for breaking every connected component of the 
@@ -667,8 +670,16 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                     Row(TT('ReachabilityCutoff'),
                        Paragraph(0,'The cutoff of "average reachability within 
                        two steps" defines up to what point a cluster is split 
-                       into sub-clusters.'), 
+                       into sub-clusters. This paramter applies only to the top-down HOG 
+                       inference approach. See parameter ',TT('DoHierarchicalGroups'),' for 
+                       additional information.'), 
                        TT('0.65')),
+                    Row(TT('MinEdgeCompletenessFraction'),
+                       Paragraph(0,'The cutoff in GETHOGs bottom-up algorithm to make an 
+                       edge trusted in the orthology graph among HOGs. This parameter applies 
+                       only to the bottom-up approach. See parameter ',TT('DoHierarchicalGroups'),
+                       ' for additional information.'), 
+                       TT(0.80)),
                     Row(TT('DoGroupFunctionPrediction'),
                        Paragraph(0, 'Compute Gene Ontology function predictions 
                        based on the OMA Groups assignments. The predictions are

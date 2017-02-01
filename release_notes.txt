@@ -20,6 +20,8 @@ New Features:
 - Add an additional check for additivity of the distances when checking 
   for hidden paralogy
 
+- add bottom-up HOG algorithm as experimental feature
+
 
 Summary of Changes from 1.1.1 to 1.1.2
 ======================================
