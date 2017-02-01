@@ -38,6 +38,7 @@ GetHOGsBottomUp := proc()
     if SpeciesTree='estimate' then
         # tree has already been computed and safed to EstimatedSpeciesTree.nwk
         cmd := append(cmd, '-s', OutputFolder.'/EstimatedSpeciesTree.nwk');
+        dir := '':
     else
         if SpeciesTree='lineage' then
             speciesTree := LineageSpeciesTree():
@@ -52,6 +53,7 @@ GetHOGsBottomUp := proc()
         printf('Command used to compute bottom-up HOGs:\n %s\n\n', cmd);
     fi:
     res := TimedCallSystem(cmd);
+    if dir<>'' then CallSystem('rm -rf '.dir) fi:
     if res[1]<>0 then 
         lprint(CreateString(80,'*'));
         lprint('An error occured in bottom-up HOG computations:');
@@ -82,7 +84,8 @@ ParseToplevelHOGs := proc(fn)
 end:
 
 FindWarthogs := proc()
-    for loc in [op(SearchDelim(':', getenv('PATH'))), '.', 'bin'] do
+    for loc in [libdir.'/../bin', op(SearchDelim(':', getenv('PATH'))), '.', 'bin'] do
+        if printlevel>2 then lprint(' checking '.loc.'/warthog existance') fi:
         if FileExists(loc.'/warthog') then return(loc.'/warthog') fi:
     od:
     error('cannot find warthog');
