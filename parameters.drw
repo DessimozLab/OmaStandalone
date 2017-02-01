@@ -127,7 +127,7 @@ GuessIdType := false;
 # as of now still an experimental feature, where as 'top-down' uses the 
 # algorithm of before. You can disable the HOG computation by setting it to  
 # 'false'. 
-DoHierarchicalGroups := 'bottom-up'; #'top-down';
+DoHierarchicalGroups := 'top-down';
 
 # Define maximum umount of time (in sec) spent by the program for  breaking 
 # every connected component of the orthology graph at its weakest link on a 
