@@ -23,6 +23,11 @@ New Features:
 - add bottom-up HOG algorithm as experimental feature
 
 
+Bug Fixes
+---------
+- improved stability for big job-arrays on HPC systems 
+
+
 Summary of Changes from 1.1.1 to 1.1.2
 ======================================
 

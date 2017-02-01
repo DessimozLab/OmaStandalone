@@ -255,17 +255,27 @@ OMA')),
         Anchor(TextBlock('a', href='resources', 'below')), '
         Do not start OMA with the -n option for that. Instead, use a job 
         array with one of the supported schedulers below (the example is to 
-        start 100 jobs in parallel)'),
+        start 100 jobs in parallel).'),
+
+        Paragraph(0, Color(red, 'New in 2.0: '), 'The user should now explicitly set the number of
+        total processes that should run in the job array. This is done by setting the environment
+        variable ',TT('''NR_PROCESSES''.'),' E.g. in bash/tcsh use', Code('export NR_PROCESSES=100  # bash
+setenv NR_PROCESSES 100  # tcsh'), 
+        ' prior to submitting the job. The main advantage of this new form is that single jobs 
+        can be more easily resubmitted, and very big job arrays that do not all run simultaneously 
+        will work more reliable.'),
 
         Anchor(TextBlock('a', name='LSF', SectionHeader(3, 'LSF'))),
 
         Paragraph(0, 
-            Code('bsub -J "OMA[1-100]" -o "out.%I" "OMA"')),
+            Code('export NR_PROCESSES=100
+bsub -J "OMA[1-$NR_PROCESSES]" -o "out.%I" "OMA"')),
 
         Anchor(TextBlock('a', name='SGE', SectionHeader(3, 'Sun Grid Engine (aka Oracle Grid Engine)'))),
 
         Paragraph(0, 
-            Code('qsub -t 1-100 "OMA"')
+            Code('export NR_PROCESSES=100
+qsub -t 1-$NR_PROCESSES "OMA"')
         ),
 
         Anchor(TextBlock('a', name='PBSPro', SectionHeader(3, 'PBS Pro'))),
@@ -277,6 +287,7 @@ OMA')),
 \# set max wallclock time
 \#PBS -l walltime=01:00:00
 \#PBS -J 1-100
+export NR_PROCESSES=100
 OMA'), 'The script can then be submitted as follows:', 
         Code('qsub job.sh')
         ),
@@ -285,6 +296,7 @@ OMA'), 'The script can then be submitted as follows:',
 
         Paragraph(0, Code('sbatch --array=1-100 -N1 <<EOF
 \#!/bin/sh 
+export NR_PROCESSES=100
 /absolute/path/to/bin/OMA
 EOF')
         ),
