@@ -30,7 +30,7 @@
 StoreOrthologMilestone := proc(fn_)
     fn := If(fn_[-3..-1]='.gz', fn_[1..-4], fn_);
     OpenWriting(fn):
-    for var in ['Ort', 'VPairs', 'StablePairs'] do
+    for var in ['Ort', 'VPairs', 'StablePairs', 'ParalogPairs'] do
         printf('%s := %A:\n', var, eval(symbol(var))):
     od:
     printf('_genomes_order := %A:\n', genomes):
@@ -55,7 +55,7 @@ end:
 
 
 LoadOrthologMilestone := proc(fn)
-    global Ort, VPairs, StablePairs, _genomes_order, _hash_DBs, _params;
+    global Ort, VPairs, StablePairs, _genomes_order, _hash_DBs, _params, ParalogPairs;
     _genomes_order := _hash_DBs := _params := 0;
     cur_DB_hashes := HashDBs():
     cur_params := OrthologMilestoneParams():

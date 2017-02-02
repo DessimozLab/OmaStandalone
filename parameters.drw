@@ -43,6 +43,23 @@ LengthTol := 0.61;
 # discarded.
 StablePairTol := 1.81;
 
+# During the stable pair formation, if the within species evolutionary distance 
+# difference is more than InparalogTol standard deviations closer than the 
+# distance to the other species, a pair is still considered inparalog even 
+# if they don't fullfil the StablePairTol criterion
+InparalogTol := 3.00;
+
+# The ParalogTol is used to identify clear paralogous pairs, which can be 
+# used in further analysis. If set to a value larger than StablePairTol,
+# homologous matches for which the difference in their evolutionary distance
+# is larger than ParalogTol * std(distance), where std(distance) is the 
+# standard deviation of the distance difference between the closest ortholog
+# and the more distant homolog, will be stored. 
+# This is an experimental feature!
+# computing and storing the paralogs can be disabled by setting this
+# parameter to a negative value.
+ParalogTol := -2.5*StablePairTol;
+
 # For the verification of stable pairs, there is also a tolerance parameter 
 # (for details, see Dessimoz et al, Nucl Acids Res 2006)
 VerifiedPairTol := 1.53;
@@ -96,21 +113,27 @@ GuessIdType := false;
 #WriteOutput_OrthologousPairs_orthoxml := false;  #this file requires lots of time.
 #WriteOutput_OrthologousGroupsFasta := false;
 #WriteOutput_HOGFasta := false;
+#WriteOutput_Paralogs := false; 
+
 
 
 ##############################################################
-# Hierarchical Orthologous Groups
+# Hierarchical Orthologous Groups (HOGs)
 ##############################################################
-# Compute Hierarchical groups?
-# You can either set it to 'true', which will enable the computation or 
-# disable it by setting it to 'false'. Keep in mind that the current 
-# implementation is not yet parallelized and hence needs quite some time.
-DoHierarchicalGroups := true;
+# Infer the Hierarchical Orthologous Groups (HOGs)? 
+# In OMA standalone prior to 2.0 you can activate the inference of HOGs 
+# through the Top-Down algorithm by setting 'DoHierarchicalGroup' to 'true'. 
+# Since 2.0, you should set it to 'top-down' or 'bottom-up'. The later is 
+# as of now still an experimental feature, where as 'top-down' uses the 
+# algorithm of before. You can disable the HOG computation by setting it to  
+# 'false'. 
+DoHierarchicalGroups := 'top-down';
 
 # Define maximum umount of time (in sec) spent by the program for  breaking 
 # every connected component of the orthology graph at its weakest link on a 
 # given taxonomic level. If set to a negative value, no timelimit is enforced.
-MaxTimePerLevel := 1200; # 20min
+# This variable applies only to the top-down approach.
+MaxTimePerLevel := 1200;  # 20min
 
 # The hierarchical groups need a hierarchy of the involved species in from of 
 # a tree. This tree can either be estimated from the OMA Groups by setting the 
@@ -121,8 +144,15 @@ SpeciesTree := 'estimate';
 #SpeciesTree := '((mouse,mouse2),human,dog);';
 
 # The cutoff of 'average reachability within two steps' defines up to what 
-# point a cluster is split into sub-clusters.
+# point a cluster is split into sub-clusters. This parameter applies only to the
+# top-down approach. For the bottom-up approach, use the parameter 
+# 'MinEdgeCompletenessFraction' instead.
 ReachabilityCutoff := 0.65;
+
+# The cutoff in GETHOGs bottom-up algorithm to make an edge trusted in the 
+# orthology graph among HOGs. This parameter applies only to the bottom-up 
+# approach. Use 'ReachabilityCutoff' for the top-down approach. 
+MinEdgeCompletenessFraction := 0.8;
 
 
 

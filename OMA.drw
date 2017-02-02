@@ -190,6 +190,14 @@ IsMyJob := proc(name1, name2, chunk)
     return( evalb(mod(nr, pinf['NrParallelProc']) = pinf['ProcNr']-1) );
 end:
 
+CheckRemainingTimeAndQuitIfOver := proc(fn_chunk)
+    if stop_at_time - UTCTime() < 10 then 
+        printf('\n\n%s\nReached timelimit. Quitting now...\n', CreateString(34,'*')):
+        CallSystem('rm -f '.fn_chunk):
+        exit(3):
+    fi:
+end:    
+
 if UseExperimentalHomologousClusters=true then
     ReadProgram(If(not assigned(libdir),'lib',libdir).'/HomologousClustering'):
 else
@@ -276,6 +284,7 @@ for g1 to NG do
                 len1 := length(Seqs1[i1]);
                 len2 := length(Seqs2[i2]);
                 c2 := c2+1;
+                if mod(c2,1009)=0 then CheckRemainingTimeAndQuitIfOver(fn) fi:
                 if mod(c2,50000)=0 then
                     printf('   [pid %6d]: %.2f%% complete, time left for this '.
                         'part=%.2fh, %.1f%% of AllAll done. Mem: %.3fGB\n',
@@ -452,7 +461,7 @@ else
         StoreOrthologMilestone( orthoCacheFile );
     fi:
 
-    if DoHierarchicalGroups=true or DoGroupFunctionPrediction=true then
+    if not DoHierarchicalGroups=false or DoGroupFunctionPrediction=true then
         if SpeciesTree='estimate' then;
             speciesTree := BuildSpeciesTree( Ort );
         elif SpeciesTree='lineage' then
@@ -463,9 +472,9 @@ else
         fi:
     fi:
 
-    if DoHierarchicalGroups=true then
+    if DoHierarchicalGroups='top-down' then
         # call hierarchical group procedure
-        HOG := traperror(HierarchicalGroups(ReachabilityCutoff,speciesTree));
+        HOG := traperror(HierarchicalGroups(ReachabilityCutoff, speciesTree));
         if HOG=lasterror then
             warning('computation of HierarchicalGroups failed: '.string(lasterror));
         fi:
@@ -523,7 +532,7 @@ else
     od:
 
     # Store the pairwise orthologs
-    if not WriteOutput_PairwiseOrthologs=false then
+    if not WriteOutput_PairwiseOrthologs=false or DoHierarchicalGroups='bottom-up' then
         CallSystem('mkdir '.OutputFolder.'/PairwiseOrthologs');
         for i to NG do for j from i+1 to NG do
             if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
@@ -552,6 +561,26 @@ else
                             '')
                     );
                 od;
+            od:
+            OpenWriting(previous);
+        od od:
+    fi:
+
+    if not WriteOutput_Paralogs=false and ParalogTol>0 then
+        CallSystem('mkdir '.OutputFolder.'/PairwiseParalogs');
+        for i to NG do for j from i+1 to NG do
+            if ns[i] < ns[j] or ns[i]=ns[j] and genomes[i] < genomes[j] then
+                g1 := i;  g2 := j else g2 := i;  g1 := j fi;
+
+            OpenWriting(OutputFolder.'/PairwiseParalogs/'.genomes[g1].'-'.genomes[g2].'.txt');
+            printf('#nr1\tnr2\tid1\tid2\tScore\tPamDist\n');
+            for x1 to ns[g1] do 
+                pp := decompress(ParalogPairs[g1,g2,x1]);
+                for y2 in pp do 
+                    printf('%d\t%d\t%s\t%s\t%.2f\t%.2f\n',
+                        x1, y2['Entry'], IDtable[g1,x1], IDtable[g2, y2['Entry']],
+                        y2['Score100']/100, y2['PamDist10000']/10000);
+                od:
             od:
             OpenWriting(previous);
         od;od:
@@ -585,16 +614,21 @@ else
     fi:
 
     # store hierarchical groups if computed
-    if DoHierarchicalGroups=true and type(HOG, list) then
-        WriteOrthoXML( HOG, OutputFolder.'/HierarchicalGroups.orthoxml',
-            StableIdsForGroups=true);
-        if not WriteOutput_HOGFasta=false then
-            WriteFastaGroups(OutputFolder.'/HOGFasta', HOG);
-        fi:
-        if SpeciesTree='estimate' then
+    if member(DoHierarchicalGroups, {'top-down','bottom-up'}) then
+        if SpeciesTree='estimate' then 
             OpenWriting(OutputFolder.'/EstimatedSpeciesTree.nwk');
             prints( Tree_Newick(speciesTree) .';' );
             OpenWriting(previous):
+        fi:
+        if DoHierarchicalGroups='bottom-up' then
+            HOG := GetHOGsBottomUp(speciesTree):
+        elif DoHierarchicalGroups='top-down' and type(HOG,list) then
+            WriteOrthoXML( HOG, OutputFolder.'/HierarchicalGroups.orthoxml',
+                StableIdsForGroups=true);
+        fi:
+
+        if not WriteOutput_HOGFasta=false then
+            WriteFastaGroups(OutputFolder.'/HOGFasta', HOG);
         fi:
     fi:
 
@@ -627,7 +661,7 @@ else
     ###
     # Final comments to user
     printf('\n\n%s\n', CreateString(80, '*'));
-    if SpeciesTree='estimate' and DoHierarchicalGroups=true then
+    if SpeciesTree='estimate' and member(DoHierarchicalGroups, {'top-down','bottom-up'}) then
         printf('NOTE: The HOGs OMA computed depend strongly on the correct species tree.\n');
         printf('      OMA estimated a species tree based on some marker genes, and stored\n');
         printf('      it in %s.\n', OutputFolder.'/EstimatedSpeciesTree.nwk');

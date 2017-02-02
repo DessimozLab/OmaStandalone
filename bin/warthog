@@ -1,0 +1,19 @@
+#!/bin/bash
+
+INSTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../"
+WARTHOG="hog_bottom_up/warthogs.py"
+
+for dir in $INSTPATH ~ ~/Repositories; do 
+    if [ -f "$dir/$WARTHOG" ] ;then break; fi
+done
+
+if [ ! -f "$dir/$WARTHOG" ] ; then 
+    (>2& echo "cannot fine GETHOGs Bottom-Up")
+    exit 1
+fi
+
+if [ "$dir" != "$INSTPATH" ] ; then 
+    (>&2 echo "using GETHOGs Bottom-up from dev location \"$dir\". ")
+fi
+exec python $dir/$WARTHOG $@
+

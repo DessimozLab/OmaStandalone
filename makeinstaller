@@ -3,19 +3,84 @@
 os=$(uname -s)
 
 showUsage () {
-    echo "This script creates an installer package for oma at 'path_to_installer'."
-    echo "Usage: makeinstaller path_to_installer"
-    exit 1
+cat << EOF
+$0 - creates an release of OMA standalone.
+
+$0 [options] [target_path]
+
+Run this script to create a new release of OMA standalone. The version will
+be named according to what 'git describe' returns, so you should generally
+create a new tag prior to creating a release.
+
+Options:
+  -r <host>   host where the releases are hosted. Need to be able to ssh to 
+              this host. Also, an environment variable should be set in the
+              login script that sets DARWIN_BROWSER_SHARE. This can be
+              overwritten with the -p flag (see below). By default,
+              linneus77.ethz.ch is used.
+
+  -p <path>   the path on the remote host where the browser data are stored,
+              i.e. the value of DARWIN_BROWSER_SHARE. If set, this overwrites
+              the value that might be set in the login script on the host.
+
+  -l          do not deploy to the remote host. Just create the tarball 
+              locally in the 'target_path' (see below).
+
+taget_path    path where the target is created. If not set, 
+              ${TMPDIR:-/tmp} is used.
+
+EOF
 }
 
-if [ $# -le 0 ]
-then
-    showUsage
+webhost="linneus77.ethz.ch"
+deploy="yes"
+webpath=""
+while getopts "hlr:p:" opt ; do
+    case $opt in 
+    h) usage
+         exit 0
+         ;;
+    r)   webhost="$OPTARG"
+         ;;
+    p)   webpath="$OPTARG"
+         ;;
+    l)   deploy="no"
+         ;;
+    \?)  echo "invalid option" >&2
+         usage
+         exit 1
+         ;;
+    :)   echo "option -$OPTARG requires an argument" >&2
+         usage
+         exit 1
+         ;;
+    esac
+done
+shift $((OPTIND-1))
+tmpdir=${TMPDIR:-/tmp}
+target_path=${1:-$tmpdir}
+
+if [ -z "$webpath" ]; then
+    case "$webhost" in 
+        linneus*) 
+            webpath="/pub/projects/cbrg-oma-browser";;
+        jet.cs.*) 
+            webpath="/cs/research/biosciences/oma/oma-server";;
+        prd.vital-it.ch) 
+            webpath="/scratch/ul/projects/cdessimo/oma-browser";;
+        *)
+            webpath=$(ssh $webhost "source ~/.bashrc && echo \$DARWIN_BROWSER_SHARE")
+            if [ -z "$webpath" ] ; then 
+                echo "remote DARWIN_BROWSER_SHARE is not set"
+                exit 1
+            fi;;
+    esac
 fi
+webpath="$webpath/standalone"
 
 versionnr=`git describe`
-instpath=$1/OMA.$versionnr
-webpath=linneus78.ethz.ch:${DARWIN_BROWSER_SHARE}/standalone
+instpath=$target_path/OMA.$versionnr
+darwinhome="darwin@linneus77.ethz.ch:v2/source/"
 
 mkdir -p $instpath/bin
 mkdir -p $instpath/DB
@@ -27,18 +92,44 @@ rm -rf darwin/lib/.git
 mv darwin/lib $instpath/darwinlib
 rm -rf darwin
 
+# clone hog_bottom_up python repo
+git clone --depth 1 ssh://gitolite@lab.dessimoz.org:2222/hog_bottom_up
+cd hog_bottom_up; git log -n 1 --format=%H > bottom_up.version; cd ..
+rm -rf hog_bottom_up/.git
+mv hog_bottom_up $instpath/
+
 # copy darwin binaries to $shortname/bin/${shortname}darwin
-cp /home/darwin/v2/source/linux/darwin $instpath/bin/omadarwin.linux32
-cp /home/darwin/v2/source/linux64_2.6.9/darwin $instpath/bin/omadarwin.linux64
-cp /home/darwin/v2/source/macintel/darwin $instpath/bin/omadarwin.mac32
-cp /home/darwin/v2/source/macintel64/darwin $instpath/bin/omadarwin.mac64
+scp $darwinhome/linux/darwin $instpath/bin/omadarwin.linux32
+scp $darwinhome/linux64_2.6.9/darwin $instpath/bin/omadarwin.linux64
+scp $darwinhome/macintel/darwin $instpath/bin/omadarwin.mac32
+scp $darwinhome/macintel64/darwin $instpath/bin/omadarwin.mac64
 
 # copy oma library to $1/OMA$versionnr/lib
 cp -r lib $instpath/
 
 # copy OMA files to $1/OMA$versionnr
 cp OMA.drw parameters.drw install.sh README.oma LICENSE release_notes.txt $instpath/
-cp bin/oma bin/omadarwin $instpath/bin/
+cp bin/oma bin/omadarwin bin/warthog $instpath/bin/
+
+# create file with previous releases that exist for download
+prev_rels="Manual/previous_releases.html"
+cat > $prev_rels <<EOF
+<html><head>
+<title>OMA standalone - Previous releases</title>
+<link href="manual.css" rel="stylesheet" type="text/css"></link>
+</head><body>
+<div class="content"><div class="title">OMA standalone</div>
+<h1>Previous Releases</h1>
+<ul>
+EOF
+for rel in $(ssh $webhost "cd $webpath; ls -t *.tgz") ; do
+    echo " <li><a href=\"http://omabrowser.org/standalone/$rel\">$rel</a></li>" >> $prev_rels
+done
+cat >> $prev_rels <<EOF
+</ul>
+</body>
+</html>
+EOF
 
 # create manual and copy files to $instpath
 darwin < Manual/manual.drw
@@ -47,6 +138,8 @@ cp Manual/manual.pdf $instpath/Manual/
 cp Manual/manual.css $instpath/Manual/
 cp Manual/manual.html $instpath/Manual/
 cp release_notes.txt $instpath/Manual/
+cp $prev_rels $instpath/Manual/
+
 
 # copy toy example to $1/OMA$versionnr
 cp -r ToyExample $instpath/ToyExample
@@ -55,12 +148,12 @@ cp -r ToyExample $instpath/ToyExample
 if [ $os = "Darwin" ]
 then
     sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
- $instpath/install.sh $instpath/README.oma $instpath/bin/oma
+ $instpath/install.sh $instpath/README.oma $instpath/bin/oma $instpath/hog_bottom_up/file_manager.py
     sed -i '' "/utildir/d" $instpath/lib/darwinit
     sed -i '' "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
 else
     sed -i -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
- $instpath/install.sh $instpath/README.oma $instpath/bin/oma
+ $instpath/install.sh $instpath/README.oma $instpath/bin/oma $instpath/hog_bottom_up/file_manager.py
     sed -i "/utildir/d" $instpath/lib/darwinit
     sed -i "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
 fi
@@ -68,8 +161,11 @@ fi
 # create tarball
 $(cd `dirname $instpath`; tar -cvzf `basename $instpath`.tgz `basename $instpath`)
 
-# deploy webpage (html, css and tarball)
-scp $(dirname $instpath)/$(basename $instpath).tgz ${webpath}
-scp $(dirname $0)/Manual/manual.css ${webpath}
-scp $(dirname $0)/Manual/manual.html ${webpath}/index.html
-scp $(dirname $0)/release_notes.txt ${webpath}
+if [ "$deploy" == "yes" ] ; then
+    # deploy webpage (html, css and tarball)
+    scp $(dirname $instpath)/$(basename $instpath).tgz ${webhost}:${webpath}
+    scp $(dirname $0)/Manual/manual.css ${webhost}:${webpath}
+    scp $(dirname $0)/Manual/manual.html ${webhost}:${webpath}/index.html
+    scp $(dirname $0)/Manual/previous_releases.html ${webhost}:${webpath}
+    scp $(dirname $0)/release_notes.txt ${webhost}:${webpath}
+fi

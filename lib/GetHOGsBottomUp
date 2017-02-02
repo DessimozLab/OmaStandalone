@@ -1,0 +1,140 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 2.0
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 2.0 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/2.0/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is OMA standalone.
+#
+# The Initial Developer of the Original Code is CBRG Research Group; 
+# ETH Zurich; Switzerland.
+# Portions created by the Initial Developer are Copyright (C) 2005-2013
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#   Christophe Dessimoz <cdessimoz@inf.ethz.ch>
+#   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
+#   Stefan Zoller <stefan.zoller@inf.ethz.ch>
+#   Adrian Schneider <adrian.schneider@inf.ethz.ch>
+#   Alexander Roth <alexander.roth@inf.ethz.ch>
+#   Gaston Gonnet <gonnet@inf.ethz.ch>
+#
+# ***** END LICENSE BLOCK *****
+
+module external GetHOGsBottomUp;
+
+GetHOGsBottomUp := proc()
+    cmd := [FindWarthogs()]:
+    cmd := append(cmd, '-m pair', '-o', OutputFolder.'/HierarchicalGroups.orthoxml',
+        '-i', OutputFolder.'/PairwiseOrthologs', '-t standalone', '-p', 
+        string(round(100*MinEdgeCompletenessFraction)));
+    if SpeciesTree='estimate' then
+        # tree has already been computed and safed to EstimatedSpeciesTree.nwk
+        cmd := append(cmd, '-s', OutputFolder.'/EstimatedSpeciesTree.nwk');
+        dir := '':
+    else
+        if SpeciesTree='lineage' then
+            speciesTree := LineageSpeciesTree():
+        else speciesTree := SpeciesTree fi:
+        dir := trim(TimedCallSystem('mktemp -d "${TMPDIR:-/tmp/}warthog.XXXXXXX"')[2]);
+        treeFile := dir.'/speciestree.nwk':
+        OpenWriting(treeFile): prints(speciesTree); OpenWriting(previous);
+        cmd := append(cmd, '-s', treeFile);
+    fi:
+    cmd := ConcatStrings(cmd, ' '):
+    if printlevel>1 then 
+        printf('Command used to compute bottom-up HOGs:\n %s\n\n', cmd);
+    fi:
+    res := TimedCallSystem(cmd);
+    if dir<>'' then CallSystem('rm -rf '.dir) fi:
+    if res[1]<>0 then 
+        lprint(CreateString(80,'*'));
+        lprint('An error occured in bottom-up HOG computations:');
+        prints(res[2]);
+        error('failed to compute bottom-up hogs');
+    else
+        prints(res[2]);
+        prints('Successfully computed HOGs using bottom-up approach');
+    fi:
+
+    HOGs := ParseToplevelHOGs(OutputFolder.'/HierarchicalGroups.orthoxml'):
+    return(HOGs);
+end:
+
+ParseToplevelHOGs := proc(fn)
+    file := ReadRawFile(fn):
+    grp_offsets := SearchAllString('<orthologGroup id="', file):
+    NH := length(grp_offsets):
+    HOGs := CreateArray(1..NH, []):
+    geneRefs := SearchAllString('<geneRef id="', file):
+    for gene in geneRefs do
+        h := SearchOrderedArray(gene, grp_offsets):
+        eNr := sscanf(file[gene..gene+30], '<geneRef id="%d"')[1];
+        HOGs[h] := append(HOGs[h], eNr):
+    od:
+    for h to NH do HOGs[h] := OrthologousCluster('top', op(HOGs[h])) od:
+    return(HOGs):
+end:
+
+FindWarthogs := proc()
+    for loc in [libdir.'/../bin', op(SearchDelim(':', getenv('PATH'))), '.', 'bin'] do
+        if printlevel>2 then lprint(' checking '.loc.'/warthog existance') fi:
+        if FileExists(loc.'/warthog') then return(loc.'/warthog') fi:
+    od:
+    error('cannot find warthog');
+end:
+
+###
+# functions to convert lineage to a newick tree. a bit of a hack...
+FmtInternalNode := proc(children, label)
+  if length(children) = 1 then children[1]
+  else
+     lab := ReplaceString(' ', '_', label);
+     lab := ReplaceString('(', '__po__', lab);
+     lab := ReplaceString(')', '__pc__', lab);
+     lab := ReplaceString(',', '__sc__', lab);
+     lab := ReplaceString(':', '__dc__', lab);
+     sprintf('(%s)%s', ConcatStrings(children,', '), lab);
+  fi:
+end:
+
+LineageSpeciesTreeR := proc( l, lev )
+  if length(l)=0 then error('null tree')
+  elif length(l)=1 then return( [l[1,2], 1] )
+  elif lev > min( seq(length(r[1]), r=l )) then
+       sub_res := procname(l[2..-1], lev);
+       return( [FmtInternalNode([l[1,2], op(sub_res[1])], l[1,1,-1]), 1] );
+  else card := { seq( r[1,lev], r=l ) };
+       parts := []: lo := 1;
+       while lo <= length(l) do
+           for hi from lo+1 to length(l) while l[lo,1,lev] = l[hi,1,lev] do od:
+           sub_part := procname(l[lo..hi-1], lev+1);
+           parts := append(parts, If(sub_part[2]>1, FmtInternalNode(sub_part[1], l[lo,1,lev]),
+                  sub_part[1]));
+           lo := hi:
+       od:
+       return( If(length(parts)=1, [parts[1],1], [parts,length(parts)]) );
+  fi
+end:
+
+LineageSpeciesTree := proc():
+    lindata := sort([seq([GS[g,Lineage], g], g=genomes)]):
+    tree_res := LineageSpeciesTreeR(lindata, 1):
+    if tree_res[2] > 1 then
+        tree := FmtInternalNode(tree_res[1], 'LUCA'):
+    else
+        tree := tree_res[1]:
+    fi:
+    tree := tree.';';
+    return(tree):
+end:
+
+
+end: #module 

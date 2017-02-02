@@ -9,145 +9,58 @@ ParallelInfo_print := proc(pinf) option internal;
 end:
 CompleteClass(ParallelInfo):
 
-LSF_Platform := proc()
-    jobidx := getenv('LSB_JOBINDEX');
-    # if not a jobarray, assume single process and warn user.
-    if jobidx='' or jobidx='0' then 
-        jobidx:=1;
-        NrParallelProc := 1;
-        warning('not run as job-array. Will assume it is a single process.');
-    else
-        jobidx := parse(jobidx);
-        jobId := getenv('LSB_JOBID');
-        jobsum := TimedCallSystem('bjobs -A '.jobId);
-        if jobsum[1]<>0 then 
-            error('cannot call ''bjobs'' command successfully'); 
-        fi:
-        sndLine := SplitLines(jobsum[2])[2];
-        re := MatchRegex('^[[:digit:]]\+[[:blank:]]\+[^[:blank:]]\+[[:blank:]]\+[^[:blank:]]\+[[:blank:]]\+([[:digit:]]\+)', sndLine);
-        if length(re)<2 then error('cannot extract total number of jobs'); fi:
-        NrParallelProc := parse(re[2]);
-    fi:
-    if jobidx > NrParallelProc then
-        error('require range from 1-x of jobarray.');
-    fi:
-    return(ParallelInfo(NrParallelProc, jobidx));
+ErrorExplicitNrJobs := proc()
+    msg := ['We require that job-arrays now explicitly specify the number of jobs ',
+            'in the array. You should add to your submission script an environment ',
+            'variable "NR_PROCESSES" that holds the total number of jobs you use. ',
+            'Example:\n in bash:  export NR_PROCESSES=100\n in tcsh:  setenv NR_PROCESSES=100'];
+    prints(ConcatStrings(msg,'\n'));
+    error('require NR_PROCESSES to be assigned to an environment variable');
 end:
 
-SunGrid_Platform := proc()
-    jobidx := getenv('SGE_TASK_ID');
-    # if not a jobarray, assume single process and warn user.
-    if jobidx='' then 
-        jobidx:=1;
-        NrParallelProc := 1;
-        warning('not run as job-array. Will assume it is a single process.');
+Variables_Platform := proc(tot, cur)
+    if type(tot, posint) and type(cur, posint) then
+       if cur <= tot then return(ParallelInfo(tot, cur));
+       else 
+          error(sprintf('Inconsistency in parallel job setup:\n process nr (%d) must be smaller or equal to total nr of processes (%d)',cur, tot));
+       fi:
     else
-        jobidx := parse(jobidx);
-        # TODO: find out how to compute NrOfParallelJobs
-        NrParallelProc := getenv('SGE_TASK_LAST');
-        if NrParallelProc<>'' then
-            NrParallelProc := parse(NrParallelProc);
-        else
-            NrParallelProc := 1;
-        fi:
+       error('parallel setup must be called with positive integer values');
     fi:
-    if jobidx > NrParallelProc then
-        error('require range from 1-x of jobarray.');
-    fi:
-    return(ParallelInfo(NrParallelProc, jobidx));
-end:
-
-Slurm_Platform := proc()
-    jobidx := getenv('SLURM_ARRAY_TASK_ID');
-    # if not a jobarray, assume single process and warn user.
-    if jobidx = '' then
-        jobidx := 1;
-        NrParallelProc := 1;
-        warning('not run as job-array. Will assume it is a single process.');
-    else
-        jobidx := parse(jobidx);
-        jobmax := getenv('SLURM_ARRAY_TASK_MAX');
-        if jobmax='' then
-            slurm_version := TimedCallSystem('scontol --version');
-            printf('\n\n*******************************************************************\n');
-            printf('Your slurm installation (version: %s) does not yet support our\n', 
-                   If(slurm_version[1]=0, trim(slurm_version[2]), 'n/a'));
-            printf('way to synchronize processes. At least SLURM version 15.08 is\n');
-            printf('required.\n\n');
-            printf('You can mimic the behaviour by manually setting an environment\n'); 
-            printf('variable that stores the number of jobs you want to run in parallel,\n');
-            printf('i.e. the size of the job array:\n');
-            printf('  export SLURM_ARRAY_TASK_MAX=5;\n');
-            printf('You can add this directly to the script you use to launch OMA.\n');
-            exit(1);
-        fi:
-        NrParallelProc := parse(jobmax);
-    fi;
-    if jobidx < 1 or jobidx > NrParallelProc then
-        error('require range from 1-x of jobarray.');
-    fi:
-    return(ParallelInfo(NrParallelProc, jobidx));
-end:
-
-PBS_Platform := proc()
-    sleep(3);
-    # wait for a while just in case...
-    jobidx := getenv('PBS_ARRAY_INDEX');
-    # if not a jobarray, assume single process and warn user.
-    if jobidx = '' then
-        jobidx := 1;
-        NrParallelProc := 1;
-        warning('not run as job-array. Will assume it is a single process.');
-    else
-        jobidx := parse(jobidx);
-        jobId := getenv('PBS_ARRAY_ID');
-        jobsum := TimedCallSystem('qstat -f '.jobId);
-        if jobsum[1] <> 0 then
-            error('cannot call ''qstat'' command successfully');
-        fi;
-        sndLine := SplitLines(jobsum[2]);
-        for eachLine in sndLine do
-            if SearchString('array_state_count', eachLine) <> -1 then
-                targetLine := eachLine;
-                break;
-            fi;
-        od;
-        indexQueued := SearchString('Queued', targetLine);
-        indexRunning := SearchString('Running', targetLine);
-        indexExiting := SearchString('Exiting', targetLine);
-        indexExpired := SearchString('Expired', targetLine);
-        NrParallelProc := parse(targetLine[(indexQueued+8)..indexRunning]) +
-                          parse(targetLine[(indexRunning+9)..indexExiting]) +
-                          parse(targetLine[(indexExiting+9)..indexExpired]) +
-                          parse(targetLine[(indexExpired+9)..length(targetLine)]);
-    fi;
-    if jobidx > NrParallelProc then
-        error('require range from 1-x of jobarray.');
-    fi;
-    return(ParallelInfo(NrParallelProc, jobidx));
 end:
 
 DetectParallelInfo := proc()
-    if getenv('NR_PROCESSES')<>'' and getenv('THIS_PROC_NR')<>0 then
-        NR_PROCESSES := parse(getenv('NR_PROCESSES')):
-        THIS_PROC_NR := parse(getenv('THIS_PROC_NR')):
-    fi:
-    if type(NR_PROCESSES,posint) then
-        if not type(THIS_PROC_NR,posint) then 
-            error('oma standalone is not propperly started. bye.');
-        fi:
-        return(ParallelInfo(NR_PROCESSES,THIS_PROC_NR));
-    elif getenv('LSB_JOBID')<>'' then
-        return(LSF_Platform());
+    if type(NR_PROCESSES, posint) and type(THIS_PROC_NR, posint) then 
+       return(Variables_Platform(NR_PROCESSES, THIS_PROC_NR));
+    fi: 
+    nr := getenv('NR_PROCESSES');
+       
+    if getenv('LSB_JOBID')<>'' then
+        job_idx := getenv('LSB_JOBINDEX');
     elif getenv('SGE_ROOT')<>'' then
-        return(SunGrid_Platform());
+        job_idx := getenv('SGE_TASK_ID');
     elif getenv('SLURM_ARRAY_JOB_ID') <> '' then
-        return(Slurm_Platform());
+        job_idx := getenv('SLURM_ARRAY_TASK_ID');
+        if nr='' and getenv('SLURM_ARRAY_TASK_MAX')<>'' then
+            nr := getenv('SLURM_ARRAY_TASK_MAX');
+        fi:
     elif getenv('PBS_ARRAY_INDEX') <> '' then
-        return(PBS_Platform());
+        job_idx := getenv('PBS_ARRAY_INDEX');
+    elif getenv('THIS_PROC_NR') <> '' then
+        job_idx := getenv('THIS_PROC_NR');
     else 
         return(ParallelInfo(1,1));
     fi:
+    if nr='' and (job_idx='' or job_idx='0') then
+        warning('not run as a job-array. Will assume it is a single process');
+        return(ParallelInfo(1,1));
+    fi:
+    if nr='' or not type(parse(nr), posint) then 
+        ErrorExplicitNrJobs();
+    fi:
+    NrParallelJobs := parse(nr);
+    job_idx := parse(job_idx);
+    return(Variables_Platform(NrParallelJobs, job_idx));
 end:
 
 end: #module
