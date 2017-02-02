@@ -644,7 +644,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         TT('true')),
                     Row(TT('StableIdsForGroups'),
                         Paragraph(0, 'Enables/disables the generation of stable identifiers for OMA groups 
-                        (and Hierarchical Groups if their computation enabled). The identifier consists of 
+                        (and Hierarchical Groups if the top-down algorithm is selected). The identifier consists of 
                         a prefix to determine the type of the group (''OMA'' or ''HOG''), and a subsequence
                         of the amino acid sequence uniquely present in this group. The computation of these 
                         ids might require a substantial amount of time. The ids are stored in the OrthoXML
