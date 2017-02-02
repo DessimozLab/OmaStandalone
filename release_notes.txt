@@ -1,18 +1,24 @@
-============================================
- Release notes for OMA standalone 1.x series
-============================================
+=================================================
+ Release notes for OMA standalone 1.x/2.x series
+=================================================
 
  :Author: OMA Developers
  :Contact: contact@omabrowser.org
 
 
-Summary of Changes from 1.1.2 to XXX
-====================================
+Summary of Changes from 1.1.2 to 2.0.0
+======================================
+This is a major new release. We added several algorithmic improvements
+to OMA standalone, i.e. two changes in the pairwise orthology inference
+step and a new algorithm to infer the HOGs (bottom-up). The predicted
+orthologs will therefor likely be slightly different than in previous
+versions. The cached All-against-all is still fully compatible with the
+new release and does not to be recomputed.
 
 New Features:
 -------------
-- Allow to specify a timelimit for the AllAll computations with a special
-  exit code.
+- Allow to specify a time limit for the AllAll computations with a 
+  special exit code.
 
 - Improve rescuing of inparalogs where one copy evolves significantly 
   faster than the other copy
@@ -20,7 +26,7 @@ New Features:
 - Add an additional check for additivity of the distances when checking 
   for hidden paralogy
 
-- add bottom-up HOG algorithm as experimental feature
+- add bottom-up HOG algorithm as an experimental feature.
 
 
 Bug Fixes
@@ -41,7 +47,7 @@ Bug Fixes
 - Properly terminate OMA standalone runs at end except if run in 
   interactive mode.
 
-- Extended documentation with more details about the ouput files.
+- Extended documentation with more details about the output files.
 
 
 Summary of Changes from 1.1.0 to 1.1.1
