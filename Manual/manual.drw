@@ -111,7 +111,10 @@ downloads := [ Anchor(TextBlock('a', name='downloads',
                 Paragraph(0, Link(TextBlock('a',href=binaryLink, binaryName))),
                 Paragraph(0, 'See the ', 
                     Link(TextBlock('a',href='release_notes.txt', 'release notes')), 
-                    ' to get an overview of recent function improvements and bug fixes.')
+                    ' to get an overview of recent function improvements and bug fixes.'),
+                Paragraph(0, 
+                    Link(TextBlock('a', href='previous_releases.html', 'Previous releases')),
+                    ' of OMA standalone are still available for download.')
             ]:
 
 # INSTALL
