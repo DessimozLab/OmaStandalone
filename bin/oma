@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# $OMA_PATH points to the folder containing the current
-# version of OMA.
-OMA_PATH=$(dirname $0)/..
-# convert relative to absolute path
-if [ ${OMA_PATH:0:1} != "/" ]
-then
-    OMA_PATH="$PWD/$OMA_PATH"
-fi
-
 
 usage(){
 cat << EOF
@@ -64,6 +55,52 @@ EXIT
 
 EOF
 }
+
+realpath() {
+    canonicalize_path "$(resolve_symlinks "$1")"
+}
+
+resolve_symlinks() {
+    local dir_context path
+    path=$(readlink -- "$1")
+    if [ $? -eq 0 ]; then
+        dir_context=$(dirname -- "$1")
+        resolve_symlinks "$(_prepend_path_if_relative "$dir_context" "$path")"
+    else
+        printf '%s\n' "$1"
+    fi
+}
+
+_prepend_path_if_relative() {
+    case "$2" in
+        /* ) printf '%s\n' "$2" ;;
+         * ) printf '%s\n' "$1/$2" ;;
+    esac
+}
+
+canonicalize_path() {
+    if [ -d "$1" ]; then
+        _canonicalize_dir_path "$1"
+    else
+        _canonicalize_file_path "$1"
+    fi
+}
+
+_canonicalize_dir_path() {
+    (cd "$1" 2>/dev/null && pwd -P)
+}
+
+_canonicalize_file_path() {
+    local dir file
+    dir=$(dirname -- "$1")
+    file=$(basename -- "$1")
+    (cd "$dir" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$file")
+}
+
+
+# $OMA_PATH points to the folder containing the current
+# version of OMA.
+OMA_PATH=$(realpath "$(dirname $(realpath $0))/..")
 
 paramerror="
 
