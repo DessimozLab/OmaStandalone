@@ -267,8 +267,8 @@ OMA')),
         variable ',TT('''NR_PROCESSES''.'),' E.g. in bash/tcsh use', Code('export NR_PROCESSES=100  # bash
 setenv NR_PROCESSES 100  # tcsh'), 
         ' prior to submitting the job. The main advantage of this new form is that single jobs 
-        can be more easily resubmitted, and very big job arrays that do not all run simultaneously 
-        will work more reliable.'),
+        can be more easily resubmitted, and very large job arrays that do not all run simultaneously 
+        will work more reliably.'),
 
         Anchor(TextBlock('a', name='LSF', SectionHeader(3, 'LSF'))),
 
