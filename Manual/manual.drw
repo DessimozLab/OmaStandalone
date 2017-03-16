@@ -170,7 +170,9 @@ hinstall := append(hinstall, addinstp):
 # USAGE
 usage := [ Anchor(TextBlock('a', name='usage', SectionHeader(1, 'Usage'))),
         Paragraph(0, 'First, set up a working directory. Copy the file ', 
-        TT('parameters.drw'), ' into this folder and change it to your needs. 
+        TT('parameters.drw'), ' into this folder (if you installed OmaStandalone,
+        you can alternatively run ', TT('OMA -p'), ' to get the parameter file
+        with default values) and change it to your needs. 
         Create a directory ', TT('DB'), ' in your working directory that holds 
         the genome data in FASTA format (see "File formats") and copy your 
         data into this directory. If you want to use ESPRIT, the FASTA file 

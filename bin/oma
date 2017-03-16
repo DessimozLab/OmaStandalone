@@ -49,6 +49,9 @@ Options:
                 effect in the all-against-all phase. If the job terminates
                 because it reaches the time limit, it quits with the exit
                 code 3.
+  -p            copy the default parameter file to the current directory. This
+                is useful if want to analyse a new dataset and previously 
+                installed OmaStandalone.
   -h/?          this help
 
 paramfile       path to the parameter file. it defaults to ./parameters.drw
@@ -78,7 +81,7 @@ darwin_flag="-E -q"
 interactive=""
 earlyStop="false"
 convOnly="false"
-while getopts "hn:vd:isc-W:" opt ; do
+while getopts "hn:vd:iscW:p" opt ; do
     case $opt in 
     h) usage
          exit 0
@@ -114,6 +117,9 @@ while getopts "hn:vd:isc-W:" opt ; do
               usage
               exit 1
          fi
+         ;;
+    p)   cp -i $OMA_PATH/parameters.drw .
+         exit 0
          ;;
     \?)  echo "invalid option" >&2
          usage
