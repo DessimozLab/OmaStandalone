@@ -170,7 +170,9 @@ hinstall := append(hinstall, addinstp):
 # USAGE
 usage := [ Anchor(TextBlock('a', name='usage', SectionHeader(1, 'Usage'))),
         Paragraph(0, 'First, set up a working directory. Copy the file ', 
-        TT('parameters.drw'), ' into this folder and change it to your needs. 
+        TT('parameters.drw'), ' into this folder (if you installed OmaStandalone,
+        you can alternatively run ', TT('OMA -p'), ' to get the parameter file
+        with default values) and change it to your needs. 
         Create a directory ', TT('DB'), ' in your working directory that holds 
         the genome data in FASTA format (see "File formats") and copy your 
         data into this directory. If you want to use ESPRIT, the FASTA file 
@@ -265,8 +267,8 @@ OMA')),
         variable ',TT('''NR_PROCESSES''.'),' E.g. in bash/tcsh use', Code('export NR_PROCESSES=100  # bash
 setenv NR_PROCESSES 100  # tcsh'), 
         ' prior to submitting the job. The main advantage of this new form is that single jobs 
-        can be more easily resubmitted, and very big job arrays that do not all run simultaneously 
-        will work more reliable.'),
+        can be more easily resubmitted, and very large job arrays that do not all run simultaneously 
+        will work more reliably.'),
 
         Anchor(TextBlock('a', name='LSF', SectionHeader(3, 'LSF'))),
 

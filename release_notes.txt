@@ -6,6 +6,25 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.0.0 to 2.1.0
+======================================
+
+New Features:
+-------------
+- Checkpointing AllAll chunks before termination when specified max time
+  is used.
+
+- create a new instance of a default parameter file.
+
+
+Bug Fixes
+---------
+- fixed resolving the oma launch script on mac osx if called through a 
+  symlink.
+
+- Fixing a few typos.
+
+
 Summary of Changes from 1.1.2 to 2.0.0
 ======================================
 This is a major new release. We added several algorithmic improvements

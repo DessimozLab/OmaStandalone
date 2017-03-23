@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# $OMA_PATH points to the folder containing the current
-# version of OMA.
-OMA_PATH=$(dirname $0)/..
-# convert relative to absolute path
-if [ ${OMA_PATH:0:1} != "/" ]
-then
-    OMA_PATH="$PWD/$OMA_PATH"
-fi
-
 
 usage(){
 cat << EOF
@@ -49,6 +40,9 @@ Options:
                 effect in the all-against-all phase. If the job terminates
                 because it reaches the time limit, it quits with the exit
                 code 3.
+  -p            copy the default parameter file to the current directory. This
+                is useful if want to analyse a new dataset and previously 
+                installed OmaStandalone.
   -h/?          this help
 
 paramfile       path to the parameter file. it defaults to ./parameters.drw
@@ -61,6 +55,52 @@ EXIT
 
 EOF
 }
+
+realpath() {
+    canonicalize_path "$(resolve_symlinks "$1")"
+}
+
+resolve_symlinks() {
+    local dir_context path
+    path=$(readlink -- "$1")
+    if [ $? -eq 0 ]; then
+        dir_context=$(dirname -- "$1")
+        resolve_symlinks "$(_prepend_path_if_relative "$dir_context" "$path")"
+    else
+        printf '%s\n' "$1"
+    fi
+}
+
+_prepend_path_if_relative() {
+    case "$2" in
+        /* ) printf '%s\n' "$2" ;;
+         * ) printf '%s\n' "$1/$2" ;;
+    esac
+}
+
+canonicalize_path() {
+    if [ -d "$1" ]; then
+        _canonicalize_dir_path "$1"
+    else
+        _canonicalize_file_path "$1"
+    fi
+}
+
+_canonicalize_dir_path() {
+    (cd "$1" 2>/dev/null && pwd -P)
+}
+
+_canonicalize_file_path() {
+    local dir file
+    dir=$(dirname -- "$1")
+    file=$(basename -- "$1")
+    (cd "$dir" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$file")
+}
+
+
+# $OMA_PATH points to the folder containing the current
+# version of OMA.
+OMA_PATH=$(realpath "$(dirname $(realpath $0))/..")
 
 paramerror="
 
@@ -78,7 +118,7 @@ darwin_flag="-E -q"
 interactive=""
 earlyStop="false"
 convOnly="false"
-while getopts "hn:vd:isc-W:" opt ; do
+while getopts "hn:vd:iscW:p" opt ; do
     case $opt in 
     h) usage
          exit 0
@@ -114,6 +154,9 @@ while getopts "hn:vd:isc-W:" opt ; do
               usage
               exit 1
          fi
+         ;;
+    p)   cp -i $OMA_PATH/parameters.drw .
+         exit 0
          ;;
     \?)  echo "invalid option" >&2
          usage

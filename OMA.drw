@@ -190,13 +190,17 @@ IsMyJob := proc(name1, name2, chunk)
     return( evalb(mod(nr, pinf['NrParallelProc']) = pinf['ProcNr']-1) );
 end:
 
-CheckRemainingTimeAndQuitIfOver := proc(fn_chunk)
-    if stop_at_time - UTCTime() < 10 then 
+CheckRemainingTimeAndQuitIfOver := proc(fn_chunk, matches, skip_until)
+    if stop_at_time - UTCTime() < 30 then
         printf('\n\n%s\nReached timelimit. Quitting now...\n', CreateString(34,'*')):
-        CallSystem('rm -f '.fn_chunk):
+        OpenWriting(fn_chunk.'.ckpt');
+        printf('# checkpoint created by job %d (PID: %d, host %s) at %s\n',
+            pinf['ProcNr'], getpid(), hostname(), date());
+        printf('_matches := %A:\n_skip_until := %A:\n', matches, skip_until);
+        OpenWriting(previous):
         exit(3):
     fi:
-end:    
+end:
 
 if UseExperimentalHomologousClusters=true then
     ReadProgram(If(not assigned(libdir),'lib',libdir).'/HomologousClustering'):
@@ -250,15 +254,38 @@ for g1 to NG do
 
             # skip if cached or already computed
             fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d', name1, name2, part, nrChunks);
-            if FileExists(fn) or FileExists(fn.'.gz') then
+            if FileExists(fn.'.gz') then
                 printf('Pair %s/%s part %d of %d already computed. Skipped.\n',
                     name1, name2, part, nrChunks);
                 next;
+            elif FileExists(fn) then
+                if not FileExists(fn.'.ckpt') then
+                    printf('Pair %s/%s part %d of %d seems to be currently computed\n',
+                        name1, name2, part, nrChunks);
+                    next;
+                else
+                    # load checkpoint
+                    _matches := 0; _skip_until := 0:
+                    err := traperror(ReadProgram(fn.'.ckpt'));
+                    if err=lasterror or _matches=0 or _skip_until=0 then
+                         # something bad happend. remove checkpoint file and start over with this chunk
+                         res := []; skip_until := 0:
+                         printf('Failed to load checkpoint file for %s/%s part %d of %d. Redo chunk\n',
+                              name1, name2, part, nrChunks);
+                    else
+                         res := _matches: skip_until := _skip_until:
+                         printf('Loaded checkpoint file for %s/%s part %d of %d. Continue with this chunk\n',
+                              name1, name2, part, nrChunks);
+                    fi:
+                    CallSystem('rm -f '.fn.'.ckpt');
+                fi:
+            else
+                res := []; skip_until := 0:
             fi:
 
-            fn_oldstyle := sprintf('Cache/AllAll/%s/%s_%d-%d', name1, name2, part, nrChunks);
-            if FileExists(fn_oldstyle.'.gz') then
-                CallSystem('mv '.fn_oldstyle.'.gz '.fn.'.gz');
+            fn_oldstyle := sprintf('Cache/AllAll/%s/%s_%d-%d.gz', name1, name2, part, nrChunks);
+            if FileExists(fn_oldstyle) then
+                CallSystem('mv '.fn_oldstyle.' '.fn.'.gz');
                 warning('using AllAll files from old release. moved file '.fn_oldstyle.'.gz into subfolder');
                 next;
             fi:
@@ -272,7 +299,6 @@ for g1 to NG do
 
             t0 := UTCTime():
             dat0 := time():
-            res := []:
             c2 := 0;
             algnInRange := min(AlignBatchSize,NumberOfAlignments(name1,name2));
 
@@ -280,11 +306,20 @@ for g1 to NG do
             for proteinPair in RangeOfChunk(name1, name2, part) do
                 i1 := proteinPair[1];
                 i2 := proteinPair[2];
+                c2 := c2+1;
+                # if we continue from a checkpoint, we skip until we reach the
+                # proteinPair where we left off.
+                if skip_until<>0 then
+                      if skip_until = proteinPair then
+                          skip_until := 0:
+                      else next fi:
+                fi:
 
                 len1 := length(Seqs1[i1]);
                 len2 := length(Seqs2[i2]);
-                c2 := c2+1;
-                if mod(c2,1009)=0 then CheckRemainingTimeAndQuitIfOver(fn) fi:
+                if mod(c2,109)=0 then
+                    CheckRemainingTimeAndQuitIfOver(fn, res, proteinPair);
+                fi:
                 if mod(c2,50000)=0 then
                     printf('   [pid %6d]: %.2f%% complete, time left for this '.
                         'part=%.2fh, %.1f%% of AllAll done. Mem: %.3fGB\n',
