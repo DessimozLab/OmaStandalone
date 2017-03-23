@@ -37,7 +37,7 @@ deploy="yes"
 webpath=""
 while getopts "hlr:p:" opt ; do
     case $opt in 
-    h) usage
+    h) showUsage
          exit 0
          ;;
     r)   webhost="$OPTARG"
@@ -47,11 +47,11 @@ while getopts "hlr:p:" opt ; do
     l)   deploy="no"
          ;;
     \?)  echo "invalid option" >&2
-         usage
+         showUsage
          exit 1
          ;;
     :)   echo "option -$OPTARG requires an argument" >&2
-         usage
+         showUsage
          exit 1
          ;;
     esac
