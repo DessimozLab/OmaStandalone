@@ -54,8 +54,6 @@ then
 fi
 echo "Installing oma..."
 
-sed -i.se  "s:OMA_PATH=.*\$:OMA_PATH=\$(dirname \$0)/../OMA.${versionnr}:g" $omadir/bin/oma && rm $omadir/bin/oma.se
-
 cp $current_dir/OMA.drw $current_dir/README.oma $current_dir/parameters.drw $omadir/
 echo "Installing libraries..."
 cp -rf $current_dir/lib $omadir/
