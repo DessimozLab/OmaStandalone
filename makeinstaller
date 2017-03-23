@@ -113,23 +113,31 @@ cp bin/oma bin/omadarwin bin/warthog $instpath/bin/
 
 # create file with previous releases that exist for download
 prev_rels="Manual/previous_releases.html"
-cat > $prev_rels <<EOF
-<html><head>
+list_fn="/tmp/standalone_list.txt"
+ssh $webhost "find $webpath -type f -name '*.tgz' -fprintf $list_fn '%p\t%TY%Tm%Td\t%TY %Tb %Td\n'"
+scp $webhost:$list_fn $list_fn
+python - << EOF
+import os
+with open("$list_fn",'rt') as fin, open("$prev_rels", 'w') as fout:
+    data = [line.split('\\t') for line in fin]
+    data.sort(key=lambda x:[x[1],x[0]], reverse=True)
+    fout.write("""<html><head>
 <title>OMA standalone - Previous releases</title>
 <link href="../browser.css" rel="stylesheet" type="text/css"></link>
 <link href="manual.css" rel="stylesheet" type="text/css"></link>
 </head><body>
 <div class="content"><div class="title">OMA standalone</div>
 <h1>Previous Releases</h1>
-<ul>
-EOF
-for rel in $(ssh $webhost "cd $webpath; ls -t *.tgz") ; do
-    echo " <li><a href=\"http://omabrowser.org/standalone/$rel\">$rel</a></li>" >> $prev_rels
-done
-cat >> $prev_rels <<EOF
-</ul>
-</body>
-</html>
+<table>
+<tr><th style="width:220px;">Release</th><th>Release Date</th></tr>
+""")
+
+    for row in data:
+        vers = os.path.basename(row[0])
+        fout.write('<tr><td><a href="http://omabrowser.org/standalone/{0}">{0}</a></td>'
+                   '<td>{1}</td></tr>\\n'
+                   .format(vers, row[2]))
+    fout.write('</table></body></html>\\n')
 EOF
 
 # create manual and copy files to $instpath
