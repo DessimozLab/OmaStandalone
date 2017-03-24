@@ -228,8 +228,8 @@ for g1 to NG do
         # skip if 1-chunk archive already present (import from OMA AxA)
         fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
         if FileExists(fn1chunk) then
-            printf('Pair %s/%s already computed (probably imported). Skipped.\n',
-                name1, name2 );
+            Logger(sprintf('Pair %s/%s already computed (probably imported). Skipped.\n',
+                           name1, name2 ), mem=false);
             next;
         fi;
 
@@ -255,13 +255,13 @@ for g1 to NG do
             # skip if cached or already computed
             fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d', name1, name2, part, nrChunks);
             if FileExists(fn.'.gz') then
-                printf('Pair %s/%s part %d of %d already computed. Skipped.\n',
-                    name1, name2, part, nrChunks);
+                Logger(sprintf('Pair %s/%s part %d of %d already computed. Skipped.\n',
+                    name1, name2, part, nrChunks), mem=false);
                 next;
             elif FileExists(fn) then
                 if not FileExists(fn.'.ckpt') then
-                    printf('Pair %s/%s part %d of %d seems to be currently computed\n',
-                        name1, name2, part, nrChunks);
+                    Logger(sprintf('Pair %s/%s part %d of %d seems to be currently computed\n',
+                        name1, name2, part, nrChunks), mem=false);
                     next;
                 else
                     # load checkpoint
@@ -270,12 +270,12 @@ for g1 to NG do
                     if err=lasterror or _matches=0 or _skip_until=0 then
                          # something bad happend. remove checkpoint file and start over with this chunk
                          res := []; skip_until := 0:
-                         printf('Failed to load checkpoint file for %s/%s part %d of %d. Redo chunk\n',
-                              name1, name2, part, nrChunks);
+                         Logger(sprintf('Failed to load checkpoint file for %s/%s part %d of %d. Redo chunk\n',
+                              name1, name2, part, nrChunks), mem=true);
                     else
                          res := _matches: skip_until := _skip_until:
-                         printf('Loaded checkpoint file for %s/%s part %d of %d. Continue with this chunk\n',
-                              name1, name2, part, nrChunks);
+                         Logger(sprintf('Loaded checkpoint file for %s/%s part %d of %d. Continue with this chunk\n',
+                              name1, name2, part, nrChunks), mem=true);
                     fi:
                     CallSystem('rm -f '.fn.'.ckpt');
                 fi:
@@ -290,8 +290,8 @@ for g1 to NG do
                 next;
             fi:
 
-            printf('[pid %6d]: Computing %s vs %s (Part %d of %d). Mem: %.3fGB\n',
-                getpid(), name1, name2, part, nrChunks, Set(BytesAlloc)/2^30);
+            Logger(sprintf('Computing %s vs %s (Part %d of %d)',
+                name1, name2, part, nrChunks));
             OpenWriting(fn);
             printf( '# AllAll of %s vs %s (Part %d of %d); pid %d; %s\n',
                 name1, name2, part, nrChunks, getpid(), hostname() );
@@ -317,18 +317,22 @@ for g1 to NG do
 
                 len1 := length(Seqs1[i1]);
                 len2 := length(Seqs2[i2]);
+                Logger(sprintf('aligning %s/%d vs %s/%d (seq lens: %d/%d)', 
+                               name1, i1, name2, i2, len1, len2), 3);
                 if mod(c2,109)=0 then
                     CheckRemainingTimeAndQuitIfOver(fn, res, proteinPair);
                 fi:
                 if mod(c2,50000)=0 then
-                    printf('   [pid %6d]: %.2f%% complete, time left for this '.
-                        'part=%.2fh, %.1f%% of AllAll done. Mem: %.3fGB\n',
-                        getpid(),100*c2/algnInRange,(algnInRange/c2-1)*(UTCTime()-t0)/3600,
-                        100*( (chunk_cnt-1+c2/algnInRange)/sum(tot) ), Set(BytesAlloc)/2^30);
+                    Logger(sprintf('  %.2f%% complete, time left for this '.
+                        'part=%.2fh, %.1f%% of AllAll done.', 100*c2/algnInRange,
+                        (algnInRange/c2-1)*(UTCTime()-t0)/3600,
+                        100*( (chunk_cnt-1+c2/algnInRange)/sum(tot) )));
                 fi:
                 dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
+                Logger(sprintf('fast sign check done. score: %.5g', dps[1]), 4);
                 if dps[1] >= .75*MinScore then
                     a := Align(Seqs1[i1],Seqs2[i2],DMS);
+                    Logger(sprintf('optimal alignment done. score: %f dist %f', a[Score], a[PamDistance]), 4);
                     if a[Score] < MinScore or min(a[Length1],a[Length2]) <
                                 max(30,0.3*min(len1,len2)) then next fi;
                     i := GetOffset(a[Seq1])-GetOffset(Seqs1[i1]);
@@ -355,15 +359,12 @@ for g1 to NG do
             OpenAppending(previous);
             # Compress file
             CallSystem('gzip -9f '.fn);
+            msg := [sprintf('Finished %s vs %s (Part %d of %d)', name1, name2, part, nrChunks)];
             if c2 > 0 then
-                printf('Finished %s vs %s (Part %d of %d)\n'.
-                '  %.1f%% of AllAll done, estimated remaining time:'
-                .' %.1fh\n\n', name1, name2, part, nrChunks,
-                100*chunk_cnt/sum(tot), tot_align_time/chunk_processed * (sum(tot[genomepair_cnt..-1])+nrChunks-part)/3600);
-            else
-                printf('Finished %s vs %s (Part %d of %d)\n',
-                    name1,name2,part,nrChunks);
-            fi;
+                msg := append(msg, sprintf('  %.1f%% of AllAll done, estimated remaining time: %.1fh\n', 
+                    100*chunk_cnt/sum(tot), tot_align_time/chunk_processed * (sum(tot[genomepair_cnt..-1])+nrChunks-part)/3600));
+            fi:
+            Logger(msg, mem=false);
         od:
     od;
 od:

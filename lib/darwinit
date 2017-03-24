@@ -67,6 +67,7 @@ FilterBestSplicingMatches := noeval(ReadLibrary(OrthologsLib.'AltSplicing', Filt
 
 ValidateParameters := noeval(ReadLibrary(OrthologsLib.'CheckParamCompability', ValidateParameters));
 
+Logger := noeval(ReadLibrary(OrthologsLib.'Logging',Logger));
 FileExists := noeval(ReadLibrary(OrthologsLib.'FileExists',FileExists));
 StoreOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
     StoreOrthologMilestone));
