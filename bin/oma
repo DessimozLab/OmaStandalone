@@ -100,7 +100,7 @@ _canonicalize_file_path() {
 
 # $OMA_PATH points to the folder containing the current
 # version of OMA.
-OMA_PATH=$(realpath "$(dirname $(realpath $0))/..")
+OMA_PATH="$(realpath "$(dirname "$(realpath $0)")/..")"
 
 paramerror="
 

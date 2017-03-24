@@ -6,8 +6,21 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.1.0 to 2.1.1
+======================================
+This is a bugfix release only.
+
+Bug Fixes
+---------
+- fixed installer script to be compatible with homebrew.
+
+
 Summary of Changes from 2.0.0 to 2.1.0
 ======================================
+This release contains a few new features and several bug fixes.
+Analyses obtained from previous OMA standalone versions are still fully
+compatible, so it is safe to carry over the Cache/ (and of course also DB/)
+folders.
 
 New Features:
 -------------
