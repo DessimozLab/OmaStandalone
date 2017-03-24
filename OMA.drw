@@ -276,6 +276,8 @@ for g1 to NG do
                          res := _matches: skip_until := _skip_until:
                          Logger(sprintf('Loaded checkpoint file for %s/%s part %d of %d. Continue with this chunk\n',
                               name1, name2, part, nrChunks), mem=true);
+                         Logger(sprintf(' loaded %d matches from checkpoint. will continue with pair %A',
+                              length(res), skip_until),  2);
                     fi:
                     CallSystem('rm -f '.fn.'.ckpt');
                 fi:
@@ -310,8 +312,10 @@ for g1 to NG do
                 # if we continue from a checkpoint, we skip until we reach the
                 # proteinPair where we left off.
                 if skip_until<>0 then
+                      Logger(sprintf('  pair is %A. skip_until %A', proteinPair, skip_until), 4);
                       if skip_until = proteinPair then
                           skip_until := 0:
+                          Logger('reached pair in Chunk where AllAll continues...', 2);
                       else next fi:
                 fi:
 
