@@ -148,23 +148,49 @@ NumberOfChunks := proc(name1, name2)
     return(ceil(NumberOfAlignments(name1, name2)/AlignBatchSize));
 end:
 
-UpperTriangInd2Tuple := proc(index, N)
-    c := index; m := 1;
+UpperTriangInd2Tuple := proc(first, last, N)
+    tot := last-first+1;
+    # find starting tuple
+    c := first; m := 1;
     while c-N+m > 0 do
         c := c-N+m;
         m := m+1;
+        if m > N then error('starting value out of range'); fi;
     od:
-    return([m, c+m]);
+    out := CreateArray(1..tot);
+    # generate all pairs
+    for i to tot do:
+        if m > N then error('end value out of range'); fi;
+        out[i] := [m, c+m];
+        c := c+1;
+        if c+m > N then
+            m := m+1;
+            c := 1;
+        fi;
+    od;
+    return(out)
 end:
 
-FullInd2Tuple := proc(index, N)
-    m := floor((index-1)/N);
-    c := index - m*N;
-    return([m+1,c]);
+FullInd2Tuple := proc(first,last, N)
+    tot := last-first+1;
+    # find starting tuple
+    m := floor((first-1)/N);
+    c := first - m*N;
+
+    out := CreateArray(1..tot);
+    # generate all pairs
+    for i to tot do:
+        out[i] := [m+1, c];
+        c := c+1;
+        if c > N then
+            m := m+1;
+            c := 1;
+        fi;
+    od;
+    return(out)
 end:
 
-RangeOfChunk_iterator := proc(x)
-    name1 := x[1]; name2 := x[2]; chunk:= x[3];
+RangeOfChunk := proc(name1,name2,chunk)
     totChunks := NumberOfChunks(name1, name2);
     if not type(chunk,posint) or chunk>totChunks then
         error('invalid chunk number: '.chunk)
@@ -173,16 +199,14 @@ RangeOfChunk_iterator := proc(x)
     first := floor((chunk-1)*all/totChunks)+1;
     last := floor(chunk*all/totChunks);
     if name1=name2 then
-        for index from first to last do
-            iterate( UpperTriangInd2Tuple(index, GS[name1,TotEntries]));
-        od:
+        # retrieve them in one go
+        return(UpperTriangInd2Tuple(first,last,GS[name1,TotEntries]));
     else
-        for index from first to last do
-            iterate( FullInd2Tuple(index, GS[name2,TotEntries]));
-        od:
+        return( FullInd2Tuple(first,last,GS[name2,TotEntries]));
     fi:
 end:
-RangeOfChunk := noeval(RangeOfChunk):
+
+
 
 IsMyJob := proc(name1, name2, chunk)
     h := sha2(sprintf('%a',[name1,name2,chunk]))[1..8]:
@@ -312,7 +336,9 @@ for g1 to NG do
                 # if we continue from a checkpoint, we skip until we reach the
                 # proteinPair where we left off.
                 if skip_until<>0 then
-                      Logger(sprintf('  pair is %A. skip_until %A', proteinPair, skip_until), 4);
+                      if proteinPair[2] = proteinPair[1] + 1 then
+                          Logger(sprintf('  pair is %A. skip_until %A', proteinPair, skip_until), 4);
+                      fi;
                       if skip_until = proteinPair then
                           skip_until := 0:
                           Logger('reached pair in Chunk where AllAll continues...', 2);
