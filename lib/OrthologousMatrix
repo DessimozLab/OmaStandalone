@@ -544,7 +544,7 @@ for X to NG do for Y from X+1 to NG do
                 e3 := ExtractBestMatchesSubgroupAsEdges(Y, Y, pY, pY, ns[X], ns[X], 'score'=0);
                 G := Graph(Edges(op(e1),op(e2),op(e3)),Nodes(op(pX),seq(ns[X]+z,z=pY))):
                 while length(G[Nodes])>1 do
-                     CliqueIterFactor := min( 2, (200/length(G[Nodes]))^2.5 );
+                     CliqueIterFactor := min( 1, (140/length(G[Nodes]))^2.5 );
                      cli := MaxEdgeWeightClique(G);
                      Lcli := length(cli);
                      npX := {seq(If(z<=ns[X],z,NULL),z=cli)}:
