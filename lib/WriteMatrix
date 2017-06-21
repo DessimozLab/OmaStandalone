@@ -28,7 +28,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
-module external WriteMatrix, WriteGroups;
+module external WriteMatrix, WriteGroups, WriteProfileFromOGs, WriteProfileFromHOGs;
 
 WriteMatrix := proc(Ort:matrix(numeric), fname:string)
     # Store the groups of orthologs
@@ -60,6 +60,42 @@ WriteGroups := proc(Ort, fname)
         printf('\n');
     od;
     OpenWriting(previous);
+end:
+
+WriteProfileFromHOGs := proc(HOGs, fname)
+    OpenWriting(fname);
+    print('\# The phyletic profiles are given as one HOG (at its root level)',
+          '\# per row, starting with a group identifier, followed by the number',
+          '\# of entries per species in the group as columns. The first row',
+          '\# contains the species for each column.');
+    printf('Group\t%s\n', ConcatStrings(genomes, '\t'));
+    Goff := CreateArray(1..NG+1):
+    for i to NG do Goff[i+1] := Goff[i] + GS[genomes[i],TotEntries] od:
+    for hognr to length(HOGs) do
+        hog := HOGs[hognr];
+        cnts := CreateArray(1..NG):
+        for eNr in indets(hog, posint) do
+            g := SearchOrderedArray(eNr-1, Goff);
+            cnts[g] := cnts[g] + 1;
+        od:
+        printf('HOG%05d\t%s\n', hognr, ConcatStrings(zip(string(cnts)),'\t'));
+    od:
+    OpenWriting(previous):
+end:
+
+WriteProfileFromOGs := proc(OGs, fname)
+    OpenWriting(fname);
+    print('\# The phyletic profiles are given as one OMA Group per row, starting',
+          '\# with a group identifier, followed by a presents/absents indicator',
+          '\# (i.e. 0 := absent, 1: present) per species in the group as columns.',
+          '\# The first row contains the species for each column.');
+    printf('Group\t%s\n', ConcatStrings(genomes, '\t'));
+    for grpnr to length(OGs) do
+        og := OGs[grpnr];
+        profile := [sprintf('OMA%05d', grpnr), seq(If(z>0,'1','0'), z=og)];
+        print(ConcatStrings(profile,'\t'));
+    od:
+    OpenWriting(previous):
 end:
 
 end: #module

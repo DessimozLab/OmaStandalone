@@ -662,6 +662,9 @@ else
     # store orthologous groups in orthoxml format
     WriteOrthoXML(Ort, OutputFolder.'/OrthologousGroups.orthoxml',
         StableIdsForGroups=true);
+    if not WriteOutput_PhyleticProfileOG = false then
+        WriteProfileFromOGs(Ort, OutputFolder.'/PhyleticProfileOMAGroups.txt');
+    fi:
 
     if type(QuasiCliquesCutoff, numeric) and QuasiCliquesCutoff<1 then
         mergedOMAGroups := MergeOMAGroups(Ort, VPairs, QuasiCliquesCutoff);
@@ -671,6 +674,9 @@ else
         WriteGroups( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.txt');
         if not WriteOutput_OrthologousGroupsFasta=false then
             WriteFastaGroups(OutputFolder.'/MergedOMAGroupsFasta', mergedOMAGroups);
+        fi:
+        if not WriteOutput_PhyleticProfileOG = false then
+            WriteProfileFromOGs(mergedOMAGroups, OutputFolder.'/PhyleticProfileMergedOMAGroups.txt');
         fi:
     fi:
 
@@ -695,6 +701,9 @@ else
 
         if not WriteOutput_HOGFasta=false then
             WriteFastaGroups(OutputFolder.'/HOGFasta', HOG);
+        fi:
+        if not WriteOutput_PhyleticProfileHOG = false then
+            WriteProfileFromHOGs(HOG, OutputFolder.'/PhyleticProfileHOGs.txt');
         fi:
     fi:
 

@@ -114,7 +114,8 @@ GuessIdType := false;
 #WriteOutput_OrthologousGroupsFasta := false;
 #WriteOutput_HOGFasta := false;
 #WriteOutput_Paralogs := false; 
-
+#WriteOutput_PhyleticProfileHOG := false;
+#WriteOutput_PhyleticProfileOG := false;
 
 
 ##############################################################
