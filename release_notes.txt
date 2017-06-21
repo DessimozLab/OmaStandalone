@@ -65,7 +65,7 @@ to OMA standalone, i.e. two changes in the pairwise orthology inference
 step and a new algorithm to infer the HOGs (bottom-up). The predicted
 orthologs will therefor likely be slightly different than in previous
 versions. The cached All-against-all is still fully compatible with the
-new release and does not to be recomputed.
+new release and does not need to be recomputed.
 
 New Features:
 -------------
