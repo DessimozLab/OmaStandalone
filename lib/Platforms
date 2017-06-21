@@ -51,7 +51,7 @@ DetectParallelInfo := proc()
     else 
         return(ParallelInfo(1,1));
     fi:
-    if nr='' and (job_idx='' or job_idx='0') then
+    if nr='' and (job_idx='' or job_idx='0' or lowercase(job_idx)='undefined') then
         warning('not run as a job-array. Will assume it is a single process');
         return(ParallelInfo(1,1));
     fi:
@@ -60,6 +60,11 @@ DetectParallelInfo := proc()
     fi:
     NrParallelJobs := parse(nr);
     job_idx := parse(job_idx);
+    if not type(job_idx, posint) then
+        warning('determined "job_idx" value is not an integer: ' . job_idx);
+        if NrParallelJobs=1 then job_idx := 1;
+        else error('job_idx not an integer: '.job_idx) fi:
+    fi:
     return(Variables_Platform(NrParallelJobs, job_idx));
 end:
 
