@@ -28,8 +28,8 @@
 #
 # ***** END LICENSE BLOCK *****
 
-# -- Added to OMA standalone by Alex Warwick Vesztrocy, August 2016.
-module external PropagateFunctionByGroup, WriteGAF:
+# -- Added to OMA standalone by Alex Warwick Vesztrocy, August 2016, June 2017.
+module external CheckExported, PropagateFunctionByGroup, WriteGAF:
 
 
 # Hard-coded experimental evidence codes, trusted evidence codes 
@@ -69,8 +69,8 @@ go_aspect_ := proc(id)
 end:
 
 # Propagation strategy
-prop_strategy := proc(annot_count, group_size)
-    return(annot_count >= min(3, group_size/2)):
+prop_strategy := proc(annot_count, group_size, cut_off)
+    return(annot_count >= min(3, group_size*cut_off)):
 end:
 
 
@@ -202,7 +202,7 @@ gen_org2clade_map := proc(speciesTree)
             elif clade[2]<>unassigned then
                 printf('Mapped %s to clade: %s\n', g, clade[2]):
             else
-                warning(sprintf('Unable to map %s to a clade. Will not propage function.', g)):
+                warning(sprintf('Unable to map %s to a clade. Will not propagate function.', g)):
             fi:
             org2clade[g] := clade[2]:
         fi:
@@ -315,7 +315,7 @@ end:
 
 
 # Propagate these annotations
-PropagateFunctionByGroup := proc(Ort:matrix(numeric), speciesTree)
+PropagateFunctionByGroup := proc(Ort:matrix(numeric), speciesTree, cut_off:float)
     global DB:
 
     t1 := UTCTime():
@@ -348,7 +348,7 @@ PropagateFunctionByGroup := proc(Ort:matrix(numeric), speciesTree)
         od:
         # Find annotations which have enough representation in the group and ensure
         # that we only have the most specific annotations
-        group_annots := get_specific_set({seq(If(prop_strategy(annots[z], group_size), z, NULL), 
+        group_annots := get_specific_set({seq(If(prop_strategy(annots[z], group_size, cut_off), z, NULL), 
                                          z=Indices(annots))}):
 
         for j to NG do
@@ -447,11 +447,11 @@ write_gaf_entry := proc(tax_id, e, id_, go_id, ev_s)
         od:
     od:
 end:
-WriteGAF := proc(new_terms, fn:string)
+WriteGAF := proc(new_terms, fn:string, cut_off:float)
     global DB:
     OpenWriting(fn):
     printf('!gaf-version: 2.1\n'):
-    printf('! Functional prediction from OMA standalone using OMA groups.\n'): 
+    printf('! Functional prediction from OMA standalone using OMA groups (cut-off %f).\n', cut_off): 
     for i to NG do
         DB := DBs[i]:
         genome := genomes[i]:
@@ -470,5 +470,23 @@ WriteGAF := proc(new_terms, fn:string)
     OpenWriting(previous):
 end:
 
+# Check there are enough exported genomes for functional propagation
+CheckExported := proc(cut_off:float)
+    # Warning if low acceptance set.
+    if cut_off < 0.25 then
+        warning(sprintf('GroupFunctionPredictionCutOff parameter is set very low. This will enable very liberal function prediction from exported genomes. Ensure there are enough genomes included.')):
+    fi:
+
+    # Count the exported genomes (using lineage as counter)
+    c := 0:
+    for i to NG do
+        genome := genomes[i]:
+        if GS[genome, 'Lineage'][1]<>Unknown then
+            c := c + 1:
+        fi:
+    od:
+
+    return(NG*cut_off >= c):
+end:
 
 end: # module

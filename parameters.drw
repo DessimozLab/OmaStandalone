@@ -163,7 +163,7 @@ MinEdgeCompletenessFraction := 0.8;
 # You can either set it to 'true', which will enable the computation or 
 # disable it by setting it to 'false'. Writing the output takes a long time. 
 DoGroupFunctionPrediction := true;
-
+GroupFunctionPredictionCutOff := 0.1;
 
 
 ###############################################################################

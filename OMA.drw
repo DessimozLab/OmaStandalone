@@ -539,7 +539,11 @@ else
 
     if DoGroupFunctionPrediction=true then
         if SpeciesTree<>'lineage' then
-            new_annots := PropagateFunctionByGroup(Ort, speciesTree): 
+            if CheckExported(GroupFunctionPredictionCutOff) then
+              new_annots := PropagateFunctionByGroup(Ort, speciesTree, GroupFunctionPredictionCutOff):
+            else
+              warning(sprintf('Too few OMA exported genomes are included to do group function prediction. To run either include more exported genomes or override by setting GroupFunctionPredictionCutOff lower in the parameters file.')):
+            fi:
         else
             error('Annotation propagation is not implemented for parameter SpeciesTree := lineage'):
         fi:
@@ -690,7 +694,7 @@ else
 
     # Write out function predictions
     if DoGroupFunctionPrediction=true then
-        WriteGAF(new_annots, OutputFolder.'/gene_function.gaf'):
+        WriteGAF(new_annots, OutputFolder.'/gene_function.gaf', GroupFunctionPredictionCutOff):
     fi:
 
     ###
