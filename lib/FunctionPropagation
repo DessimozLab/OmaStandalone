@@ -192,7 +192,7 @@ gen_org2clade_map := proc(speciesTree)
         # Check all genomes exist.
         for g in genomes do
             if org2clade[g]=unassigned then
-                error(sprintf('Clade mapping file doesn\'t contain %s.', g)):
+                error(sprintf('Clade mapping file does not contain %s.', g)):
             fi:
         od:
     else
@@ -276,14 +276,15 @@ end:
 gen_clade_terms := proc(org2clade)
     global DB:
     clade_terms := table([], []):
+		clade2org := table([], []):
     for i to NG do
         DB := DBs[i]:
         clade := org2clade[genomes[i]]:
-        if clade<>unassigned then
-            NULL:
-        else
-            printf('%s does not belong to a valid clade.\n', genomes[i]): 
+        if clade=unassigned then
+            warning(sprintf('%s does not belong to a valid clade.\n', genomes[i])):
+						next:
         fi:
+				clade2org[clade] := append(clade2org[clade], genomes[i]):
 
         for j to GS[genomes[i], 'TotEntries'] do
             e := Entry(j):
@@ -309,6 +310,10 @@ gen_clade_terms := proc(org2clade)
             l := append(l, op(go_super(term)), term):
         od:
         clade_terms[clade] := {op(l)}:
+
+				if length(clade_terms[clade])=0 then
+						warning(sprintf('No GO terms for clade %s %a.', clade, clade2org[clade])):
+				fi:
     od:
 
     return(clade_terms):
@@ -367,13 +372,16 @@ PropagateFunctionByGroup := proc(Ort:matrix(numeric), speciesTree, cut_off:float
         for j to NG do
             e_num := Ort[i,j]:
             clade := org2clade[genomes[j]]:
+            # Skip if no clade terms. 
+            if length(clade_terms[clade])=0 then next fi:
+
 
             if e_num<>0 and clade<>unassigned then
                 candidates := minus(group_annots, {op(cached_entry_annots[j])}):
                 validated := []:
 
                 for candidate in candidates do
-                    if member(candidate, clade_terms(clade)) then
+                    if member(candidate, clade_terms[clade]) then
                         validated := append(validated, candidate):
                     else
                         # Find most specific parent terms that are valid for this clade
@@ -487,7 +495,9 @@ end:
 CheckExported := proc(cut_off:float)
     # Warning if low acceptance set.
     if cut_off < 0.25 then
-        warning(sprintf('GroupFunctionPredictionCutOff parameter is set very low. This will enable very liberal function prediction from exported genomes. Ensure there are enough genomes included.')):
+        warning('GroupFunctionPredictionCutOff parameter is set very low. This will
+                 enable very liberal function prediction from exported genomes. Ensure
+                 there are enough genomes included.'):
     fi:
 
     # Count the exported genomes (using lineage as counter)
