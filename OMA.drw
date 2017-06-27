@@ -541,7 +541,10 @@ else
         if SpeciesTree='lineage' then
             error('Annotation propagation is not implemented for parameter SpeciesTree := lineage'):
         elif not CheckExported(GroupFunctionPredictionCutOff) then
-            error('Too few OMA exported genomes are included to do group function prediction. To run either include more exported genomes or override by setting GroupFunctionPredictionCutOff lower in the parameters file.'):
+            printf('Too few OMA exported genomes are included to do group function prediction.\n'):
+            printf('To run either include more exported genomes or override by setting \n'):
+            printf('GroupFunctionPredictionCutOff lower in the parameters file.\n'):
+            error('Too few OMA exported genomes for function prediction.'): 
         fi:
 
         if CladeDefinitionFilename<>false then
