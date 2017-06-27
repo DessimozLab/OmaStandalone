@@ -184,29 +184,39 @@ CLADES := {'Bacteria', 'Archaea', 'Fungi', 'Viridiplantae', 'Nematoda',
 # Generate an organism to clade mapping table
 gen_org2clade_map := proc(speciesTree)
     org2clade := table():
-    for g in genomes do
-        for clade in CLADES do
-            if SearchArray(clade, GS[g, 'Lineage']) > 0 then
-                org2clade[g] := clade:
-                break:
+    if type(speciesTree)=string then
+        # Read in the org2clade table from file.
+        OpenReading(speciesTree):
+        for i to NG do
+            z := SearchDeim('\t', ReadRawLine()):
+            org2clade[z[2]] := z[1]:
+        od:
+        OpenReading(terminal):
+    else
+        for g in genomes do
+            for clade in CLADES do
+                if SearchArray(clade, GS[g, 'Lineage']) > 0 then
+                    org2clade[g] := clade:
+                    break:
+                fi:
+            od:
+        od:
+
+        # Map non-mapped genomes
+        for g in genomes do
+            if org2clade[g]=unassigned then
+                clade := infer_clade(g, org2clade, speciesTree):
+                if clade[1]<>g then
+                    error('Unable to find genome in species tree.'):
+                elif clade[2]<>unassigned then
+                    printf('Mapped %s to clade: %s\n', g, clade[2]):
+                else
+                    warning(sprintf('Unable to map %s to a clade. Will not propagate function.', g)):
+                fi:
+                org2clade[g] := clade[2]:
             fi:
         od:
-    od:
-
-    # Map non-mapped genomes
-    for g in genomes do
-        if org2clade[g]=unassigned then
-            clade := infer_clade(g, org2clade, speciesTree):
-            if clade[1]<>g then
-                error('Unable to find genome in species tree.'):
-            elif clade[2]<>unassigned then
-                printf('Mapped %s to clade: %s\n', g, clade[2]):
-            else
-                warning(sprintf('Unable to map %s to a clade. Will not propagate function.', g)):
-            fi:
-            org2clade[g] := clade[2]:
-        fi:
-    od:
+    fi:
       
     return(org2clade):
 end:
