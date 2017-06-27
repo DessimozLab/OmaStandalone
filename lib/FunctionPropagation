@@ -496,7 +496,7 @@ CheckExported := proc(cut_off:float)
         fi:
     od:
 
-    return(NG*cut_off >= c):
+    return(NG*cut_off < c):
 end:
 
 end: # module
