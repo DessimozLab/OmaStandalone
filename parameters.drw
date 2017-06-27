@@ -165,8 +165,6 @@ MinEdgeCompletenessFraction := 0.8;
 DoGroupFunctionPrediction := true;
 GroupFunctionPredictionCutOff := 0.1;
 # Force the clade definitions by listing a file of <SPECIES NAME>\t<CLADE>
-# Clades used: Bacteria, Archaea, Fungi, Viridiplantae, Nematoda, Arthropoda, 
-#              Mammalia, Sauria, Dictyostelium, Cleupeocephala, Amphibia.
 # Note: this is used for blocking nonsense annotations. Setting all to one
 #       clade would remove this block.
 CladeDefinitionFilename := false;
