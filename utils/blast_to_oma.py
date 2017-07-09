@@ -22,7 +22,8 @@ class IdMapper(object):
 
     def add_genome(self, fn):
         open_ = gzip.open if fn.endswith('.gz') else open
-        gname, _ = os.path.basename(fn).split('.')
+        basename = os.path.basename(fn)
+        gname = basename[:basename.find('.')]
         nr = 0
         with open_(fn, 'r') as fh:
             seqs = Bio.SeqIO.parse(fh, 'fasta')
