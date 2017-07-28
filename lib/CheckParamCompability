@@ -72,7 +72,10 @@ _check_HOG_params := proc() global DoHierarchicalGroups;
         fi:
     elif type(DoHierarchicalGroups, string) then
         DoHierarchicalGroups := lowercase(DoHierarchicalGroups);
-        if not member(DoHierarchicalGroups, {'top-down','bottom-up'}) then 
+        if DoHierarchicalGroups = 'false' then
+            warning('You should use "DoHierarchicalGroups := false;" (without quotes around false).');
+            DoHierarchicalGroups := false;
+        elif not member(DoHierarchicalGroups, {'top-down','bottom-up'}) then 
             error(sprintf('DoHierarchicalGroups should be ''top-down'' or ''bottom-up'', not ''%s''.', DoHierarchicalGroups)):
         fi:
     else

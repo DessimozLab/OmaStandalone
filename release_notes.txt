@@ -24,6 +24,7 @@ Bug Fixes
 
 - Fixing a few typos.
 
+- Improved parameter checks
 
 
 Summary of Changes from 2.1.0 to 2.1.1
