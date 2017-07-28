@@ -403,7 +403,7 @@ iformat := [
             ENSP00000384207, ENSP00000263741 and ENSP00000353094 are encoded by the 
             same gene, add the following line to the splice file:'),
             Paragraph(0, Code('ENSP00000384207; ENSP00000263741; ENSP00000353094'),
-            'OMA requires that the individual IDs are uniq prefixes of your 
+            'OMA requires that the individual IDs are unique prefixes of your 
             FASTA headers.'),
             
             Paragraph(0, 'If you want to use ESPRIT, make sure that FASTA files
