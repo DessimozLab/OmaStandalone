@@ -113,8 +113,8 @@ WriteGeneRefs := proc()
             fi:
             printf('    <gene id="%d" protId="%s"%s%s/>\n', id, 
                 XMLEscape(refs[1]), 
-                XMLEscape(If(refs[2]<>'',sprintf(' transcriptId="%s"',refs[2]),'')), 
-                XMLEscape(If(refs[3]<>'',sprintf(' geneId="%s"',refs[3]),'')));
+                If(refs[2]<>'',sprintf(' transcriptId="%s"', XMLEscape(refs[2])),''), 
+                If(refs[3]<>'',sprintf(' geneId="%s"', XMLEscape(refs[3])),''));
         od:
         printf('   </genes>\n  </database>\n </species>\n');
     od:
