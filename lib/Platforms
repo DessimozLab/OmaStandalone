@@ -37,7 +37,7 @@ DetectParallelInfo := proc()
        
     if getenv('LSB_JOBID')<>'' then
         job_idx := getenv('LSB_JOBINDEX');
-    elif getenv('SGE_ROOT')<>'' then
+    elif getenv('SGE_TASK_ID')<>'' then
         job_idx := getenv('SGE_TASK_ID');
     elif getenv('SLURM_ARRAY_JOB_ID') <> '' then
         job_idx := getenv('SLURM_ARRAY_TASK_ID');
