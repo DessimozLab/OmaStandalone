@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import time
 import Bio.SearchIO
 import Bio.SeqIO
@@ -9,16 +11,17 @@ import logging
 import pyopa
 
 logger = logging.getLogger(__name__)
-OmaID = collections.namedtuple('OmaID', 'genome nr')
+OmaID = collections.namedtuple('OmaID', 'genome nr seq')
 MatchData = collections.namedtuple('MatchData', 'bits rng1 rng2')
 OmaMatchData = collections.namedtuple('OmaMatchData', 'score dist rng1 rng2 var')
 
 
 class IdMapper(object):
-    def __init__(self):
+    def __init__(self, cache_sequences=False):
         self.genomes = []
         self.ids = {}
         self.nr_entries = {}
+        self._cache_sequences = cache_sequences
 
     def add_genome(self, fn):
         open_ = gzip.open if fn.endswith('.gz') else open
@@ -30,10 +33,11 @@ class IdMapper(object):
             for k, prot in enumerate(seqs):
                 nr = k + 1
                 ids = frozenset([prot.id, prot.id.split(' ')[0]])
+                seq = None if not self._cache_sequences else str(prot.seq)
                 for cur_id in ids:
                     if cur_id in self.ids:
                         raise KeyError('id "{}" already assigned: {}'.format(cur_id, self.ids[cur_id]))
-                    self.ids[cur_id] = OmaID(gname, nr)
+                    self.ids[cur_id] = OmaID(gname, nr, seq)
         self.genomes.append(gname)
         self.nr_entries[gname] = nr
         logger.info("added {} with {} entries".format(gname, nr))
@@ -55,16 +59,24 @@ class IdMapper(object):
 
 
 class MLDistanceEstimator(object):
-    def __init__(self):
+    def __init__(self, idmapper, dist=224):
         import pyopa
         envs = pyopa.load_default_environments()
         self.dist_opt = pyopa.MutipleAlEnv(envs['environments'], envs['log_pam1'])
         self.trans_table = str.maketrans('BUZJO$*-', 'X' * 7 + '_')
+        self.mapper = idmapper
+        self.score_matrix = min(envs['environments'], key=lambda e: abs(e.pam - dist))
 
     def process_hit(self, hsp):
         if hsp is None or hsp.query_id == hsp.hit_id:
             return None
-        s1, s2 = (pyopa.Sequence(str(z.seq).translate(self.trans_table)) for z in list(hsp.aln))
+        if hsp.aln is not None:
+            s1, s2 = (pyopa.Sequence(str(z.seq).translate(self.trans_table)) for z in list(hsp.aln))
+        else:
+            raw_s1 = pyopa.Sequence(idmapper.map_id(hsp.query_id).seq.translate(self.trans_table))
+            raw_s2 = pyopa.Sequence(idmapper.map_id(hsp.hit_id).seq.translate(self.trans_table))
+            aln = pyopa.align_double(raw_s1, raw_s2, self.score_matrix, calculate_ranges=True)
+            s1, s2 = pyopa.align_strings(raw_s1, raw_s2, self.score_matrix, provided_alignment=aln)
         score, dist, var = self.dist_opt.estimate_pam(s1, s2)
         return OmaMatchData(score, dist, tuple(z + 1 for z in hsp.query_range),
                             tuple(z + 1 for z in hsp.hit_range), var)
@@ -182,7 +194,8 @@ if __name__ == "__main__":
 
     p = argparse.ArgumentParser("Convert a blast AllAll run into OMA standalone AllAll")
     p.add_argument('--out', '-o', default="Cache", help="path to OMA Cache directory. defaults to 'Cache/'")
-    p.add_argument('--format', '-f', default='xml', help="format of allall file, either 'xml' or 'tab'")
+    p.add_argument('--format', '-f', choices=['xml','tab'], default='xml',
+                   help="format of allall file, either 'xml' or 'tab'")
     p.add_argument('--dist', '-d', default="ML", help="used distance estimation, eiterh 'kernel' or 'ML'",
                    choices=['ML', 'kernel'])
     p.add_argument('allall_file', help="path to blast allall file.")
@@ -191,11 +204,11 @@ if __name__ == "__main__":
     conf = p.parse_args()
 
     logging.basicConfig(level=max(30 - 10 * conf.v, 10))
-    idmapper = IdMapper()
+    idmapper = IdMapper(cache_sequences=(conf.dist == 'ML' and conf.format == 'tab'))
     for genome in conf.genomes:
         idmapper.add_genome(genome)
     if conf.dist == 'ML':
-        dist_estimator = MLDistanceEstimator()
+        dist_estimator = MLDistanceEstimator(idmapper)
     elif conf.dist == 'kernel':
         dist_estimator = KernelDistanceEstimator()
     converter = MatchConverter(idmapper, conf.out)
