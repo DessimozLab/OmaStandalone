@@ -506,7 +506,8 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                        Paragraph(0, 'The predicted Gene Ontology function assignments
                     as a gaf formatted file. The file is only created if ',
                     TT('DoGroupFunctionPrediction'), ' is set to ',TT('true'),' in the 
-                    parameter file.')),
+                    parameter file and at least some exported genomes with GO 
+                    annotations are included in the analysis.')),
                     NULL
             ) ,
             
@@ -701,7 +702,12 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        Paragraph(0, 'Compute Gene Ontology function predictions 
                        based on the OMA Groups assignments. The predictions are
                        then stored in a gaf file. Computing these predictions 
-                       can take a substantial amount of time.'),
+                       can take a substantial amount of time. ', 
+                       Bold('Note: '), 'Predictions are based on transfering 
+                       existing annotations from genomes. Only genomes exported
+                       through the ', 
+                       Link(TextBlock('a',href='https://omabrowser.org/export', 'OMA Browser export')),
+                       ' interface have usable input annotations.'),
                        TT('true'))
                     ),
 
