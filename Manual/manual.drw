@@ -162,7 +162,14 @@ hinstall := [op(install),
                 )
             ]:
 
-addinstp := Paragraph(0, 'For other shells, choose the appropriate syntax.'):
+addinstp := Paragraph(0, 'For other shells, choose the appropriate syntax.'),
+            SectionHeader(2, 'Homebrew/Linuxbrew'),  
+            Paragraph(0, 'Alternatively, OMA standalone is also available on ',
+            IT('Homebrew'), ' and ', IT('Linuxbrew'),'. To install 
+            OMA standalone with Homebrew or Linuxbrew make sure you have 
+            installed the respective package and then run ', 
+            Code('brew tap brewsci/bio
+brew install oma')):
 
 linstall := append(linstall, addinstp):
 hinstall := append(hinstall, addinstp):
@@ -403,7 +410,7 @@ iformat := [
             ENSP00000384207, ENSP00000263741 and ENSP00000353094 are encoded by the 
             same gene, add the following line to the splice file:'),
             Paragraph(0, Code('ENSP00000384207; ENSP00000263741; ENSP00000353094'),
-            'OMA requires that the individual IDs are uniq prefixes of your 
+            'OMA requires that the individual IDs are unique prefixes of your 
             FASTA headers.'),
             
             Paragraph(0, 'If you want to use ESPRIT, make sure that FASTA files
@@ -506,7 +513,8 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                        Paragraph(0, 'The predicted Gene Ontology function assignments
                     as a gaf formatted file. The file is only created if ',
                     TT('DoGroupFunctionPrediction'), ' is set to ',TT('true'),' in the 
-                    parameter file.')),
+                    parameter file and at least some exported genomes with GO 
+                    annotations are included in the analysis.')),
                     NULL
             ) ,
             
@@ -696,13 +704,39 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        edge trusted in the orthology graph among HOGs. This parameter applies 
                        only to the bottom-up approach. See parameter ',TT('DoHierarchicalGroups'),
                        ' for additional information.'), 
-                       TT(0.80)),
+                       TT('0.80')),
                     Row(TT('DoGroupFunctionPrediction'),
                        Paragraph(0, 'Compute Gene Ontology function predictions 
                        based on the OMA Groups assignments. The predictions are
                        then stored in a gaf file. Computing these predictions 
-                       can take a substantial amount of time.'),
-                       TT('true'))
+                       can take a substantial amount of time. ', 
+                       Bold('Note: '), 'Predictions are based on transfering 
+                       existing annotations from genomes. Only genomes exported
+                       through the ', 
+                       Link(TextBlock('a',href='https://omabrowser.org/export', 'OMA Browser export')),
+                       ' interface have usable input annotations.'),
+                       TT('true')),
+                    Row(TT('GroupFunctionCutoff'),
+                       Paragraph(0, 'Parameter to specify the fraction of genes in a 
+                       group that need to be annotated with a GO term in order to propagate
+                       the annotation to the unannotated group members. 
+                       The parameter ensures that predictions are not 
+                       propagated too liberally.
+                       Note that it requires at least the specified fraction of 
+                       genomes to be exported from the OMA Browser.'),
+                       TT('0.5')),
+                    Row(TT('CladeDefinition'),
+                       Paragraph(0, 'Path to tab-seperated file that provides a mapping
+                       from the species names to the clade/group to which annotations
+                       should at most be propagated. If set to ', TT('default'), ', the
+                       algorithm infers a species tree an propages GO annotations to 
+                       user genomes only within some predefined clades. These predifined
+                       clades are ''Amphibia'', ''Archaea'', ''Arthropoda'', ''Bacteria'', 
+                       ''Clupeocephala'', ''Dictyostelium'', ''Fungi'', ''Mammalia'', 
+                       ''Nematoda'', ''Sauria'' and ''Viridiplantae''. If the parameter 
+                       is set to ', TT('false'), ' or ', TT('none'), ', no limitations
+                       on the clades are used to propagate the function annotations.'),
+                       TT('default'))
                     ),
 
                 Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),

@@ -148,23 +148,49 @@ NumberOfChunks := proc(name1, name2)
     return(ceil(NumberOfAlignments(name1, name2)/AlignBatchSize));
 end:
 
-UpperTriangInd2Tuple := proc(index, N)
-    c := index; m := 1;
+UpperTriangInd2Tuple := proc(first, last, N)
+    tot := last-first+1;
+    # find starting tuple
+    c := first; m := 1;
     while c-N+m > 0 do
         c := c-N+m;
         m := m+1;
+        if m > N then error('starting value out of range'); fi;
     od:
-    return([m, c+m]);
+    out := CreateArray(1..tot);
+    # generate all pairs
+    for i to tot do:
+        if m > N then error('end value out of range'); fi;
+        out[i] := [m, c+m];
+        c := c+1;
+        if c+m > N then
+            m := m+1;
+            c := 1;
+        fi;
+    od;
+    return(out)
 end:
 
-FullInd2Tuple := proc(index, N)
-    m := floor((index-1)/N);
-    c := index - m*N;
-    return([m+1,c]);
+FullInd2Tuple := proc(first,last, N)
+    tot := last-first+1;
+    # find starting tuple
+    m := floor((first-1)/N);
+    c := first - m*N;
+
+    out := CreateArray(1..tot);
+    # generate all pairs
+    for i to tot do:
+        out[i] := [m+1, c];
+        c := c+1;
+        if c > N then
+            m := m+1;
+            c := 1;
+        fi;
+    od;
+    return(out)
 end:
 
-RangeOfChunk_iterator := proc(x)
-    name1 := x[1]; name2 := x[2]; chunk:= x[3];
+RangeOfChunk := proc(name1,name2,chunk)
     totChunks := NumberOfChunks(name1, name2);
     if not type(chunk,posint) or chunk>totChunks then
         error('invalid chunk number: '.chunk)
@@ -173,16 +199,14 @@ RangeOfChunk_iterator := proc(x)
     first := floor((chunk-1)*all/totChunks)+1;
     last := floor(chunk*all/totChunks);
     if name1=name2 then
-        for index from first to last do
-            iterate( UpperTriangInd2Tuple(index, GS[name1,TotEntries]));
-        od:
+        # retrieve them in one go
+        return(UpperTriangInd2Tuple(first,last,GS[name1,TotEntries]));
     else
-        for index from first to last do
-            iterate( FullInd2Tuple(index, GS[name2,TotEntries]));
-        od:
+        return( FullInd2Tuple(first,last,GS[name2,TotEntries]));
     fi:
 end:
-RangeOfChunk := noeval(RangeOfChunk):
+
+
 
 IsMyJob := proc(name1, name2, chunk)
     h := sha2(sprintf('%a',[name1,name2,chunk]))[1..8]:
@@ -228,8 +252,8 @@ for g1 to NG do
         # skip if 1-chunk archive already present (import from OMA AxA)
         fn1chunk := sprintf('Cache/AllAll/%s/%s.gz', name1, name2);
         if FileExists(fn1chunk) then
-            printf('Pair %s/%s already computed (probably imported). Skipped.\n',
-                name1, name2 );
+            Logger(sprintf('Pair %s/%s already computed (probably imported). Skipped.\n',
+                           name1, name2 ), mem=false);
             next;
         fi;
 
@@ -255,13 +279,13 @@ for g1 to NG do
             # skip if cached or already computed
             fn := sprintf('Cache/AllAll/%s/%s/part_%d-%d', name1, name2, part, nrChunks);
             if FileExists(fn.'.gz') then
-                printf('Pair %s/%s part %d of %d already computed. Skipped.\n',
-                    name1, name2, part, nrChunks);
+                Logger(sprintf('Pair %s/%s part %d of %d already computed. Skipped.\n',
+                    name1, name2, part, nrChunks), mem=false);
                 next;
             elif FileExists(fn) then
                 if not FileExists(fn.'.ckpt') then
-                    printf('Pair %s/%s part %d of %d seems to be currently computed\n',
-                        name1, name2, part, nrChunks);
+                    Logger(sprintf('Pair %s/%s part %d of %d seems to be currently computed\n',
+                        name1, name2, part, nrChunks), mem=false);
                     next;
                 else
                     # load checkpoint
@@ -270,12 +294,14 @@ for g1 to NG do
                     if err=lasterror or _matches=0 or _skip_until=0 then
                          # something bad happend. remove checkpoint file and start over with this chunk
                          res := []; skip_until := 0:
-                         printf('Failed to load checkpoint file for %s/%s part %d of %d. Redo chunk\n',
-                              name1, name2, part, nrChunks);
+                         Logger(sprintf('Failed to load checkpoint file for %s/%s part %d of %d. Redo chunk\n',
+                              name1, name2, part, nrChunks), mem=true);
                     else
                          res := _matches: skip_until := _skip_until:
-                         printf('Loaded checkpoint file for %s/%s part %d of %d. Continue with this chunk\n',
-                              name1, name2, part, nrChunks);
+                         Logger(sprintf('Loaded checkpoint file for %s/%s part %d of %d. Continue with this chunk\n',
+                              name1, name2, part, nrChunks), mem=true);
+                         Logger(sprintf(' loaded %d matches from checkpoint. will continue with pair %A',
+                              length(res), skip_until),  2);
                     fi:
                     CallSystem('rm -f '.fn.'.ckpt');
                 fi:
@@ -290,8 +316,8 @@ for g1 to NG do
                 next;
             fi:
 
-            printf('[pid %6d]: Computing %s vs %s (Part %d of %d). Mem: %.3fGB\n',
-                getpid(), name1, name2, part, nrChunks, Set(BytesAlloc)/2^30);
+            Logger(sprintf('Computing %s vs %s (Part %d of %d)',
+                name1, name2, part, nrChunks));
             OpenWriting(fn);
             printf( '# AllAll of %s vs %s (Part %d of %d); pid %d; %s\n',
                 name1, name2, part, nrChunks, getpid(), hostname() );
@@ -310,25 +336,33 @@ for g1 to NG do
                 # if we continue from a checkpoint, we skip until we reach the
                 # proteinPair where we left off.
                 if skip_until<>0 then
+                      if proteinPair[2] = proteinPair[1] + 1 then
+                          Logger(sprintf('  pair is %A. skip_until %A', proteinPair, skip_until), 4);
+                      fi;
                       if skip_until = proteinPair then
                           skip_until := 0:
+                          Logger('reached pair in Chunk where AllAll continues...', 2);
                       else next fi:
                 fi:
 
                 len1 := length(Seqs1[i1]);
                 len2 := length(Seqs2[i2]);
+                Logger(sprintf('aligning %s/%d vs %s/%d (seq lens: %d/%d)', 
+                               name1, i1, name2, i2, len1, len2), 3);
                 if mod(c2,109)=0 then
                     CheckRemainingTimeAndQuitIfOver(fn, res, proteinPair);
                 fi:
                 if mod(c2,50000)=0 then
-                    printf('   [pid %6d]: %.2f%% complete, time left for this '.
-                        'part=%.2fh, %.1f%% of AllAll done. Mem: %.3fGB\n',
-                        getpid(),100*c2/algnInRange,(algnInRange/c2-1)*(UTCTime()-t0)/3600,
-                        100*( (chunk_cnt-1+c2/algnInRange)/sum(tot) ), Set(BytesAlloc)/2^30);
+                    Logger(sprintf('  %.2f%% complete, time left for this '.
+                        'part=%.2fh, %.1f%% of AllAll done.', 100*c2/algnInRange,
+                        (algnInRange/c2-1)*(UTCTime()-t0)/3600,
+                        100*( (chunk_cnt-1+c2/algnInRange)/sum(tot) )));
                 fi:
                 dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
+                Logger(sprintf('fast sign check done. score: %.5g', dps[1]), 4);
                 if dps[1] >= .75*MinScore then
                     a := Align(Seqs1[i1],Seqs2[i2],DMS);
+                    Logger(sprintf('optimal alignment done. score: %f dist %f', a[Score], a[PamDistance]), 4);
                     if a[Score] < MinScore or min(a[Length1],a[Length2]) <
                                 max(30,0.3*min(len1,len2)) then next fi;
                     i := GetOffset(a[Seq1])-GetOffset(Seqs1[i1]);
@@ -355,15 +389,12 @@ for g1 to NG do
             OpenAppending(previous);
             # Compress file
             CallSystem('gzip -9f '.fn);
+            msg := [sprintf('Finished %s vs %s (Part %d of %d)', name1, name2, part, nrChunks)];
             if c2 > 0 then
-                printf('Finished %s vs %s (Part %d of %d)\n'.
-                '  %.1f%% of AllAll done, estimated remaining time:'
-                .' %.1fh\n\n', name1, name2, part, nrChunks,
-                100*chunk_cnt/sum(tot), tot_align_time/chunk_processed * (sum(tot[genomepair_cnt..-1])+nrChunks-part)/3600);
-            else
-                printf('Finished %s vs %s (Part %d of %d)\n',
-                    name1,name2,part,nrChunks);
-            fi;
+                msg := append(msg, sprintf('  %.1f%% of AllAll done, estimated remaining time: %.1fh\n', 
+                    100*chunk_cnt/sum(tot), tot_align_time/chunk_processed * (sum(tot[genomepair_cnt..-1])+nrChunks-part)/3600));
+            fi:
+            Logger(msg, mem=false);
         od:
     od;
 od:
@@ -372,7 +403,7 @@ fi:
 ## Parallel version:
 ## At this point, check whether all files are ready. If not
 ## exit (another process will pick from there on!)
-f := TimedCallSystem('find Cache/AllAll -type f | grep -v ".gz" | grep -v ".DS_store"')[2]:
+f := TimedCallSystem('find Cache/AllAll -type f | grep -v ".gz" | grep -v ".DS_store" | grep -v ".ckpt"')[2]:
 if length(f) > 0 then
     print('** At least 1 process appears to be still computing the all-vs-all.');
     print('** The following file(s) is (are) not yet completed:');
@@ -496,7 +527,8 @@ else
         StoreOrthologMilestone( orthoCacheFile );
     fi:
 
-    if not DoHierarchicalGroups=false or DoGroupFunctionPrediction=true then
+    if not DoHierarchicalGroups=false or (
+           DoGroupFunctionPrediction=true and CladeDefinition='default') then
         if SpeciesTree='estimate' then;
             speciesTree := BuildSpeciesTree( Ort );
         elif SpeciesTree='lineage' then
@@ -538,10 +570,24 @@ else
     fi:
 
     if DoGroupFunctionPrediction=true then
-        if SpeciesTree<>'lineage' then
-            new_annots := PropagateFunctionByGroup(Ort, speciesTree): 
-        else
-            error('Annotation propagation is not implemented for parameter SpeciesTree := lineage'):
+        can_do_function := true;
+        if SpeciesTree='lineage' then
+            warning('Annotation propagation is not implemented for parameter SpeciesTree := ''lineage'''):
+            can_do_function := false;
+        elif not CheckExported(GroupFunctionCutoff) then
+            printf('Too few OMA exported genomes are included to do group function prediction.\n'):
+            printf('To run either include more exported genomes or override by setting \n'):
+            printf('GroupFunctionCutoff lower in the parameters file.\n'):
+            warning('Too few OMA exported genomes for function prediction.'):
+            can_do_function := false;
+        fi:
+
+        if can_do_function then 
+            if CladeDefinition<>'default' then
+                new_annots := PropagateFunctionByGroup(Ort, CladeDefinition, GroupFunctionCutoff):
+            else
+                new_annots := PropagateFunctionByGroup(Ort, speciesTree, GroupFunctionCutoff):
+            fi:
         fi:
     fi:
 
@@ -631,6 +677,9 @@ else
     # store orthologous groups in orthoxml format
     WriteOrthoXML(Ort, OutputFolder.'/OrthologousGroups.orthoxml',
         StableIdsForGroups=true);
+    if not WriteOutput_PhyleticProfileOG = false then
+        WriteProfileFromOGs(Ort, OutputFolder.'/PhyleticProfileOMAGroups.txt');
+    fi:
 
     if type(QuasiCliquesCutoff, numeric) and QuasiCliquesCutoff<1 then
         mergedOMAGroups := MergeOMAGroups(Ort, VPairs, QuasiCliquesCutoff);
@@ -640,6 +689,9 @@ else
         WriteGroups( mergedOMAGroups, OutputFolder.'/MergedOMAGroups.txt');
         if not WriteOutput_OrthologousGroupsFasta=false then
             WriteFastaGroups(OutputFolder.'/MergedOMAGroupsFasta', mergedOMAGroups);
+        fi:
+        if not WriteOutput_PhyleticProfileOG = false then
+            WriteProfileFromOGs(mergedOMAGroups, OutputFolder.'/PhyleticProfileMergedOMAGroups.txt');
         fi:
     fi:
 
@@ -664,6 +716,9 @@ else
 
         if not WriteOutput_HOGFasta=false then
             WriteFastaGroups(OutputFolder.'/HOGFasta', HOG);
+        fi:
+        if not WriteOutput_PhyleticProfileHOG = false then
+            WriteProfileFromHOGs(HOG, OutputFolder.'/PhyleticProfileHOGs.txt');
         fi:
     fi:
 
@@ -690,7 +745,7 @@ else
 
     # Write out function predictions
     if DoGroupFunctionPrediction=true then
-        WriteGAF(new_annots, OutputFolder.'/gene_function.gaf'):
+        WriteGAF(new_annots, OutputFolder.'/gene_function.gaf', GroupFunctionCutoff):
     fi:
 
     ###

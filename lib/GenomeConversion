@@ -124,6 +124,18 @@ DownloadGeneOntologyIfNeeded := proc()
     fi:
 end:
 
+DownloadUniprotTaxonomyIfNeeded := proc()
+    if not member(DoHierarchicalGroups, {'top-down'}) or 
+        lowercase(SpeciesTree)<>'lineage' then return() fi;
+    lnk := datadirname.'/UniProtTaxonomy.drw.gz';
+    src := TimedCallSystem('readlink '.lnk);
+    if src[1]<>0 or (not FileExists(trim(src[2])) and not FileExists(datadirname.'/'.trim(src[2]))) then
+        Logger('start downloading UniProt Taxonomy...');
+        TaxonomyDownload();
+        Logger('finished downloading taxonomy');
+    fi:
+end:
+
 # convert the list of genomes. args are G (list of fasta file names)
 # and pinf (the ParallelInfo datastructure)
 # the function will assign the results in global variables
@@ -221,6 +233,7 @@ ConvertGenomes := proc(G, pinf)
         DBhashes := append(DBhashes, sha2(DB['string'])[1..16]);
     od:
     DownloadGeneOntologyIfNeeded();
+    DownloadUniprotTaxonomyIfNeeded();
 
     if pinf['ProcNr']=1 and not convDone(dataset_hash) then
         convDone(dataset_hash, true); # signal other processes to start.

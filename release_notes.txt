@@ -6,6 +6,39 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.1.1 to 2.2.0
+======================================
+This release contains a few new features and bug fixes.
+Analyses obtained from previous OMA standalone versions are 
+still fully compatible, so it is safe to carry over the 
+Cache/ (and of course also DB/) folders.
+
+The new release contains a few more parameters. Unspecified
+parameters since 2.0.0 will quietly be set to their default
+value, but not stored in the parameter file.
+
+
+New Features:
+-------------
+- produce phyletic profile matrices for OMA Groups and HOGs
+
+- additional parameters and options to better parametrize 
+  the prediction of  GO functions from exported genomes
+
+
+Bug Fixes
+---------
+- fixes various performance problems with checkpointing and pairs 
+  iterator that could lead to inf loop in short queues with automatic
+  job resubmission
+
+- improved logging output
+
+- Fixing a few typos.
+
+- Improved parameter checks
+
+
 Summary of Changes from 2.1.0 to 2.1.1
 ======================================
 This is a bugfix release only.
@@ -45,7 +78,7 @@ to OMA standalone, i.e. two changes in the pairwise orthology inference
 step and a new algorithm to infer the HOGs (bottom-up). The predicted
 orthologs will therefor likely be slightly different than in previous
 versions. The cached All-against-all is still fully compatible with the
-new release and does not to be recomputed.
+new release and does not need to be recomputed.
 
 New Features:
 -------------

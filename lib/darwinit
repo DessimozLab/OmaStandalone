@@ -67,17 +67,22 @@ FilterBestSplicingMatches := noeval(ReadLibrary(OrthologsLib.'AltSplicing', Filt
 
 ValidateParameters := noeval(ReadLibrary(OrthologsLib.'CheckParamCompability', ValidateParameters));
 
+Logger := noeval(ReadLibrary(OrthologsLib.'Logging',Logger));
 FileExists := noeval(ReadLibrary(OrthologsLib.'FileExists',FileExists));
 StoreOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
     StoreOrthologMilestone));
 LoadOrthologMilestone := noeval(ReadLibrary(OrthologsLib.'WriteMileStones',
     LoadOrthologMilestone));
 
+CheckExported := noeval(ReadLibrary(OrthologsLib.'FunctionPropagation', CheckExported));
 PropagateFunctionByGroup := noeval(ReadLibrary(OrthologsLib.'FunctionPropagation', PropagateFunctionByGroup));
+WriteGAF := noeval(ReadLibrary(OrthologsLib.'FunctionPropagation', WriteGAF));
 
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
 WriteMatrix := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteMatrix));
 WriteGroups := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteGroups));
+WriteProfileFromHOGs := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteProfileFromHOGs));
+WriteProfileFromOGs := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteProfileFromOGs));
 WriteFastaGroups := noeval(ReadLibrary(OrthologsLib.'WriteFastaGroups', WriteFastaGroups));
 HierarchicalGroups := noeval(ReadLibrary(OrthologsLib.'HierarchicalGroups', HierarchicalGroups));
 BuildSpeciesTree := noeval(ReadLibrary(OrthologsLib.'TreeBuilding', BuildSpeciesTree));
