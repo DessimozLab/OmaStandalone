@@ -162,7 +162,14 @@ hinstall := [op(install),
                 )
             ]:
 
-addinstp := Paragraph(0, 'For other shells, choose the appropriate syntax.'):
+addinstp := Paragraph(0, 'For other shells, choose the appropriate syntax.'),
+            SectionHeader(2, 'Homebrew/Linuxbrew'),  
+            Paragraph(0, 'Alternatively, OMA standalone is also available on ',
+            IT('Homebrew'), ' and ', IT('Linuxbrew'),'. To install 
+            OMA standalone with Homebrew or Linuxbrew make sure you have 
+            installed the respective package and then run ', 
+            Code('brew tap brewsci/bio
+brew install oma')):
 
 linstall := append(linstall, addinstp):
 hinstall := append(hinstall, addinstp):
