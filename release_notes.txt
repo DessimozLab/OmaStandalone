@@ -17,9 +17,16 @@ New Features:
 -------------
 - produce phyletic profile matrices for OMA Groups and HOGs
 
+- additional parameters and options to better parametrize 
+  the prediction of  GO functions from exported genomes
+
 
 Bug Fixes
 ---------
+- fixes various performance problems with checkpointing and pairs 
+  iterator that could lead to inf loop in short queues with automatic
+  job resubmission
+
 - improved logging output
 
 - Fixing a few typos.
