@@ -704,7 +704,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        edge trusted in the orthology graph among HOGs. This parameter applies 
                        only to the bottom-up approach. See parameter ',TT('DoHierarchicalGroups'),
                        ' for additional information.'), 
-                       TT(0.80)),
+                       TT('0.80')),
                     Row(TT('DoGroupFunctionPrediction'),
                        Paragraph(0, 'Compute Gene Ontology function predictions 
                        based on the OMA Groups assignments. The predictions are
