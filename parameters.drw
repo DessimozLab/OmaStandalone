@@ -163,11 +163,20 @@ MinEdgeCompletenessFraction := 0.8;
 # You can either set it to 'true', which will enable the computation or 
 # disable it by setting it to 'false'. Writing the output takes a long time. 
 DoGroupFunctionPrediction := true;
-GroupFunctionPredictionCutOff := 0.5;
-# Force the clade definitions by listing a file of <SPECIES NAME>\t<CLADE>
-# Note: this is used for blocking nonsense annotations. Setting all to one
-#       clade would remove this block.
-CladeDefinitionFilename := false;
+
+# Fraction of group members that need to be assigned with a certain
+# GO annotation in order to transfer it. The lower the value is the 
+# more liberally functions are propagated.
+GroupFunctionCutoff := 0.5;
+
+# Specify how to limit function propagation on clades. Parameter can be
+# one of (i) default (ii) none or (iii) <file-path>.
+# default infers species tree and limits propagation at predefined clade 
+# levels. 'none' disables the limits entierly and the last option allows to 
+# point ot an tsv file with the following format: <SPECIES NAME>\t<CLADE>,
+# that provides a mapping from genome name to a clade. only annotations that 
+# are supported within the same clade are transfered to a genome.
+CladeDefinition := 'default';
 
 
 ###############################################################################

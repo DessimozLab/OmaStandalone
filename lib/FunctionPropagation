@@ -182,11 +182,14 @@ CLADES := {'Bacteria', 'Archaea', 'Fungi', 'Viridiplantae', 'Nematoda',
            'Arthropoda', 'Mammalia', 'Sauria', 'Dictyostelium', 
            'Clupeocephala', 'Amphibia'}:
 # Generate an organism to clade mapping table
-gen_org2clade_map := proc(speciesTree)
+gen_org2clade_map := proc(propagation_param)
     org2clade := table():
-    if type(speciesTree)=string then
+    if member(propagation_param, {false, 'false', 'none'}) then
+        return(table('ROOT'));
+
+    elif type(propagation_param, string) then
         # Read in the org2clade table from file.
-        z := ReadData(speciesTree, '%s\t%s'):
+        z := ReadData(propagation_param, '%s\t%s'):
         for z1 in z do org2clade[z1[1]] := z1[2] od:
 
         # Check all genomes exist.
@@ -195,7 +198,8 @@ gen_org2clade_map := proc(speciesTree)
                 error(sprintf('Clade mapping file does not contain %s.', g)):
             fi:
         od:
-    else
+
+    elif type(propagation_param, Tree) then
         for g in genomes do
             for clade in CLADES do
                 if SearchArray(clade, GS[g, 'Lineage']) > 0 then
@@ -208,7 +212,7 @@ gen_org2clade_map := proc(speciesTree)
         # Map non-mapped genomes
         for g in genomes do
             if org2clade[g]=unassigned then
-                clade := infer_clade(g, org2clade, speciesTree):
+                clade := infer_clade(g, org2clade, propagation_param):
                 if clade[1]<>g then
                     error('Unable to find genome in species tree.'):
                 elif clade[2]<>unassigned then
@@ -219,6 +223,8 @@ gen_org2clade_map := proc(speciesTree)
                 org2clade[g] := clade[2]:
             fi:
         od:
+    else
+        error(sprintf('unexpected parameter: %A', propagation_param));
     fi:
       
     return(org2clade):
@@ -333,12 +339,12 @@ end:
 
 
 # Propagate these annotations
-PropagateFunctionByGroup := proc(Ort:matrix(numeric), speciesTree, cut_off:float)
+PropagateFunctionByGroup := proc(Ort:matrix(numeric), propagation_param:{Tree,string,boolean}, cut_off:float)
     global DB:
 
     t1 := UTCTime():
 
-    org2clade := gen_org2clade_map(speciesTree):
+    org2clade := gen_org2clade_map(propagation_param):
     clade_terms := gen_clade_terms(org2clade):
     new_terms := eval(CreateArray(1..NG, noeval(table({})))):
     n_groups := length(Ort):
@@ -495,7 +501,7 @@ end:
 CheckExported := proc(cut_off:float)
     # Warning if low acceptance set.
     if cut_off < 0.25 then
-        warning('GroupFunctionPredictionCutOff parameter is set very low. This will
+        warning('GroupFunctionCutoff parameter is set very low. This will
                  enable very liberal function prediction from exported genomes. Ensure
                  there are enough genomes included.'):
     fi:

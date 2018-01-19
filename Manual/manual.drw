@@ -702,7 +702,28 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        based on the OMA Groups assignments. The predictions are
                        then stored in a gaf file. Computing these predictions 
                        can take a substantial amount of time.'),
-                       TT('true'))
+                       TT('true')),
+                    Row(TT('GroupFunctionCutoff'),
+                       Paragraph(0, 'Parameter to specify the fraction of genes in a 
+                       group that need to be annotated with a GO term in order to propagate
+                       the annotation to the unannotated group members. 
+                       The parameter ensures that predictions are not 
+                       propagated too liberally.
+                       Note that it requires at least the specified fraction of 
+                       genomes to be exported from the OMA Browser.'),
+                       TT('0.5')),
+                    Row(TT('CladeDefinition'),
+                       Paragraph(0, 'Path to tab-seperated file that provides a mapping
+                       from the species names to the clade/group to which annotations
+                       should at most be propagated. If set to ', TT('default'), ', the
+                       algorithm infers a species tree an propages GO annotations to 
+                       user genomes only within some predefined clades. These predifined
+                       clades are ''Amphibia'', ''Archaea'', ''Arthropoda'', ''Bacteria'', 
+                       ''Clupeocephala'', ''Dictyostelium'', ''Fungi'', ''Mammalia'', 
+                       ''Nematoda'', ''Sauria'' and ''Viridiplantae''. If the parameter 
+                       is set to ', TT('false'), ' or ', TT('none'), ', no limitations
+                       on the clades are used to propagate the function annotations.'),
+                       TT('default'))
                     ),
 
                 Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),

@@ -496,7 +496,8 @@ else
         StoreOrthologMilestone( orthoCacheFile );
     fi:
 
-    if not DoHierarchicalGroups=false or DoGroupFunctionPrediction=true then
+    if not DoHierarchicalGroups=false or (
+           DoGroupFunctionPrediction=true and CladeDefinition='default') then
         if SpeciesTree='estimate' then;
             speciesTree := BuildSpeciesTree( Ort );
         elif SpeciesTree='lineage' then
@@ -542,19 +543,19 @@ else
         if SpeciesTree='lineage' then
             warning('Annotation propagation is not implemented for parameter SpeciesTree := ''lineage'''):
             can_do_function := false;
-        elif not CheckExported(GroupFunctionPredictionCutOff) then
+        elif not CheckExported(GroupFunctionCutoff) then
             printf('Too few OMA exported genomes are included to do group function prediction.\n'):
             printf('To run either include more exported genomes or override by setting \n'):
-            printf('GroupFunctionPredictionCutOff lower in the parameters file.\n'):
+            printf('GroupFunctionCutoff lower in the parameters file.\n'):
             warning('Too few OMA exported genomes for function prediction.'):
             can_do_function := false;
         fi:
 
         if can_do_function then 
-            if CladeDefinitionFilename<>false then
-                new_annots := PropagateFunctionByGroup(Ort, CladeDefinitionFilename, GroupFunctionPredictionCutOff):
+            if CladeDefinition<>'default' then
+                new_annots := PropagateFunctionByGroup(Ort, CladeDefinition, GroupFunctionCutoff):
             else
-                new_annots := PropagateFunctionByGroup(Ort, speciesTree, GroupFunctionPredictionCutOff):
+                new_annots := PropagateFunctionByGroup(Ort, speciesTree, GroupFunctionCutoff):
             fi:
         fi:
     fi:
@@ -704,7 +705,7 @@ else
 
     # Write out function predictions
     if DoGroupFunctionPrediction=true then
-        WriteGAF(new_annots, OutputFolder.'/gene_function.gaf', GroupFunctionPredictionCutOff):
+        WriteGAF(new_annots, OutputFolder.'/gene_function.gaf', GroupFunctionCutoff):
     fi:
 
     ###
