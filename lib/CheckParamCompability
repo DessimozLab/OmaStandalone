@@ -35,6 +35,7 @@ ValidateParameters := proc()
     _check_species_tree_param();
     _check_quasi_clique_cutoff();
     _check_HOG_params();
+    _check_group_function_params();
 end:
 
 _check_species_tree_param := proc()
@@ -98,6 +99,35 @@ _check_HOG_params := proc() global DoHierarchicalGroups;
            prints(res[2]);
            error(SplitLines(res[2])[1]);
         fi:
+    fi:
+end:
+
+_check_group_function_params := proc()
+    global GroupFunctionCutoff, CladeDefinition;
+    
+    if not assigned(GroupFunctionCutoff) then
+        # check that it is not under the old name
+        if type(GroupFunctionPredictionCutOff, numeric) then 
+            warning('Parameter ''GroupFunctionPredictionCutOff'' has been renamed to ''GroupFunctionCutoff''. Please update parameter file accordingly');
+            error('invalid parameter name');
+        else
+            warning('Parameter ''GroupFunctionCutoff'' not defined. Using default value');
+            GroupFunctionCutoff := 0.5;
+        fi:
+    fi:
+
+    if assigned(CladeDefinition) then
+        if not member(CladeDefinition, {'none', 'false', false, 'default'}) then
+            if not type(CladeDefinition, string) or length(FileStat(CladeDefinition))=0 then
+                error('File specified in ''CladeDefinition'' does not exist');
+            fi;
+        fi:
+    elif assigned(CladeDefinitionFilename) then
+        warning('Parameter ''CladeDefinitionFilename'' has been renamed to ''CladeDefinition''. Please update parameter file accordingly');
+        error('invalid parameter name');
+    else
+        warning('Parameter ''CladeDefinition'' not defined. Using default value ''default''.');
+        CladeDefintion := 'default';
     fi:
 end:
 
