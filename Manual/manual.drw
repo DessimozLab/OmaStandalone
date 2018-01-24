@@ -372,11 +372,14 @@ OMA'), 'Note that this staging is mostly useful on computing clusters where
         get a higher priority assigned. With the ', TT('-W'), ' command line 
         option, one can inform OMA of the maximum amount of time (in seconds) it should use
         before exiting in a clean way. Once this time limit is reached, OMA terminates
-        with an exit value of 3, which can be used on many schedulers to re-queue the job
-        automatically. On LSF, you can use for example -Q "3". Sensible values
-        for ',TT('-W'), ' are usually between 3600 (1 hour) or higher. Note that 
-        this flag does not replace any resource allocation option from the scheduler.'),
-        
+        with an exit value of 99, which can be used on many schedulers to re-queue the job
+        automatically. On LSF, you can use for example -Q "99", SGE (if not deactivated
+        by the cluster configurations) will reschedule jobs automatically. The ',
+        Bold('exit code has changed in release 2.3'), ' in order to support the
+        SGE platform more easily.'),
+        Paragraph(0, 'Sensible values for ',TT('-W'), ' are usually between 3600
+        (1 hour) or higher. Note that this flag does not replace any resource
+        allocation option from the scheduler.'),
        
         NULL]:
 

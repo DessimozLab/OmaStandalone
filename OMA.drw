@@ -222,7 +222,7 @@ CheckRemainingTimeAndQuitIfOver := proc(fn_chunk, matches, skip_until)
             pinf['ProcNr'], getpid(), hostname(), date());
         printf('_matches := %A:\n_skip_until := %A:\n', matches, skip_until);
         OpenWriting(previous):
-        exit(3):
+        exit(99):
     fi:
 end:
 

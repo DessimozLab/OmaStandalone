@@ -9,8 +9,13 @@
 Summary of Changes from 2.2.0 to XXX
 ====================================
 
+
 Bug Fixes
 ---------
+- changed exit code from 3 to 99 in case the specified max
+  runtime exceeded.
+
+- fixes documentation typos
 
 
 Summary of Changes from 2.1.1 to 2.2.0
