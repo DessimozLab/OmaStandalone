@@ -77,6 +77,18 @@ pagetitle := 'OMA standalone':
 intro := [  Anchor(TextBlock('a', name='introduction', 
                 SectionHeader(1, 'Introduction')
             )),
+
+            Paragraph(0, 'The OMA (Orthologous MAtrix) database is a leading
+            resource for identifying orthologs, that are homologous genes started diverging
+            through a speciation event, among publicly available complete genomes.
+            Orthologs are essential for many applications in molecular biology, including
+            gene function prediction or species tree reconstruction.'),
+
+            Paragraph(0, 'OMA standalone is a standalone package that can infer orthologs
+            with the OMA for custom genomes. It is possible to export genomes and their
+            homology relations directly from the OMA web-browser and combine them with
+            custom genomes or proteomes.'),
+
             Paragraph(0, 'You can run OMA as a standalone program.
             Included are the algorithms for OMA itself plus its 
             addition ESPRIT. The software can be installed on Linux (x86, 
