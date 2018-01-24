@@ -67,7 +67,7 @@ end:
 # tag in the git repo.
 currentVersion := TimedCallSystem('git describe')[2, 1..-2]:
 binaryName := 'OMA.'.currentVersion.'.tgz':
-binaryLink := 'http://omabrowser.org/standalone/'.binaryName:
+binaryLink := 'https://omabrowser.org/standalone/'.binaryName:
 folderName := ConcatStrings(SearchDelim('.', binaryName)[1..-2], '.'):
 
 # PAGETITLE
@@ -86,8 +86,8 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             publications of OMA, please refer to the OMA browser page:'), 
             
             Paragraph(0, Link(TextBlock('a', 
-                href='http://omabrowser.org/oma/about/',
-                'http://omabrowser.org/oma/about/'))),
+                href='https://omabrowser.org/oma/about/',
+                'https://omabrowser.org/oma/about/'))),
                 
             Paragraph(0, 'For background info on ESPRIT, 
             please refer to this article:'), 
