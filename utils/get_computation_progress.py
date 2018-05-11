@@ -1,88 +1,147 @@
 #!/usr/bin/env python
+
+from __future__ import unicode_literals, division
+import collections
+import math
 import os
-import sys
 import re
-import subprocess
+import multiprocessing
+import logging
+import itertools
+logger = logging.getLogger(__name__)
 
 
-def _output_shell(line):
-  try:
-    shell_command = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-  except OSError:
-    return None
-  except ValueError:
-    return None
-
-  (output, err) = shell_command.communicate()
-  shell_command.wait()
-  if shell_command.returncode != 0:
-    print("Shell command failed to execute")
-    return None
-
-  return output
-
-def get_progress(cache_folder, intermediate=False):
-    walk_dir = cache_folder
-    computed_length = 0
-    total_length = 0
-    total_compar = 0
-    #out_file = sys.argv[2]
-    #f = open(out_file,'w')
-
-    for root, subdirs, files in os.walk(walk_dir):
-        if files:
-        #print(root+"\n")
-        part = re.split("\_|-|\.",files[0])
-        if part[0] == "part":
-            gzip_files = int(_output_shell("ls " + os.path.abspath(root) + "/*.gz | wc -l"))
-            ckpt_files = int(_output_shell("ls  " + os.path.abspath(root) + "/*.ckpt | wc -l"))
-            all_files = int(_output_shell("ls " + os.path.abspath(root) + "/* | wc -l"))
-            in_progress_files = float(all_files - gzip_files - ckpt_files)/float(part[len(part)-2])*100
-            computed_length += gzip_files
-            total_compar += 1
-            total_length += int(part[len(part)-2])
-            individual_progress = float(gzip_files)/float(part[len(part)-2])*100
-            ckpt_progress = float(ckpt_files)//float(part[len(part)-2])*100
-            if intermediate:
-                print("--- Progress of {} vs {}---".format(root.split("/")[-1], root.split("/")[-2]))
-                print("Individual Progress: {}".format(round(individual_progress,2)))
-                print("Checkpoints: {}".format(round(ckpt_progress,2)))
-                print("Currently unfinished: {}".format(round(in_progress_files,2)))
-    
-    return (computed_length, total_length, total_compar)
+def load_dataset(db_dir):
+    genomes = [g[0:g.index('.')] for g in sorted(os.listdir(db_dir)) if g.endswith('.fa')]
+    return genomes
 
 
-def main():
+def get_nr_protein(genome_db_path):
+    with open(genome_db_path, 'rb') as fh:
+        return sum(map(lambda line: line.startswith(b'<E>'), fh))
 
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "c:i:h", ["cache_folder=", "intermediate="])
-    except getopt.GetoptError as e:
-        print(str(e))
-        print('get_computation_progress.py -c <cache all vs all folder> -i <print intermediate>')
-        sys.exit(2)
 
-    cache_folder = None
-    intermediate = False
+def get_batch_size(paramfile):
+    pat = re.compile(b'AlignBatchSize\s*:=\s*(?P<size>[\d.e]+)[:;]')
+    with open(paramfile, 'rb') as fh:
+        for line in fh:
+            m = pat.search(line)
+            if m is not None:
+                return int(float(m.group('size')))
 
-    for opt, arg in opts:
-        if opt == '-h':
-            print('get_computation_progress.py -c <cache all vs all folder> -i <print intermediate>')
-            sys.exit()
-        elif opt in ("-c", "--cache_folder"):
-            cache_folder = arg
-            if cache_folder[-1] is not "/":
-                cache_folder += "/"
-        elif opt in ("-i", "--intermediate"):
-            intermediate = arg
+
+def progress_of_pair(arg_tuple):
+    g1, g2, allall, expected = arg_tuple
+    compact = os.path.join(allall, g1, g2 + '.gz')
+    if os.path.isfile(compact):
+        is_exported = os.path.exists(os.path.join(allall, g1, g2 + '.sha2.gz'))
+        return g1, g2, expected, 0, is_exported
+    part_directory = os.path.join(allall, g1, g2)
+    if not os.path.isdir(part_directory):
+        return g1, g2, 0, 0, False
+    files = os.listdir(part_directory)
+    finished = sum(map(lambda x: x.endswith('.gz'), files))
+    return g1, g2, finished, len(files) - finished, False
+
+
+def build_genome_entrycount_dict(genomes, path):
+    pool = multiprocessing.Pool()
+    dbnames = [os.path.join(path, 'Cache', 'DB', g + '.db') for g in genomes]
+    mapping = collections.OrderedDict(
+        zip(genomes, pool.map(get_nr_protein, dbnames)))
+    pool.close()
+    pool.join()
+    return mapping
+
+
+class Dataset(object):
+    def __init__(self, path, report_individual=False):
+        self.path = path
+        genomes = load_dataset(os.path.join(path, 'DB'))
+        self.batch_size = get_batch_size(os.path.join(path, 'parameters.drw'))
+        self.progress_results = []
+        self.report_individual = report_individual
+        self.genomes = build_genome_entrycount_dict(genomes, path)
+
+    def expected_nr_chunks(self, g1, g2):
+        if g1 == g2:
+            nr_alignments = self.genomes[g1] * (self.genomes[g1] - 1) / 2
         else:
-            assert False, "unhandled option"
+            nr_alignments = self.genomes[g1] * self.genomes[g2]
+        return math.ceil(nr_alignments / self.batch_size)
 
-    computed_length, total_length, total_compar = get_progress(cache_folder, intermediate=intermediate)
-    t_progress = 100*float(computed_length)/float(total_length)
-    print("Computed Files: " +str(computed_length)+ "/" +str(total_length)+ "\n")
-    print("Total Progress: " +str(round(t_progress,2))+ "%\n")
-    print("Total All vs All comparisons: " +str(total_compar))
+    def genome_order(self, g1, g2):
+        if (self.genomes[g1] < self.genomes[g2]) or (self.genomes[g1] == self.genomes[g2] and g1 < g2):
+            return g1, g2
+        else:
+            return g2, g1
+
+    def pairs_generator(self):
+        allall_path = os.path.join(self.path, 'Cache', 'AllAll')
+        for g1, g2 in itertools.combinations_with_replacement(self.genomes.keys(), 2):
+            g1, g2 = self.genome_order(g1, g2)
+            yield (g1, g2, allall_path, self.expected_nr_chunks(g1, g2))
+
+    def compute_progress(self):
+        results = Reporter(self, self.report_individual)
+        pool = multiprocessing.Pool()
+        stat = pool.map_async(progress_of_pair, self.pairs_generator(), chunksize=10, callback=results.handle_progress_result)
+        pool.close()
+        stat.wait()
+        pool.join()
+        results.print_report()
+        return results
+
+
+class Reporter(object):
+    def __init__(self, dataset, report_individual_pairs):
+        self.progress_results = []
+        self.header_printed = False
+        self.report_individual_pairs = report_individual_pairs
+        self.dataset = dataset
+
+    def handle_progress_result(self, result):
+        logger.debug('handling result chunk of size {}'.format(len(result)))
+        for pair in result:
+            self.progress_results.append(pair)
+            if self.report_individual_pairs:
+                if not self.header_printed:
+                    print(
+                        "Genome1\tGenome2\tExported\tExpected chunks\tFinished chunks\tStarted chunks\tFraction of finished chunks")
+                    self.header_printed = True
+                expect = self.dataset.expected_nr_chunks(pair[0], pair[1])
+                print("{}\t{}\t{}\t{}\t{}\t{}\t{:%}"
+                      .format(pair[0], pair[1], pair[4], int(expect), int(pair[2]), int(pair[3]), pair[2] / expect))
+
+    def print_report(self):
+        tot = started = done = tot_no_export = done_no_export = 0
+        for pair in self.progress_results:
+            done += pair[2]
+            started += pair[3]
+            tot += self.dataset.expected_nr_chunks(pair[0], pair[1])
+            if not pair[4]:
+                tot_no_export += self.dataset.expected_nr_chunks(pair[0], pair[1])
+                done_no_export += pair[2]
+        print("\n\nSummary of OMA standalone All-vs-All computations:")
+        print("--------------------------------------------------")
+        print("Nr chunks started: {:d} ({:.2%})".format(int(started), started / tot))
+        print("Nr chunks finished: {:d} ({:.2%})".format(int(done), done / tot))
+        print("Nr chunks finished w/o exported genomes: {:d} ({:.2%})"
+              .format(int(done_no_export), done_no_export / tot_no_export))
+
 
 if __name__ == "__main__":
-    main()
-
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="""Compute overall status of OMA standalone AllAll computations. 
+                    This script checks for all genome pairs to be computed the overall
+                    progress. The reporting unit is the number of alignment chunks.""")
+    parser.add_argument('root', nargs="?", default="./",
+                        help="Path to the project root of the analysis, i.e. the directory"
+                             "that contains the input genomes DB/ directory (default: %(default)s).")
+    parser.add_argument('-i', '--individual', action="store_true", default=False,
+                        help="Report a tsv-formatted line per genome pair with the current progress")
+    conf = parser.parse_args()
+    logging.basicConfig(level=logging.DEBUG)
+    d = Dataset(conf.root, report_individual=conf.individual)
+    d.compute_progress()
