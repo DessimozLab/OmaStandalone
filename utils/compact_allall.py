@@ -3,64 +3,94 @@
 import re
 import os
 import collections
+import logging
+logger = logging.getLogger(__name__)
 
 
 def compact_allall_folder(cachedir):
-    """this function compacts the chunk files of the AllAll computation.
+    """Function to compacts the chunk files of the AllAll computation.
 
-    :param cachedir: the path to the Cache folder to be compacted.
-                     Don't add the AllAll folder."""
- 
+    :param cachedir: the path to the *Cache* folder to be compacted."""
+
     allall_root = os.path.normpath(os.path.join(cachedir, 'AllAll'))
-    _dirs_top = [ f for f in os.listdir(allall_root) 
-        if os.path.isdir(os.path.join(allall_root,f)) ]
-    buf_size = 2**16
-    
+    _dirs_top = [f for f in os.listdir(allall_root)
+                 if os.path.isdir(os.path.join(allall_root, f))]
+    buf_size = 2 ** 16
+    files_removed = files_compact = 0
+
     for _dir in _dirs_top:
         allfiles = []
-        for d, subd, dfiles in os.walk(os.path.join(allall_root, _dir)): 
-            allfiles.extend(list(map(lambda f: os.path.join(d,f), dfiles)))
+        for d, subd, dfiles in os.walk(os.path.join(allall_root, _dir)):
+            allfiles.extend(list(map(lambda f: os.path.join(d, f), dfiles)))
         tots = collections.defaultdict(int)
         cnts = collections.defaultdict(int)
-        files = collections.defaultdict(list)    
+        files = collections.defaultdict(list)
         part_re = re.compile(r'.*{0}{1}(?P<species>\w*)({1}part)?_(?P<nr>\d+)-(?P<tot>\d+).gz'.format(
             os.path.join(allall_root, _dir), os.path.sep))
         for _file in allfiles:
             match = part_re.match(_file);
             if match:
                 spec2 = match.group('species')
-                if tots[spec2]==0:
+                if tots[spec2] == 0:
                     tots[spec2] = int(match.group('tot'))
                 cnts[spec2] += 1
                 files[spec2].append(_file)
-    
+
         for spec2 in tots:
-            if cnts[spec2]==tots[spec2]:
+            if cnts[spec2] == tots[spec2]:
                 outfn = os.path.join(allall_root, _dir, spec2 + ".gz")
                 if os.path.isfile(outfn):
-                    print('{} already exists. Leaving part files untouched!'.format(outfn))
+                    logger.warning('{} already exists. Leaving part files untouched!'.format(outfn))
                     continue
 
                 with open(os.path.join(allall_root, _dir, spec2 + ".gz"), 'wb') as dest:
                     for f in files[spec2]:
                         with open(f, 'rb') as src:
-                            for chunk in iter(lambda:src.read(buf_size), ''):
-                                if chunk==b'':
+                            for chunk in iter(lambda: src.read(buf_size), b''):
+                                if chunk == b'':
                                     break
                                 dest.write(chunk)
                 for f in files[spec2]:
                     os.remove(f)
+                files_compact += 1
+                files_removed += len(files[spec2])
                 try:
                     os.rmdir(os.path.join(allall_root, _dir, spec2))
                 except FileNotFoundError:
                     pass
-                  
-                print('compacted {} vs {}'.format(_dir, spec2))
+                logger.info("compacted {} vs {}".format(_dir, spec2))
+            else:
+                logger.debug("{}/{} not compacted: only {} out of {} files ready."
+                             .format(_dir, spec2, cnts[spec2], tots[spec2]))
+    logger.info("removed {} files and compacted them into {} genome pairs files."
+                .format(files_removed, files_compact))
+
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(prog="AllAll Compactor")
-    parser.add_argument('cachedir', help="path to the Cache folder that should be compacted")
-    conf = parser.parse_args()
 
+    parser = argparse.ArgumentParser(
+        description="""Compact the OMA standalone cache directory.
+            OMA standalone can produce a very large number of files in the Cache
+            directory. This script compacts the Cache as much as possible by
+            combining files from the same genome pair computations. You can
+            savely run it even while OMA standalone is running.""")
+    parser.add_argument('cachedir', nargs="?", default="./Cache",
+                        help="Path to the Cache directory that should be " +
+                             "compacted. (default: %(default)s)")
+    parser.add_argument('-d', '--debug', action="store_true",
+                        help="show more info")
+    parser.add_argument('-q', '--quiet', action="store_true",
+                        help="only report errors, otherwise no output is produced")
+
+    conf = parser.parse_args()
+    lev = logging.INFO
+    if conf.debug:
+        lev = logging.DEBUG
+    elif conf.quiet:
+        lev = logging.WARNING
+    logging.basicConfig(format="%(asctime)-15s %(levelname)8s: %(message)s", level=lev)
+
+    if not os.path.isdir(conf.cachedir):
+        raise ValueError("cachedir {} is not an existing directory".format(conf.cachedir))
     compact_allall_folder(conf.cachedir)
