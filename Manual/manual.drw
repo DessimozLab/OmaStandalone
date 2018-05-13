@@ -158,33 +158,18 @@ cd '.folderName.'
             Paragraph(0, 'After installation, make sure the ', TT('bin'), 
             ' folder of OMA is in your ', TT('PATH'), ' variable, e.g., if
             you are using bash and used ', TT('/your/install/prefix'), ' as
-            installer prefix, add a line in ', TT('~/.profile'), ' such as:')
-            ]:
+            installer prefix, add a line in ', TT('~/.profile'), ' such as:'),
 
-# latex uses $ for math, need to escape...
-linstall := [op(install), 
-                Paragraph(0, 
-                    Code('export PATH=\\$PATH:/your/install/prefix/OMA/bin')
-                )
-            ]:
-# HTML has no problem with this
-hinstall := [op(install), 
-                Paragraph(0, 
-                    Code('export PATH=$PATH:/your/install/prefix/OMA/bin')
-                )
-            ]:
+            Paragraph(0, Code('export PATH=$PATH:/your/install/prefix/OMA/bin')),
 
-addinstp := Paragraph(0, 'For other shells, choose the appropriate syntax.'),
+            Paragraph(0, 'For other shells, choose the appropriate syntax.'),
             SectionHeader(2, 'Homebrew/Linuxbrew'),  
             Paragraph(0, 'Alternatively, OMA standalone is also available on ',
             IT('Homebrew'), ' and ', IT('Linuxbrew'),'. To install 
             OMA standalone with Homebrew or Linuxbrew make sure you have 
             installed the respective package and then run ', 
             Code('brew tap brewsci/bio
-brew install oma')):
-
-linstall := append(linstall, addinstp):
-hinstall := append(hinstall, addinstp):
+brew install oma'))]:
 
 # USAGE
 usage := [ Anchor(TextBlock('a', name='usage', SectionHeader(1, 'Usage'))),
@@ -933,7 +918,7 @@ urlcolor=blue') ) ):
     prints( LaTeXC( Document( 
         op(intro),
         op(downloads),
-        op(linstall),
+        op(install),
         op(usage),
         op(formats),
         op(parameters),
@@ -965,7 +950,7 @@ OpenWriting('Manual/manual.html'):
                 htmltabs,
                 op(intro),
                 op(downloads),
-                op(hinstall),
+                op(install),
                 op(usage),
                 op(formats),
                 op(parameters),
