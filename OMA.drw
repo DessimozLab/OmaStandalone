@@ -744,7 +744,7 @@ else
     fi:
 
     # Write out function predictions
-    if DoGroupFunctionPrediction=true then
+    if DoGroupFunctionPrediction=true and can_do_function then
         WriteGAF(new_annots, OutputFolder.'/gene_function.gaf', GroupFunctionCutoff):
     fi:
 
