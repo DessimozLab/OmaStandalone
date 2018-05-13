@@ -82,10 +82,15 @@ class Dataset(object):
             g1, g2 = self.genome_order(g1, g2)
             yield (g1, g2, allall_path, self.expected_nr_chunks(g1, g2))
 
-    def compute_progress(self):
+    def compute_progress(self, nr_cpus=None):
         results = Reporter(self, self.report_individual)
-        pool = multiprocessing.Pool()
-        stat = pool.map_async(progress_of_pair, self.pairs_generator(), chunksize=10, callback=results.handle_progress_result)
+        all_pairs = self.pairs_generator()
+        pool = multiprocessing.Pool(nr_cpus)
+        while True:
+            pair_chunk = list(itertools.islice(all_pairs, 100))
+            if len(pair_chunk) == 0:
+                break
+            stat = pool.map_async(progress_of_pair, pair_chunk, callback=results.handle_progress_result)
         pool.close()
         stat.wait()
         pool.join()
@@ -139,9 +144,14 @@ if __name__ == "__main__":
     parser.add_argument('root', nargs="?", default="./",
                         help="Path to the project root of the analysis, i.e. the directory"
                              "that contains the input genomes DB/ directory (default: %(default)s).")
+    parser.add_argument('-n', '--nr-cpus', type=int,
+                        help="use at most that many processes in parallel to calculate status. " +
+                             "If not set, the number of available CPUs on the executing host will be used.")
     parser.add_argument('-i', '--individual', action="store_true", default=False,
                         help="Report a tsv-formatted line per genome pair with the current progress")
+    parser.add_argument('-d', '--debug', action='store_true', help="increase output to debug level")
     conf = parser.parse_args()
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG if conf.debug else logging.INFO,
+                        format="%(asctime)-15s %(levelname)8s: %(message)s")
     d = Dataset(conf.root, report_individual=conf.individual)
-    d.compute_progress()
+    d.compute_progress(conf.nr_cpus)
