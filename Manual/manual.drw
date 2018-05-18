@@ -79,20 +79,31 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             )),
 
             Paragraph(0, 'The OMA (Orthologous MAtrix) database is a leading
-            resource for identifying orthologs, that are homologous genes started diverging
-            through a speciation event, among publicly available complete genomes.
-            Orthologs are essential for many applications in molecular biology, including
-            gene function prediction or species tree reconstruction.'),
+            resource for identifying orthologs, that are homologous genes 
+            started diverging through a speciation event, among publicly 
+            available complete genomes. Orthologs are essential for many 
+            applications in molecular biology, including gene function 
+            prediction or species tree reconstruction.'),
 
-            Paragraph(0, 'OMA standalone is a standalone package that can infer orthologs
-            with the OMA for custom genomes. It is possible to export genomes and their
-            homology relations directly from the OMA web-browser and combine them with
-            custom genomes or proteomes.'),
+            Paragraph(0, 'OMA standalone is a standalone package that can infer 
+            orthologs with the OMA algorithm for custom genomes. It is possible 
+            to export genomes and their homology relations directly from the 
+            OMA web-browser and combine them with custom genomes or proteomes.'),
 
-            Paragraph(0, 'You can run OMA as a standalone program.
-            Included are the algorithms for OMA itself plus its 
-            addition ESPRIT. The software can be installed on Linux (x86, 
-            both 64bit and 32bit) and MacOSX (x86, both 32bit and 64bit).'),
+            Paragraph(0, 'OMA standalone computes pairwise orthologs and constructs
+            from those two different types of groupings, the OMA Groups and 
+            Hierarchical Orthologous Groups (HOGs). Furthermore, OMA standalone 
+            can predict gene function annotations using Gene Ontology terms 
+            based on existing annotations from exported genomes, and produces 
+            phyletic profiles for OMA Groups and HOGs. See section ', 
+            Anchor(TextBlock('a', href='applications', 'Possible applications')),
+            ' for some further explanations how to use the output of OMA standalone.'),
+
+            Paragraph(0, 'You can run OMA as a standalone program on your own 
+            computer or HPC cluster. Included are the algorithms for OMA itself 
+            plus its addition ESPRIT - a tool based on OMA to detect split genes. 
+            The software can be run on Linux (x86, both 64bit and 32bit) and 
+            MacOSX (x86, both 32bit and 64bit).'),
             
             Paragraph(0, 'For a short summary and pointers to detailed algorithmic 
             publications of OMA, please refer to the OMA browser page:'), 
@@ -110,7 +121,7 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             
             Paragraph(0, 'If you have specific questions about the installation 
             or the usage of OMA, please contact 
-            adrian.altenhoff ',IT('at'),' inf.ethz.ch or christophe.dessimoz ',
+            adrian.altenhoff ', IT('at'),' inf.ethz.ch or christophe.dessimoz ',
             IT('at'),' unil.ch.')
         ]:
 
@@ -182,7 +193,7 @@ usage := [ Anchor(TextBlock('a', name='usage', SectionHeader(1, 'Usage'))),
         data into this directory. If you want to use ESPRIT, the FASTA file 
         containing the contigs should be called ',TT('{YourGenome}.contig.fa'),
         '. Then, simply call ', TT('OMA'), ' from your working directory to 
-        run OMA and/or ESPRIT'),
+        run OMA or ESPRIT'),
 
         Paragraph(0, 'If you have not installed OMA yet, use the complete
         path to ', TT('bin/oma'), ' in the installer folder to start the
@@ -257,7 +268,7 @@ OMA')),
         Anchor(TextBlock('a', name='schedulers', 
             SectionHeader(3, 'Parallelization with LSF, PBS Pro, Slurm, or SunGridEngine'))
         ),
-        Paragraph(0, 'With a scheduler such as LSF or SGE, running parallel jobs is particularly easy,
+        Paragraph(0, 'With a scheduler such as LSF, SGE or Slurm, running parallel jobs is particularly easy,
         as the parallel jobs can be start using as a job array. OMA will 
         automatically spread the work for the all-against-all among all processes.
         For a brief discussion on the required resources refer to the section ',
@@ -268,7 +279,8 @@ OMA')),
 
         Paragraph(0, Color(red, 'New in 2.0: '), 'The user should now explicitly set the number of
         total processes that should run in the job array. This is done by setting the environment
-        variable ',TT('''NR_PROCESSES''.'),' E.g. in bash/tcsh use', Code('export NR_PROCESSES=100  # bash
+        variable ',TT('''NR_PROCESSES''.'),' E.g. in bash/tcsh use', 
+Code('export NR_PROCESSES=100  # bash
 setenv NR_PROCESSES 100  # tcsh'), 
         ' prior to submitting the job. The main advantage of this new form is that single jobs 
         can be more easily resubmitted, and very large job arrays that do not all run simultaneously 
@@ -380,6 +392,41 @@ OMA'), 'Note that this staging is mostly useful on computing clusters where
        
         NULL]:
 
+utils := [
+        Anchor(TextBlock('a', name='utils',
+           SectionHeader(1, 'Utility tools'))),
+        Paragraph(0, 'OMA standalone ships with a few additional utility tools 
+        to simplify working with OMA. We briefly introduce them here. All tools 
+        are shell script located in OMA''s bin directory. All tools provide some
+        additional help information with the command line option ', TT('-h')),
+
+        Anchor(TextBlock('a', name='cleanup', SectionHeader(2, 'oma-cleanup'))),
+        Paragraph(0, 'In case a few processes to compute the all-vs-all get 
+        prematurly terminated or killed for whatever reason, they usually leave
+        back lock files that need to be removed. ', Code('oma-cleanup'), ' is 
+        a simple shell script that removes all of the lock files. Before using
+        this tool, make sure that no OMA process is still running.'),
+
+        Anchor(TextBlock('a', name='status', SectionHeader(2, 'oma-status'))),
+        Paragraph(0, 'The parallel all-vs-all phase of OMA standalone can take 
+        quite a lot of time to compute and for the process themselves it is rather
+        difficult to estimate how far the overall progress advanced already. We 
+        therefore provide a tool that reports the overall progress of the all-vs-all
+        phase with the following command: ', Code('oma-status'), 'Note also the 
+        command line options of the tool that can give you extended reporting,
+        parallel calculations, etc. You can run ', TT('oma-status'), ' also while
+        computations are still ongoing.'), 
+
+        Anchor(TextBlock('a', name='compact', SectionHeader(2, 'oma-compact'))),
+        Paragraph(0, 'The all-vs-all phase can produce a huge amount of files, 
+        specially for big genomes. On many HPC clusters users have restrictions
+        on the number of files that can be stored. ', TT('oma-compact'), ' is a 
+        utility tool that will compact the Cache/AllAll directory of finished 
+        genome pairs to just a single file per pair:',
+        Code('oma-compact'), 'The tool can be started repeatetly and also during
+        ongoing computations.'),
+        NULL ]:
+        
 # INPUT FORMATS
 iformat := [ 
             Anchor(TextBlock('a', name='iformat', 
@@ -413,12 +460,19 @@ iformat := [
             'OMA requires that the individual IDs are unique prefixes of your 
             FASTA headers.'),
             
-            Paragraph(0, 'If you want to use ESPRIT, make sure that FASTA files
-            containing contigs are called ', TT('{YourGenome}.contig.fa'), '.
-            So if you want to experiment with some mouse genome, call the 
-            FASTA file ', TT('mouse.contig.fa'), ' or ', 
-            TT('mymouse.contig.fa'), ' or something similar.'),
-            
+            Paragraph(0, 'Poor quality genomes often suffer from truncated gene 
+            models. If you name the FASTA files of poor quality genomes ',
+            TT('{YourGenome}.contig.fa'), ', they are treated specially: OMA will
+            ignore the ', 
+            Anchor(TextBlock('a', href='parameters', TT('LengthTol'))),
+            'condition, such that orthology will also be established for 
+            none-full-length homologous pairs, i.e. the condition that the 
+            fraction of the length of the effective pairwise alignment 
+            divided by the length of the shorter sequences must be at least ', 
+            TT('LengthTol'),' is ignored. For ESPRIT, genomes labeled 
+            with the ', TT('.contig.fa'), '-extension are considered for 
+            searching for split genes.'),
+
             Paragraph(0, 'Parameter files use Darwin syntax.  Key-value-pairs 
             are written as'),
             
@@ -432,10 +486,7 @@ iformat := [
 
 # OUTPUT FORMATS
 oformat := [ Anchor(TextBlock('a', name='oformat',
-                SectionHeader(2, 'Output Files')
-            )),
-            Anchor(TextBlock('a', name='omaout',
-                SectionHeader(3, 'OMA Output')
+                SectionHeader(2, 'OMA Output Files')
             )),
             
             Paragraph(0, 'The output of OMA gets written to files stored in a 
@@ -516,63 +567,26 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     parameter file and at least some exported genomes with GO 
                     annotations are included in the analysis.')),
                     NULL
-            ) ,
-            
-                        Anchor(TextBlock('a', name='espritout',
-                SectionHeader(3, 'ESPRIT Output')
-            )),
-            
-            Paragraph(0, 'ESPRIT stores its output files in a directory called',
-            TT('EspritOutput'), ' in your working directory. The output
-            consists of three text files and one tarball. In the tarball,
-            FASTA files with the MSAs of the hits ESPRIT found are stored.
-             The other three files are explained in detail in Table 2.'),
-            
-            Table( hastitlerow, ColAlign('l', 'p{12cm}'),
-                title = 'Table 2: Contents of the ESPRIT output files',
-                Row(Bold('Filename'), Bold('Contents')),
-                Rule,
-                Row(TT('params.txt'),
-                    Paragraph(0, 'This file is kept as a reference and 
-                    contains all parameters used in the current run.')),
-                Row(TT('hits.txt'),
-                    Paragraph(0, 'All hits found by ESPRIT are listed in this
-                    file. It is a list of contigs, ordered according to their
-                    position relative to the putative ortholog. Each line 
-                    describes one contig, the fields are separated by tabs.
-                    In the first field, the fragment pair ID is printed; the
-                    next two fields contain the labels of the first and
-                    second fragments found in this hit. The forth and fifth 
-                    fields contain the label of the corresponding full gene
-                    and its genome name. Then follows the distance difference
-                    between the two fragments and the number of positions
-                    between them (i.e. the gap); at last, an array is listed
-                    containing the IDs of all s3 genes corresponding to this
-                    hit.')),
-                Row(TT('dubious.txt'),
-                    Paragraph(0, 'ESPRIT often detects more candidate pairs than
-                    it will list in the ', TT('hits.txt'), ' file, but not all
-                    of them survive the quality check. Still, if you want to
-                    see which triplets have been filtered out, have a look at ',
-                    TT('dubious.txt'), ' where they are still listed. The file
-                    format is the same as for ', TT('hits.txt'), '.'))
             )
-            ]:
+            
+           ]:
 
 # PARAMETERS
 parameters := [ Anchor(TextBlock('a', name='parameters',
                     SectionHeader(1, 'Parameters')
                 )),
                 
-                Paragraph(0, 'All parameters for OMA and/or ESPRIT are
+                Paragraph(0, 'All parameters for OMA and ESPRIT are
                 set in a parameters file. There is an example file in the
                 OMA installer package; we encourage you to copy this file
-                into your working directory and change it to your needs.'),
+                into your working directory and change it to your needs, or use
+                the command ', TT('OMA -p'), ' to create a default parameters 
+                file.'),
 
                 Paragraph(0, 'The parameter file consists of three main parts:
                 First, general parameters for OMA are set. Table 3 describes 
                 these parameters in detail.'),
-                
+
                 Paragraph(0, 'Next, there are a few optional
                 parameters, listed in Table 4, to avoid producing particular 
                 output files. Indeed, in large analyses, disabling the 
@@ -580,14 +594,11 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                 computing time and might drastically reduce the number of 
                 produced files. '),
 
-                Paragraph(0, 'And third, more specific parameters that only 
-                affect the ESPRIT algorithm can be changed.  These parameters 
-                are explained in Table 5.  Note that changing the ESPRIT 
-                parameters will not have an effect unless you set the boolean 
-                variable ',
+                Paragraph(0, 'The third part are the parameters which are unique
+                to ESPRIT. Check the ', 
+                Anchor(TextBlock('a', href='esprit', 'ESPRIT section')), 
+                ' for details on them.'),
 
-                TT('UseEsprit'), ' to ', TT('true'), '.'),
-                
                 Table( hastitlerow, long, ColAlign('l', 'p{9cm}', 'p{2cm}'),
                     title = 'Table 3: General parameters in OMA',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
@@ -762,47 +773,144 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        Paragraph(0,'Switches to disable the generation of 
                        hierarchical orthologous group files (Fasta format, one 
                        file per group) if set to ',TT('false'),'.'),
+                       TT('true')),
+                    Row(TT('WriteOutput_PhyleticProfileOG'),
+                       Paragraph(0,'Switch to disable the generation of the
+                       phyletic profiles based on the orthologous groups if set 
+                       to ', TT('false'),'.'),
+                       TT('true')),
+                    Row(TT('WriteOutput_PhyleticProfileHOG'),
+                       Paragraph(0, 'Switch to disable the generation of the 
+                       phyletic profiles based on the root level HOGs if set
+                       to ', TT('false'),'.'),
                        TT('true'))
-                ),
+                )];
 
-                Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
-                    title = 'Table 5: ESPRIT parameters',
-                    Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
-                    Rule,
-                    Row(TT('UseEsprit'), 
-                        Paragraph(0, 'You can either set this to ', TT('true'),
-                        ', which will enable ESPRIT and shut down the parts of
-                        OMA that are not directly needed for ESPRIT, or set it
-                        to ', TT('false'), ' to make no use of ESPRIT at all.'),
-                        TT('false')),
-                    Row(TT('DistConfLevel'),
-                        Paragraph(0, 'Confidence level variable for contigs.
-                        This is the parameter ', TT('tol'), ' described in the
-                        paper.'),
-                        TT('2')),
-                    Row(TT('MinProbContig'),
-                        Paragraph(0, 'Minimal proportion of genomes with which
-                        contigs form many:1 BestMatches to consider that we
-                        might be dealing with fragments of the same gene.
-                        This is the parameter ', TT('MinRefGenomes'), 
-                        ' described in the paper, normalized by the total
-                        number of reference genomes.'),
-                        TT('0.4')),
-                    Row(TT('MaxContigOverlap'),
-                        Paragraph(0, 'Maximum overlap between fragments of
-                        same gene from different contigs.'),
-                        TT('5')),
-                    Row(TT('MinSeqLenContig'),
-                        Paragraph(0, 'Any sequence which is less than ',
-                        TT('MinSeqLenContig'), ' amino acids long in contigs
-                        is not considered.'),
-                        TT('20')),
-                    Row(TT('MinBestScore'),
-                        Paragraph(0, 'Minimum best score for BestMatch in
-                        scaffold recognition.'),
-                        TT('250'))
-                )
-                ]:
+applications := [Anchor(TextBlock('a', name='applications', 
+                        SectionHeader(1, 'Applications for OMA standalone'))),
+          Paragraph(0, 'In this section we provide a few hints on best practices 
+          on how to use OMA standalone results in possible applications.'),
+
+          Anchor(TextBlock('a', name='speciestreeinference',
+                           SectionHeader(2, 'Species tree reconstruction'))),
+          Paragraph(0, 'The most common approach to reconstruct a species 
+          phylogeny is to build a supermatrice from many marker loci. For this
+          is is of outmost importance to avoid paralogous relations within each
+          loci. OMA Groups (or simply Orthologous Groups) is the most suitable 
+          type of output. Each group forms a maximum clique in the graph of 
+          pairwise orthologs. OMA standalone builds provides also a directory 
+          called ', IT('OrthologousGroupsFasta'), ', that contains for each group
+          a fasta formatted file with their unaligned sequences.'),
+
+          Paragraph(0, 'A standard approach would therefore be to build a MSA 
+          for each of the marker gene groups, concatenate it and infer a tree 
+          from the superalignment.'),
+
+          Anchor(TextBlock('a', name='functionpredict', 
+                           SectionHeader(2, 'Predict gene functions of a new genome'))),
+          Paragraph(0,'')
+          ]:
+
+esprit := [Anchor(TextBlock('a', name='esprit', SectionHeader(1, 'ESPRIT'))),
+           Paragraph(0, 'ESPRIT can be used to identify split genes in low 
+           quality genomes. In essence, it tries to find genes in genomes named ',
+           TT('{YourGenome}.contig.fa'), ' for which evidence full length gene 
+           exist in other genomes. See ', 
+           Link(TextBlock('a', href='http://dx.doi.org/10.1093/bib/bbr038', 'http://dx.doi.org/10.1093/bib/bbr038')),
+           ' for details on the methodology. '),
+
+           Anchor(TextBlock('a', name='espritparams', SectionHeader(2, 'Esprit Parameters'))),
+           Paragraph(0, 'ESPRIT also needs to operate on computed all-vs-all 
+           alignments. It therefore shares all the parameters from OMA that 
+           are relevant to the all-vs-all phase, which are ', 
+           TT('InputDataType'), ', ', TT('AlignBatchSize'), ', ', TT('MinScore'),
+           ', ', TT('MinSeqLen'), ', and ', TT('LengthTol'), '.'),
+
+           Paragraph(0, 'The more specific parameters that only 
+           affect the ESPRIT algorithm are explained in Table 5.  Note that
+           changing the ESPRIT parameters will not have an effect unless you 
+           set the boolean variable ',
+           TT('UseEsprit'), ' to ', TT('true'), '.'),
+
+           Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
+               title = 'Table 5: ESPRIT parameters',
+               Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
+               Rule,
+               Row(TT('UseEsprit'), 
+                   Paragraph(0, 'You can either set this to ', TT('true'),
+                   ', which will enable ESPRIT and shut down the parts of
+                   OMA that are not directly needed for ESPRIT, or set it
+                   to ', TT('false'), ' to make no use of ESPRIT at all.'),
+                   TT('false')),
+               Row(TT('DistConfLevel'),
+                   Paragraph(0, 'Confidence level variable for contigs.
+                   This is the parameter ', TT('tol'), ' described in the
+                   paper.'),
+                   TT('2')),
+               Row(TT('MinProbContig'),
+                   Paragraph(0, 'Minimal proportion of genomes with which
+                   contigs form many:1 BestMatches to consider that we
+                   might be dealing with fragments of the same gene.
+                   This is the parameter ', TT('MinRefGenomes'), 
+                   ' described in the paper, normalized by the total
+                   number of reference genomes.'),
+                   TT('0.4')),
+               Row(TT('MaxContigOverlap'),
+                   Paragraph(0, 'Maximum overlap between fragments of
+                   same gene from different contigs.'),
+                   TT('5')),
+               Row(TT('MinSeqLenContig'),
+                   Paragraph(0, 'Any sequence which is less than ',
+                   TT('MinSeqLenContig'), ' amino acids long in contigs
+                   is not considered.'),
+                   TT('20')),
+               Row(TT('MinBestScore'),
+                   Paragraph(0, 'Minimum best score for BestMatch in
+                   scaffold recognition.'),
+                   TT('250'))
+          ),
+
+          Anchor(TextBlock('a', name='espritout',
+                SectionHeader(2, 'ESPRIT Output')
+            )),
+            
+            Paragraph(0, 'ESPRIT stores its output files in a directory called',
+            TT('EspritOutput'), ' in your working directory. The output
+            consists of three text files and one tarball. In the tarball,
+            FASTA files with the MSAs of the hits ESPRIT found are stored.
+             The other three files are explained in detail in Table 2.'),
+            
+            Table( hastitlerow, ColAlign('l', 'p{12cm}'),
+                title = 'Table 2: Contents of the ESPRIT output files',
+                Row(Bold('Filename'), Bold('Contents')),
+                Rule,
+                Row(TT('params.txt'),
+                    Paragraph(0, 'This file is kept as a reference and 
+                    contains all parameters used in the current run.')),
+                Row(TT('hits.txt'),
+                    Paragraph(0, 'All hits found by ESPRIT are listed in this
+                    file. It is a list of contigs, ordered according to their
+                    position relative to the putative ortholog. Each line 
+                    describes one contig, the fields are separated by tabs.
+                    In the first field, the fragment pair ID is printed; the
+                    next two fields contain the labels of the first and
+                    second fragments found in this hit. The forth and fifth 
+                    fields contain the label of the corresponding full gene
+                    and its genome name. Then follows the distance difference
+                    between the two fragments and the number of positions
+                    between them (i.e. the gap); at last, an array is listed
+                    containing the IDs of all s3 genes corresponding to this
+                    hit.')),
+                Row(TT('dubious.txt'),
+                    Paragraph(0, 'ESPRIT often detects more candidate pairs than
+                    it will list in the ', TT('hits.txt'), ' file, but not all
+                    of them survive the quality check. Still, if you want to
+                    see which triplets have been filtered out, have a look at ',
+                    TT('dubious.txt'), ' where they are still listed. The file
+                    format is the same as for ', TT('hits.txt'), '.'))
+            )
+ 
+          ]:
 
 # GETTING HELP
 
@@ -836,7 +944,7 @@ Public License Version 2.0. For more info, please consult the following page:'),
 free for commercial and non-commercial use.'),
 
             Paragraph(0, 'Software distributed under the License is 
-distributed on an "AS IS" basis,WITHOUT WARRANTY OF ANY KIND, either 
+distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either 
 express or implied. See the License for the specific language governing 
 rights and limitations under the License.')
 
@@ -870,6 +978,8 @@ htmltabs := TextBlock('div', class='navigation',
                 Anchor(TextBlock('a', href='fileformats', 'File formats')),
                 ' - ',
                 Anchor(TextBlock('a', href='parameters', 'Parameters')),
+                ' - ',
+                Anchor(TextBlock('a', href='esprit', 'Esprit')),
                 ' - ',
                 Anchor(TextBlock('a', href='gettinghelp', 'Getting help')),
                 ' - ',
@@ -920,8 +1030,11 @@ urlcolor=blue') ) ):
         op(downloads),
         op(install),
         op(usage),
+        op(utils),
+        op(applications),
         op(formats),
         op(parameters),
+        op(esprit),
         op(gettinghelp),
         op(license)
     ) ) ):
@@ -952,8 +1065,11 @@ OpenWriting('Manual/manual.html'):
                 op(downloads),
                 op(install),
                 op(usage),
+                op(utils),
+                op(applications),
                 op(formats),
                 op(parameters),
+                op(esprit),
                 op(gettinghelp),
                 op(license)
             )
