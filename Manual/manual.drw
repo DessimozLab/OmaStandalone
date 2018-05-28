@@ -22,6 +22,45 @@ Link_LaTeXC := proc(l:Link)
     return(LaTeXC(li).tx):
 end:
 
+PngFigure := proc(png_file:string ; 
+                  'Caption' = ((caption=''):string),
+                  'Scale' = ((scale=1):positive),
+                  'Label' = ((label=''):string))
+    if length(png_file) < 5 or png_file[-4..-1] <> '.png' or 
+       length(FileStat(png_file)) = 0 then
+       error('png_file not with existing or not of .png extension');
+    fi:
+    noeval(procname(png_file, 'Caption'=caption, 'Scale'=scale, 'Label'=label));
+end:
+
+PngFigure_string := proc(png:PngFigure) option internal;
+    sprintf('<PNG: %s "%s">', png[1], png[2,2]);
+end:
+
+PngFigure_HTMLC := proc(png: PngFigure) option internal;
+    basename := SearchDelim('/', png[1])[-1];
+    r := [];
+    if png[4,2] <> '' then
+       r := append(r, sprintf('<a name="%s">', png[4,2]));
+    fi:
+    if png[2,2] <> '' then
+       r := append(r, sprintf('<img src="%s" alt="%s"><p>%s</p>\n', basename, png[2,2], png[2,2]));
+    else 
+       r := append(r, sprintf('<img src="%s">\n', basename));
+    fi:
+    return(ConcatStrings(r));
+end:
+
+PngFigure_LaTeXC := proc(png: PngFigure) option internal;
+    basename := SearchDelim('/', png[1])[-1];
+    r := sprintf('\n\\begin{figure}[!] \\begin{center}\\includegraphics[scale=%f]{%s}', png[3,2], basename);
+    if png[2,2]<>'' then r := r . '\\caption{' . LaTeXC(png[2,2]) . '}\n' fi;
+    if png[4,2]<>'' then r := r . '\\label{'.LaTeXC(png[4,2]).'}\n' fi;
+    r . '\\end{center}\\end{figure}\n'
+end:
+PngFigure_type := structure(anything, PngFigure):
+CompleteClass( PngFigure ):
+
 # Anchor element to create anchors (HTML) and labels (LaTeX)
 # Usage: 
 # Set an anchor: Anchor('a', name='somewhere', 'some element'):
@@ -98,6 +137,14 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             phyletic profiles for OMA Groups and HOGs. See section ', 
             Anchor(TextBlock('a', href='applications', 'Possible applications')),
             ' for some further explanations how to use the output of OMA standalone.'),
+
+            Paragraph(0, Anchor(TextBlock('a', href='fig1', 'Figure 1')), ' provides
+            an overview of the OMA standalone pipeline together with user input 
+            and output files that are produced by OMA standalone.'), 
+            PngFigure('Manual/pipeline.png', Scale=1, Caption='Figure 1: Conceptual 
+                overview of the OMA standalone software. Dotted arrows indicate 
+                alternative steps (reference species tree either specified as input 
+                or inferred from the data).', Label='fig1'),
 
             Paragraph(0, 'You can run OMA as a standalone program on your own 
             computer or HPC cluster. Included are the algorithms for OMA itself 
@@ -1046,6 +1093,7 @@ OpenWriting('Manual/manual.tex'):
     #prints( LaTeXC(DocEl('documentclass', 'scrartcl') ) ):
     prints( LaTeXC(DocEl('usepackage', 'hyperref') ) ):
     prints( LaTeXC(DocEl('usepackage', 'longtable') ) ):
+    prints( LaTeXC(DocEl('usepackage', 'graphicx') ) ):
     prints( LaTeXC(DocEl('hypersetup', 'colorlinks,
 citecolor=blue,
 filecolor=blue,
