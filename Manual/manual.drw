@@ -808,8 +808,42 @@ applications := [Anchor(TextBlock('a', name='applications',
 
           Anchor(TextBlock('a', name='functionpredict', 
                            SectionHeader(2, 'Predict gene functions of a new genome'))),
-          Paragraph(0,'')
-          ]:
+          Paragraph(0,'OMA can be used to annotate the function of proteins from 
+          a new genome / proteome using existing gene ontology annotations from 
+          other species in OMA. OMA propagates annotations based on shared OMA 
+          group membership - the details are explained in ', 
+          Link(TextBlock('a', href='http://dx.doi.org/10.1093/nar/gku1158', 'this paper')),
+          '. For this to work, you need to export a few relevant and well annotated
+          genomes from the OMA Browser. By adding your own proteome to the dataset,
+          and running OMA standalone, your output directory will eventually contain a gaf 
+          formatted annotations file named ', IT('gene_function.gaf'), '.'),
+          Paragraph(0, 'As not all annotation terms make sense in all domains
+          of life, the parameter ',TT('CladeDefinition'), ' can be used to limit 
+          the propagation to the certain parts of the tree of life. ', 
+          IT('TODO: I guess we should explain how and what is the format of the optional file')),
+
+          Anchor(TextBlock('a', name='evolanalysis',
+                           SectionHeader(2, 'Dynamics of Genome Evolution'))),
+          Paragraph(0, 'The Hierarchical Orthologous Groups (HOGs) of OMA capture
+          the dynamics of genome evolution, i.e. the joint evolutionary events
+          acting on the set of species under consideration. The model of OMA tries 
+          to explain the evolutionary history using speciations, duplications 
+          and losses. HOGs are groups of genes that descended from a single 
+          ancestral gene at a specific taxonomic level. OMA standalone will 
+          computed these nested groups and store them in the community standard ',
+          Link(TextBlock('a', href='http://www.orthoxml.org/', 'OrthoXML')), 
+          ' format. The output file is called ', IT('HierarchicalGroups.orthoxml'), '.'),
+          Paragraph(0, 'The root-level grouping provides something similar as a 
+          homologous group. As this specific grouping can be useful in itself,
+          OMA standalone produces for each root-level HOG a fasta file in a 
+          subdirectory named ', IT('HOGFasta'), '.'),
+          Paragraph(0, 'For more complicated analyses of the evolutionary dynamics, 
+          extracting groups at specific taxonomic levels, creating a phylostratetic 
+          analysis and many more things, we developed the special purpose tool ',
+          Link(TextBlock('a', href='https://github.com/DessimozLab/pyham', 'pyHAM')),
+          ' to work with orthoxml files.'),
+
+          NULL]:
 
 esprit := [Anchor(TextBlock('a', name='esprit', SectionHeader(1, 'ESPRIT'))),
            Paragraph(0, 'ESPRIT can be used to identify split genes in low 
@@ -974,6 +1008,8 @@ htmltabs := TextBlock('div', class='navigation',
                 Anchor(TextBlock('a', href='installation', 'Installation')),
                 ' - ',
                 Anchor(TextBlock('a', href='usage', 'Usage')),
+                ' - ',
+                Anchor(TextBlock('a', href='applications', 'Applications')),
                 ' - ',
                 Anchor(TextBlock('a', href='fileformats', 'File formats')),
                 ' - ',
