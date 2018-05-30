@@ -124,6 +124,25 @@ DownloadGeneOntologyIfNeeded := proc()
     fi:
 end:
 
+LoadVerifyClasses := proc()
+    classes := table(0):
+    fn := 'DB/classify.tsv':
+    if FileExists(fn) then
+        t := ReadRawFile(fn):
+        cls := 1;
+        for line in SplitLines(t) do
+            for g in SearchDelim('\t', trim(line)) do
+                if member(g, genomes) then classes[g] := cls; fi:
+            od:
+            cls := cls + 1:
+        od:
+        if length(Indices(classes)) < length(genomes) then
+           warning(fn . ' does not contain class assignments for all genomes. missing genomes will form one on their own.');
+        fi:
+    fi:
+    return(classes);
+end:
+
 DownloadUniprotTaxonomyIfNeeded := proc()
     if not member(DoHierarchicalGroups, {'top-down'}) or 
         lowercase(SpeciesTree)<>'lineage' then return() fi;
@@ -140,7 +159,7 @@ end:
 # and pinf (the ParallelInfo datastructure)
 # the function will assign the results in global variables
 ConvertGenomes := proc(G, pinf)
-    global DB, GS, DBs, genomes, isContig, DBhashes:
+    global DB, GS, DBs, genomes, isContig, DBhashes, verify_classes:
 
     dataset_hash := ComputeDatasetHash(G);
     # if not job nr 1, wait until conversion of DBs are done.
@@ -234,6 +253,7 @@ ConvertGenomes := proc(G, pinf)
     od:
     DownloadGeneOntologyIfNeeded();
     DownloadUniprotTaxonomyIfNeeded();
+    verify_classes := LoadVerifyClasses();
 
     if pinf['ProcNr']=1 and not convDone(dataset_hash) then
         convDone(dataset_hash, true); # signal other processes to start.

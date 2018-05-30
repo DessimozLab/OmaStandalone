@@ -312,7 +312,7 @@ fi;
 WitnessCrit:=min(ceil((NG-2)*0.1),5);
 # Function to determine if verification among two genomes should be done
 if not assigned(VerifyClass) or not type(VerifyClass, procedure) then
-    VerifyClass := proc(x) return(1) end:
+    VerifyClass := proc(x) return(verify_classes[x]) end:
 fi:
 # SP will not be broken if length of alignment is not sufficient
 SumLengthsTol := 0.9;
