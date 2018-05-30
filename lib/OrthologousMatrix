@@ -310,6 +310,10 @@ fi;
 
 # witness must exit in at least 10% of 5 different genomes
 WitnessCrit:=min(ceil((NG-2)*0.1),5);
+# Function to determine if verification among two genomes should be done
+if not assigned(VerifyClass) or not type(VerifyClass, procedure) then
+    VerifyClass := proc(x) return(1) end:
+fi:
 # SP will not be broken if length of alignment is not sufficient
 SumLengthsTol := 0.9;
 NumAllBreak:=CreateArray(1..NG^2);
@@ -318,6 +322,7 @@ VPairs := CreateArray(1..NG,1..NG):
 idone := 0;  st := time();
 for X to NG do for Y from X+1 to NG do
     idone := idone+1;
+if VerifyClass(genomes[X]) = VerifyClass(genomes[Y]) then
     VPairs[X,Y] := CreateArray(1..ns[X],[]);
     VPairs[Y,X] := CreateArray(1..ns[Y],[]);
     for x1 to ns[X] do 
@@ -331,7 +336,7 @@ for X to NG do for Y from X+1 to NG do
             totalbreakings:=genomesbreaking:=0;
             for Z to NG while not bad 
               or (UseSeveralWitnesses=true and GetStats=true) do
-              if Z <> X and Z <> Y then
+              if Z <> X and Z <> Y and VerifyClass(genomes[X]) = VerifyClass(genomes[Z]) then
                 for a3 in decompress(BestMatch[X,Z,x1]) while not bad 
                   or (UseSeveralWitnesses=true and GetStats=true) do
                   z3 := a3[Entry];
@@ -430,6 +435,10 @@ for X to NG do for Y from X+1 to NG do
     od od;
     for x1 to ns[X] do VPairs[X,Y,x1] := compress({op(VPairs[X,Y,x1])}) od;
     for y2 to ns[Y] do VPairs[Y,X,y2] := compress({op(VPairs[Y,X,y2])}) od;
+else  # not same verify class
+    VPairs[X,Y] := StablePairs[X,Y];
+    VPairs[Y,X] := StablePairs[Y,X];
+fi:
     printf( '%s-%s, %d verified of %d stable pairs, %.3f%% done, %.2f hrs left\n',
         genomes[X], genomes[Y], sum(length(decompress(z)),z=VPairs[X,Y]),
         sum(length(decompress(z)),z=StablePairs[X,Y]),
