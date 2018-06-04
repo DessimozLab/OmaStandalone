@@ -613,6 +613,18 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     TT('DoGroupFunctionPrediction'), ' is set to ',TT('true'),' in the 
                     parameter file and at least some exported genomes with GO 
                     annotations are included in the analysis.')),
+                    Row(TT('PhyleticProfileOMAGroups.txt'),
+                       Paragraph(0, 'The phyletic profiles are given as one OMA Group per
+                       row, starting with a group identifier, followed by a presents/absents
+                       indicator (i.e. 0: absent, 1: present) per species in the group
+                       as columns.  The first row contains the species for each column. The
+                       columns are all tab-delimted.')),
+                    Row(TT('PhyleticProfileHOGs.txt'),
+                       Paragraph(0, 'The phyletic profiles are given as one HOG per row.
+                       Only the root level of each HOG is used. Every row starts with a
+                       group identifier, followed by the number of entries per species
+                       in the group as columns. The first row contains the species labels
+                       in each column. The columns are all tab-delimited.')),
                     NULL
             )
             
