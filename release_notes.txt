@@ -9,6 +9,12 @@
 Summary of Changes from 2.2.0 to XXX
 ====================================
 
+New Features:
+-------------
+- Added auxilary scripts oma-compact, oma-status, oma-cleanup
+  to reduce nr of produced files, check overall progress of allall
+  computations and cleaning up of files after crashes.
+
 
 Bug Fixes
 ---------

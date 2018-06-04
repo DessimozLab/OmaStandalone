@@ -72,9 +72,15 @@ echo "Creating symlinks to current version..."
 [ -L $linkdir/OMA ] && unlink $linkdir/OMA
 [ -L $linkdir/oma ] && unlink $linkdir/oma
 [ -L $linkdir/OMA.$versionnr ] && unlink $linkdir/OMA.$versionnr
+for lnk in $linkdir/oma-* ; do 
+    [ -L $lnk ] && unlink $lnk
+done
 ln -s $omadir/bin/oma $linkdir/OMA.$versionnr
 ln -s $omadir/bin/oma $linkdir/OMA
 ln -s $omadir/bin/oma $linkdir/oma 2>/dev/null  #osx is caseinsensitive
+for util in $omadir/bin/oma-*; do 
+    [ -x $util ] && ln -s $util $linksir/$(basename $util)
+done
 
 echo "Installation complete."
 echo "Make sure $linkdir is in your PATH, e.g by adding the line"
