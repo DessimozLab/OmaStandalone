@@ -7,12 +7,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def compact_allall_folder(cachedir):
+def compact_allall_folder(rootdir):
     """Function to compacts the chunk files of the AllAll computation.
 
-    :param cachedir: the path to the *Cache* folder to be compacted."""
+    :param rootdir: the path to the *root* folder to be compacted."""
 
-    allall_root = os.path.normpath(os.path.join(cachedir, 'AllAll'))
+    allall_root = os.path.normpath(os.path.join(rootdir, 'Cache', 'AllAll'))
+    if not os.path.isdir(allall_root):
+        raise ValueError('AllAll-cache directory "{}" does not exist. '
+                         'Is the path to the project root correct?'
+                         .format(allall_root))
     _dirs_top = [f for f in os.listdir(allall_root)
                  if os.path.isdir(os.path.join(allall_root, f))]
     buf_size = 2 ** 16
@@ -75,8 +79,9 @@ if __name__ == "__main__":
             directory. This script compacts the Cache as much as possible by
             combining files from the same genome pair computations. You can
             savely run it even while OMA standalone is running.""")
-    parser.add_argument('cachedir', nargs="?", default="./Cache",
-                        help="Path to the Cache directory that should be " +
+    parser.add_argument('root', nargs="?", default="./",
+                        help="Path to the root directory of the analysis containing "
+                             "the Cache directory that should be " +
                              "compacted. (default: %(default)s)")
     parser.add_argument('-d', '--debug', action="store_true",
                         help="show more info")
@@ -91,6 +96,6 @@ if __name__ == "__main__":
         lev = logging.WARNING
     logging.basicConfig(format="%(asctime)-15s %(levelname)8s: %(message)s", level=lev)
 
-    if not os.path.isdir(conf.cachedir):
-        raise ValueError("cachedir {} is not an existing directory".format(conf.cachedir))
-    compact_allall_folder(conf.cachedir)
+    if not os.path.isdir(conf.root):
+        raise ValueError("root {} is not an existing directory".format(conf.cachedir))
+    compact_allall_folder(conf.root)
