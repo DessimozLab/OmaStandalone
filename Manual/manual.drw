@@ -148,7 +148,7 @@ intro := [  Anchor(TextBlock('a', name='introduction',
 
             Paragraph(0, 'You can run OMA as a standalone program on your own 
             computer or HPC cluster. Included are the algorithms for OMA itself 
-            plus its addition ESPRIT - a tool based on OMA to detect split genes. 
+            plus ESPRIT - a tool based on OMA to detect split genes.
             The software can be run on Linux (x86, both 64bit and 32bit) and 
             MacOSX (x86, both 32bit and 64bit).'),
             
@@ -202,7 +202,9 @@ install := [
             script:'),
             
             Paragraph(0, 
-                Code('curl '.binaryLink.' -o oma.tgz
+                Code('wget -O oma.tgz '.binaryLink.'
+# on MacOS you can also use curl: 
+# curl '.binaryLink.' -o oma.tgz
 tar xvzf oma.tgz
 cd '.folderName.'
 ./install.sh /your/install/prefix'
@@ -216,11 +218,12 @@ cd '.folderName.'
             Paragraph(0, 'After installation, make sure the ', TT('bin'), 
             ' folder of OMA is in your ', TT('PATH'), ' variable, e.g., if
             you are using bash and used ', TT('/your/install/prefix'), ' as
-            installer prefix, add a line in ', TT('~/.profile'), ' such as:'),
+            installer prefix, add a line in ', TT('~/.bash_profile'), ' such as:'),
 
             Paragraph(0, Code('export PATH=$PATH:/your/install/prefix/OMA/bin')),
 
-            Paragraph(0, 'For other shells, choose the appropriate syntax.'),
+            Paragraph(0, 'For other shells, choose the appropriate syntax. Of 
+            course you can also just use absolute paths to run OMA standalone.'),
             SectionHeader(2, 'Homebrew/Linuxbrew'),  
             Paragraph(0, 'Alternatively, OMA standalone is also available on ',
             IT('Homebrew'), ' and ', IT('Linuxbrew'),'. To install 
@@ -236,7 +239,9 @@ usage := [ Anchor(TextBlock('a', name='usage', SectionHeader(1, 'Usage'))),
         you can alternatively run ', TT('OMA -p'), ' to get the parameter file
         with default values) and change it to your needs. 
         Create a directory ', TT('DB'), ' in your working directory that holds 
-        the genome data in FASTA format (see "File formats") and copy your 
+        the genome data in FASTA format (see "',
+        Anchor(TextBlock('a', href='fileformats', 'File formats')), 
+        '") and copy your 
         data into this directory. If you want to use ESPRIT, the FASTA file 
         containing the contigs should be called ',TT('{YourGenome}.contig.fa'),
         '. Then, simply call ', TT('OMA'), ' from your working directory to 
@@ -279,7 +284,41 @@ OMA')),
         The available options together with a brief description is available using 
         the "-h" option, i.e. ',TT('OMA -h'),
         Code('OMA -h\n'.ReplaceString('''', '''''', trim(TimedCallSystem('bin/oma -h')[2])))),
+
+
+        Anchor(TextBlock('a', name='resources', 
+            SectionHeader(2,'Required Resources'))
+        ),
         
+        Paragraph(0, 'Depending on the dataset to be analysed, OMA can require
+        quite a significant amount of computational resources, i.e. RAM and cpu
+        time. Most computing time is spent to compute the all-against-all
+        sequence alignments, which is why this part has been parallelized.
+        Although cpu intensive this phase does not require too much memory. As
+        a rule of thumb you can assume it requires roughly 10 times the size of
+        your DB folder, but at minimum 650MB. The second part of OMA runs sequential on a single
+        core, but it requires a lot more memory: Asymptotically it grows quadratic 
+        in the number of genomes. From a few real data runs we estimated that as a rule of thumb,
+        you should count with ', TT('400MB * pow(nr_genomes, 1.4)'),'. Obviously this
+        depends also a lot on the size of your genomes. 60 metazoas have been
+        successfully computed using 120GB, and for the same number of bacterial
+        genomes, 50GB were reported to be enough.'), 
+        
+        Paragraph(0, 'Because of this imbalance regarding the required memory
+        the OMA starter script has command line option ',TT('-s'), ' to run
+        only the first part of the OMA pipeline. Using this option, the
+        computation can be split into a parallel phase with little memory 
+        requirement , and a single process requiring a lot more RAM. Running 
+        the OMA thus becomes a two stage process like this:', Code('
+# first stage, little memory:
+OMA -s 
+
+# once first stage terminated, run second stage
+OMA'), 'Note that this staging is mostly useful on computing clusters where 
+        often memory and cpu time has to be reserved at job submission.'
+        ),
+
+       
         Anchor(TextBlock('a', name='parallelization', 
             SectionHeader(2, 'Parallelization'))
         ),
@@ -287,19 +326,18 @@ OMA')),
         Paragraph(0, 'The all-against-all phase of OMA is the most time-',
         'consuming one, but it can be parallelized (unlike all other steps, ',
         'which cannot run in parallel). The way it works is that the ',
-        'parameter "AlignBatchSize" and the ',
+        'parameter "', TT('AlignBatchSize'), '" and the ',
         'total number of genomes (n) will determine into how many chunks the ',
         'all-against-all phase is divided. AlignBatchSize will split the n*(n-1)/2 ',
-        'genome pairs further into chunks of at most "AlignBatchSize" alignments. ',
-        'The larger AlignBatchSize is, the more and smaller jobs will be executed.'),
+        'genome pairs further into chunks of at most "', TT('AlignBatchSize'), 
+        '" alignments. The larger AlignBatchSize is, the fewer (and hence longer)
+        jobs will be executed.'),
         
         Paragraph(0, 'Scheduling is straightforward: all compute 
-        processes ',
-        'need to start from the same directory, and each one will try to do an equal 
-        amount of ',
-        'chunks sequentially. However, before starting a new chunk, each ',
-        'process ensures that it has not yet already been processed by another ',
-        'process (i.e. no result file yet exists).'),
+        processes need to start from the same directory, and each one will try to 
+        do an equal amount of chunks sequentially. However, before starting a new 
+        chunk, each process ensures that it has not yet already been processed
+        by another process (i.e. no result file yet exists).'),
         Paragraph(0, 'On a single computer with multiple processors and/or cores, ',
         'it is recomended to start "N" parallel processes with the "-n" option, i.e.',
         Code('OMA -n 5'), 
@@ -369,38 +407,6 @@ export NR_PROCESSES=100
 EOF')
         ),
 
-        Anchor(TextBlock('a', name='resources', 
-            SectionHeader(2,'Required Resources'))
-        ),
-        
-        Paragraph(0, 'Depending on the dataset to be analysed, OMA can require
-        quite a significant amount of computational resources, i.e. RAM and cpu
-        time. Most computing time is spent to compute the all-against-all
-        sequence alignments, which is why this part has been parallelized.
-        Although cpu intensive this phase does not require too much memory. As
-        a rule of thumb you can assume it requires roughly 10 times the size of
-        your DB folder, but at minimum 650MB. The second part of OMA runs sequential on a single
-        core, but it requires a lot more memory: Asymptotically it grows quadratic 
-        in the number of genomes. From a few real data runs we estimated that as a rule of thumb,
-        you should count with ', TT('400MB * pow(nr_genomes, 1.4)'),'. Obviously this
-        depends also a lot on the size of your genomes. 60 metazoas have been
-        successfully computed using 120GB, and for the same number of bacterial
-        genomes, 50GB were reported to be enough.'), 
-        
-        Paragraph(0, 'Because of this imbalance regarding the required memory
-        the OMA starter script has command line option ',TT('-s'), ' to run
-        only the first part of the OMA pipeline. Using this option, the
-        computation can be split into a parallel phase with little memory 
-        requirement , and a single process requiring a lot more RAM. Running 
-        the OMA thus becomes a two stage process like this:', Code('
-# first stage, little memory:
-OMA -s 
-
-# once first stage terminated, run second stage
-OMA'), 'Note that this staging is mostly useful on computing clusters where 
-        often memory and cpu time has to be reserved at job submission.'
-        ),
-
         Anchor(TextBlock('a', name='Adding/Updating new genomes', 
             SectionHeader(2, 'Adding/Updating new genomes'))
         ),
@@ -412,6 +418,19 @@ OMA'), 'Note that this staging is mostly useful on computing clusters where
         'to avoid clashes with previously computed results, the updated genome 
         must use a different filename than any previously computed 
         result.'),
+
+        Anchor(TextBlock('a', name='exported', SectionHeader(2, 
+          'Exporting precomputed all-against-all'))),
+
+        Paragraph(0, 'Additionally it is possible to export the precomputed
+        all-against-all for any of the >2000 genomes currently in the oma database.
+        This can result in a massive speedup of time to run omastandalone. To export
+        genomes, go to ', 
+        Link(TextBlock('a', href='https://omabrowser.org/export', 'https://omabrowser.org/export')), 
+        ' and select the genomes you
+        wish to include in your omastandalone run. The resulting compressed tar file
+        but be uncompressed in the root directory of your analysis. Then simply run
+        omastandalone as normal.'),
  
         Anchor(TextBlock('a', name='advanced optimisations', 
             SectionHeader(2, 'Advanced usages of OMA standalone'))
@@ -495,11 +514,12 @@ iformat := [
             symbol ">" to distinguish labels from sequences. Each sequence 
             in a genome is supposed to have its own label. Have a look at the 
             FASTA files included in ToyExample/DB in our installer package for 
-            some example files.'),
+            some example files. The fasta genome files need to have a "',
+            TT('.fa'), '" extension to be recognised as such.'),
 
             Paragraph(0, 'In case your genomes contain multiple alternative 
             splicing variants, you can add a text-based file per genome called',
-            TT('DB/{YourGenome}.splice'), 'that put together the different
+            TT('DB/{YourGenome}.splice'), ' that put together the different
             splicing variants, e.g. to indicate that the three splicing variants
             ENSP00000384207, ENSP00000263741 and ENSP00000353094 are encoded by the 
             same gene, add the following line to the splice file:'),
@@ -528,8 +548,8 @@ iformat := [
             Paragraph(0, 'Note the colon in ', TT(':='), ' and the semicolon at 
             the end of the line. If your parameter file does not use valid 
             Darwin syntax, OMA will print out a short message and stop its 
-            execution.')
-            ]:
+            execution.'),
+            NULL]:
 
 # OUTPUT FORMATS
 oformat := [ Anchor(TextBlock('a', name='oformat',
@@ -595,12 +615,15 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     Row(TT('EstimatedSpeciesTree.nwk'), 
                        Paragraph(0, 'The inferred species tree on which 
                     the hierarchical groups inference procedure is based,
-                    in Newick format.')),
+                    in Newick format. The species tree is estimated from the 
+                    1% most complete OMA Groups using a weighted least squares 
+                    distance tree inference approach with mid-point rooting.')),
                     Row(TT('HOGFasta/'), 
-                    Paragraph(0, 'For each top-level HOG group we provide a
-                    separate Fasta file with all protein sequences clustered
-                    to it. This format is particularly suitable as starting 
-                    point for a phylogenetic reconstruction of a gene tree.')),
+                    Paragraph(0, 'For each root HOG group we provide a separate Fasta file with all
+                    the protein sequences clustered in it. This format is particularly suitable as
+                    a starting point for a phylogenetic reconstruction of a gene tree, as root HOGs
+                    represent gene families which originated the common ancestor of all the species
+                    in that particular HOG.')),
                     Row(TT('used_splicing_variants.txt'),
                     Paragraph(0, 'If ',TT('UseOnlyOneSplicingVariant'), 'is activated and
                     splicing information is available, the variant which has been used 
@@ -752,7 +775,10 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        Paragraph(0, 'Define maximum amount of time (in sec) spent by 
                        the program for breaking every connected component of the 
                        orthology graph at its weakest link on a given taxonomic level. 
-                       If set to a negative value, no timelimit is enforced.'),
+                       If set to a negative value, no timelimit is enforced. Once the 
+                       timelimit is reached, OMA will treat the remaining connected 
+                       component at the lower level (groups won''t span over the deeper 
+                       node).'),
                        TT('1200')),
                     Row(TT('SpeciesTree'),
                        Paragraph(0, 'The hierarchical groups require a (partially)
@@ -765,8 +791,11 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                     Row(TT('ReachabilityCutoff'),
                        Paragraph(0,'The cutoff of "average reachability within 
                        two steps" defines up to what point a cluster is split 
-                       into sub-clusters. This paramter applies only to the top-down HOG 
-                       inference approach. See parameter ',TT('DoHierarchicalGroups'),' for 
+                       into sub-clusters. Details on this parameter are explained in ',
+                       Link(TextBlock('a', href='http://doi.org/10.1371/journal.pone.0053786', 
+                            'http://doi.org/10.1371/journal.pone.0053786')), '. 
+                       This paramter applies only to the top-down HOG inference 
+                       approach. See parameter ',TT('DoHierarchicalGroups'),' for 
                        additional information.'), 
                        TT('0.65')),
                     Row(TT('MinEdgeCompletenessFraction'),
@@ -853,7 +882,7 @@ applications := [Anchor(TextBlock('a', name='applications',
           Anchor(TextBlock('a', name='speciestreeinference',
                            SectionHeader(2, 'Species tree reconstruction'))),
           Paragraph(0, 'The most common approach to reconstruct a species 
-          phylogeny is to build a supermatrice from many marker loci. For this
+          phylogeny is to build a supermatrix from many marker loci. For this
           is is of outmost importance to avoid paralogous relations within each
           loci. OMA Groups (or simply Orthologous Groups) is the most suitable 
           type of output. Each group forms a maximum clique in the graph of 
@@ -878,8 +907,7 @@ applications := [Anchor(TextBlock('a', name='applications',
           formatted annotations file named ', IT('gene_function.gaf'), '.'),
           Paragraph(0, 'As not all annotation terms make sense in all domains
           of life, the parameter ',TT('CladeDefinition'), ' can be used to limit 
-          the propagation to the certain parts of the tree of life. ', 
-          IT('TODO: I guess we should explain how and what is the format of the optional file')),
+          the propagation to the certain parts of the tree of life.', 
 
           Anchor(TextBlock('a', name='evolanalysis',
                            SectionHeader(2, 'Dynamics of Genome Evolution'))),
@@ -902,13 +930,24 @@ applications := [Anchor(TextBlock('a', name='applications',
           Link(TextBlock('a', href='https://github.com/DessimozLab/pyham', 'pyHAM')),
           ' to work with orthoxml files.'),
 
-          NULL]:
+          Anchor(TextBlock('a', name='phylogeneticprofiling', 
+                 SectionHeader(2, 'Phylogenetic Profiling'))),
+          Paragraph(0, 'Orthology is also used to build phylogenetic profiling—patterns
+          of presence and absence of genes across species. OMA standalone produces
+          two forms of output: a binary matrix with species as rows and OMA
+          groups as columns, indicating patterns of presence or absence of genes in each
+          group; a count matrix with species as columns and HOGs as rows, indicating the
+          number of genes in each HOG. Phylogenetic profiling tools can help to 
+          identify from this information proteins that are involved in the same 
+          biological pathway.'),
+
+NULL]:
 
 esprit := [Anchor(TextBlock('a', name='esprit', SectionHeader(1, 'ESPRIT'))),
            Paragraph(0, 'ESPRIT can be used to identify split genes in low 
-           quality genomes. In essence, it tries to find genes in genomes named ',
-           TT('{YourGenome}.contig.fa'), ' for which evidence full length gene 
-           exist in other genomes. See ', 
+           quality genomes. In essense, it tries to find gene fragments in genomes 
+           named ', TT('{YourGenome}.contig.fa'), ' that when combined, exists as 
+           a full length gene in other genomes. See ',
            Link(TextBlock('a', href='http://dx.doi.org/10.1093/bib/bbr038', 'http://dx.doi.org/10.1093/bib/bbr038')),
            ' for details on the methodology. '),
 
