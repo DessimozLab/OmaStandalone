@@ -53,6 +53,7 @@ end:
 
 PngFigure_LaTeXC := proc(png: PngFigure) option internal;
     basename := SearchDelim('/', png[1])[-1];
+    basename := basename[1..-5];
     r := sprintf('\n\\begin{figure}[!] \\begin{center}\\includegraphics[scale=%f]{%s}', png[3,2], basename);
     if png[2,2]<>'' then r := r . '\\caption{' . LaTeXC(png[2,2]) . '}\n' fi;
     if png[4,2]<>'' then r := r . '\\label{'.LaTeXC(png[4,2]).'}\n' fi;
@@ -518,7 +519,7 @@ iformat := [
             TT('.fa'), '" extension to be recognised as such.'),
 
             Paragraph(0, 'In case your genomes contain multiple alternative 
-            splicing variants, you can add a text-based file per genome called',
+            splicing variants, you can add a text-based file per genome called ',
             TT('DB/{YourGenome}.splice'), ' that put together the different
             splicing variants, e.g. to indicate that the three splicing variants
             ENSP00000384207, ENSP00000263741 and ENSP00000353094 are encoded by the 
@@ -537,7 +538,7 @@ iformat := [
             fraction of the length of the effective pairwise alignment 
             divided by the length of the shorter sequences must be at least ', 
             TT('LengthTol'),' is ignored. For ESPRIT, genomes labeled 
-            with the ', TT('.contig.fa'), '-extension are considered for 
+            with the ', TT('.contig.fa'), ' extension are considered for 
             searching for split genes.'),
 
             Paragraph(0, 'Parameter files use Darwin syntax.  Key-value-pairs 
@@ -883,7 +884,7 @@ applications := [Anchor(TextBlock('a', name='applications',
                            SectionHeader(2, 'Species tree reconstruction'))),
           Paragraph(0, 'The most common approach to reconstruct a species 
           phylogeny is to build a supermatrix from many marker loci. For this
-          is is of outmost importance to avoid paralogous relations within each
+          it is of outmost importance to avoid paralogous relations within each
           loci. OMA Groups (or simply Orthologous Groups) is the most suitable 
           type of output. Each group forms a maximum clique in the graph of 
           pairwise orthologs. OMA standalone builds provides also a directory 
