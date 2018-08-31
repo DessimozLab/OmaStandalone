@@ -28,6 +28,8 @@ Bug Fixes
 - fixes bug with '/' and set TMPDIR environment varibale in
   bottom-up GETHOGs. Thanks to Ferdinand Marletaz for reporting.
 
+- explicitly list duplicated protein IDs per genome in warning
+
 
 Summary of Changes from 2.1.1 to 2.2.0
 ======================================
