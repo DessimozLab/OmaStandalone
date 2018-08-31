@@ -1,0 +1,95 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 2.0
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 2.0 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/2.0/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is OMA standalone.
+#
+# The Initial Developer of the Original Code is CBRG Research Group; 
+# ETH Zurich; Switzerland.
+# Portions created by the Initial Developer are Copyright (C) 2005-2013
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#   Christophe Dessimoz <cdessimoz@inf.ethz.ch>
+#   Adrian Altenhoff <adrian.altenhoff@inf.ethz.ch>
+#   Stefan Zoller <stefan.zoller@inf.ethz.ch>
+#   Adrian Schneider <adrian.schneider@inf.ethz.ch>
+#   Alexander Roth <alexander.roth@inf.ethz.ch>
+#   Gaston Gonnet <gonnet@inf.ethz.ch>
+#
+# ***** END LICENSE BLOCK *****
+
+module external WritePhyloXML:
+
+WriteXMLHeader := proc(release:string ; notes:string)
+    printf('<?xml version="1.0" encoding="UTF-8"?>\n');
+    printf('<phyloxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '.
+           'xmlns="http://www.phyloxml.org" '.
+           'xsi:schemaLocation="http://www.phyloxml.org http://www.phyloxml.org/1.20/phyloxml.xsd">\n');
+    printf(' <phylogeny rooted="true" rerootable="false" branch_length_unit="PAM">\n');
+    printf('  <name>Species phylogeny estimated in OmaStandalone - release %s</name>\n', release);
+    printf('  <date>%s</date>\n', IsoDate());
+end:
+
+WriteXMLFooter := proc() 
+    printf(' </phylogeny>\n</phyloxml>\n');
+end:
+
+
+IsoDate := proc():
+    t := TimedCallSystem('date "+%Y-%m-%dT%H:%M:%S"');
+    dat := If(t[1]=0, trim(t[2]), '');
+    return(dat):
+end:
+
+FormatLeaf := proc(l, indent):
+    gs := GS[l];
+    if gs=unassigned or gs['TAXONID']='' then
+       s := sprintf('%s<name>%s</name>\n', CreateString(indent), XMLEscape(l));
+    else
+       s := [CreateString(indent), '<taxonomy>\n', 
+             CreateString(indent+1), '<id>', XMLEscape(gs['TAXONID']), '</id>\n', 
+             CreateString(indent+1), '<code>', XMLEscape(gs['5LETTERNAME']), '</code>\n',
+             CreateString(indent+1), '<scientific_name>', XMLEscape(gs['SCINAME']), 
+             '</scientific_name>\n', CreateString(indent), '</taxonomy>\n']:
+       s := ConcatStrings(s):
+    fi:
+    return(s);
+end:
+
+
+WriteNodeR := proc(t:Tree; (h0=0):numeric, (indent=2):posint)
+    if |t['Height']-h0| > 0 then
+        bL := sprintf(' branch_length="%f"', |t['Height'] - h0|);
+    else bL := '' fi:
+    s := [CreateString(indent), sprintf('<clade%s>\n', bL)]:
+    if type(t, Leaf) then
+        s := append(s, FormatLeaf(t['Label'], indent+1));
+    else
+        s := append(s, WriteNodeR(t['Left'], t['Height'], indent+1), 
+                    WriteNodeR(t['Right'], t['Height'], indent+1));
+    fi:
+    s := append(s, CreateString(indent), '</clade>\n');
+    return(ConcatStrings(s)):
+end:
+       
+
+WritePhyloXML := proc(t:Tree, fn:string, name:string)
+    curGC := Set(printgc=false):
+    OpenWriting(fn):
+    WriteXMLHeader(OMA_STANDALONE_VERSION);
+    prints(WriteNodeR(t)):
+    WriteXMLFooter();
+    OpenWriting(previous):
+    Set(printgc=curGC):
+end:
+end:  #module

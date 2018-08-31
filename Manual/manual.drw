@@ -619,6 +619,9 @@ oformat := [ Anchor(TextBlock('a', name='oformat',
                     in Newick format. The species tree is estimated from the 
                     1% most complete OMA Groups using a weighted least squares 
                     distance tree inference approach with mid-point rooting.')),
+                    Row(TT('EstimatedSpeciesTree.phyloxml'),
+                       Paragraph(0, 'The infered species tree in phyloxml format, 
+                    otherwise identical to ', TT('EstimatedSpeciesTree.nwk'))),
                     Row(TT('HOGFasta/'), 
                     Paragraph(0, 'For each root HOG group we provide a separate Fasta file with all
                     the protein sequences clustered in it. This format is particularly suitable as

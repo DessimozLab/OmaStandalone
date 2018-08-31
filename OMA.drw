@@ -706,6 +706,7 @@ else
             OpenWriting(OutputFolder.'/EstimatedSpeciesTree.nwk');
             prints( Tree_Newick(speciesTree) .';' );
             OpenWriting(previous):
+            WritePhyloXML(speciesTree, OutputFolder.'/EstimatedSpeciesTree.phyloxml');
         fi:
         if DoHierarchicalGroups='bottom-up' then
             HOG := GetHOGsBottomUp(speciesTree):

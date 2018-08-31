@@ -27,7 +27,7 @@
 #   Gaston Gonnet <gonnet@inf.ethz.ch>
 #
 # ***** END LICENSE BLOCK *****
-module external WriteOrthoXML;
+module external WriteOrthoXML, XMLEscape;
 local Grp2Id;
 
 Grp2Id:=0;

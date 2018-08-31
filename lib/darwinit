@@ -79,6 +79,8 @@ PropagateFunctionByGroup := noeval(ReadLibrary(OrthologsLib.'FunctionPropagation
 WriteGAF := noeval(ReadLibrary(OrthologsLib.'FunctionPropagation', WriteGAF));
 
 WriteOrthoXML := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', WriteOrthoXML));
+XMLEscape := noeval(ReadLibrary(OrthologsLib.'WriteOrthoXML', XMLEscape));
+WritePhyloXML := noeval(ReadLibrary(OrthologsLib.'WritePhyloxml', WritePhyloXML));
 WriteMatrix := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteMatrix));
 WriteGroups := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteGroups));
 WriteProfileFromHOGs := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteProfileFromHOGs));
