@@ -95,7 +95,7 @@ rm -rf darwin
 # clone hog_bottom_up python repo
 git clone --depth 1 ssh://gitolite@lab.dessimoz.org:2222/hog_bottom_up
 cd hog_bottom_up; git log -n 1 --format=%H > bottom_up.version; cd ..
-rm -rf hog_bottom_up/.git
+rm -rf hog_bottom_up/.git hog_bottom_up/.gitignore
 mv hog_bottom_up $instpath/
 
 # copy darwin binaries to $shortname/bin/${shortname}darwin

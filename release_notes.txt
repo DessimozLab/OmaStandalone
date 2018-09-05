@@ -20,6 +20,10 @@ New Features:
 
 Bug Fixes
 ---------
+- fixes a bug in HOG inference bottom-up algorithm that led to bigger
+  HOGs than intended for deep HOGs. With this fix we have also changed 
+  the default parameter MinEdgeCompletenessFraction.
+
 - changed exit code from 3 to 99 in case the specified max
   runtime exceeded.
 
