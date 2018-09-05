@@ -6,8 +6,8 @@
  :Contact: contact@omabrowser.org
 
 
-Summary of Changes from 2.2.0 to XXX
-====================================
+Summary of Changes from 2.2.0 to 2.3.0
+======================================
 
 New Features:
 -------------
@@ -15,7 +15,7 @@ New Features:
   to reduce nr of produced files, check overall progress of allall
   computations and cleaning up of files after crashes.
 
-- Estimated species tree is also stored in phyloxml format
+- Estimated species tree is additionally stored in phyloxml format
 
 
 Bug Fixes
@@ -29,7 +29,7 @@ Bug Fixes
 
 - fixes documentation typos
 
-- fixes bug with '/' and set TMPDIR environment varibale in
+- fixes bug with '/' and set TMPDIR environment variable in
   bottom-up GETHOGs. Thanks to Ferdinand Marletaz for reporting.
 
 - explicitly list duplicated protein IDs per genome in warning
