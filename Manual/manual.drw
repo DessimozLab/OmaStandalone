@@ -151,7 +151,7 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             computer or HPC cluster. Included are the algorithms for OMA itself 
             plus ESPRIT - a tool based on OMA to detect split genes.
             The software can be run on Linux (x86, both 64bit and 32bit) and 
-            MacOSX (x86, both 32bit and 64bit).'),
+            MacOSX (x86, 64bit).'),
             
             Paragraph(0, 'For a short summary and pointers to detailed algorithmic 
             publications of OMA, please refer to the OMA browser page:'), 
