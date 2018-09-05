@@ -145,6 +145,7 @@ mkdir $instpath/Manual
 cp Manual/manual.pdf $instpath/Manual/
 cp Manual/manual.css $instpath/Manual/
 cp Manual/manual.html $instpath/Manual/
+cp Manual/*png $instpath/Manual/
 cp release_notes.txt $instpath/Manual/
 cp $prev_rels $instpath/Manual/
 
