@@ -4,18 +4,19 @@ machine=$(uname -m)
 os=$(uname -s)
 
 DARWIN_BINARY="omadarwin.linux32"
-install_prefix="/usr/local"
+install_prefix="${1:-/usr/local}"
+data_dir="${2:-${HOME}/.oma}"
+
 current_dir=`dirname $0`
 versionnr="[VERSIONNR]"
 
-if [ $# -eq 1 ]
+if [ $# -ge 1 ]
 then
     if [ $1 = "--help" -o $1 = "-h" -o $1 = "-help" ]
     then
         echo "usage: ./install.sh [install_prefix]"
         exit 0
     fi
-    install_prefix=$(dirname $1)/$(basename $1)
 fi
 omadir=$install_prefix/OMA/OMA.$versionnr
 linkdir=$install_prefix/OMA/bin
@@ -61,12 +62,12 @@ cp -rf $current_dir/darwinlib $omadir/
 cp -rf $current_dir/hog_bottom_up $omadir/
 
 echo "installing package data..."
-mkdir -p ~/.oma 
-[ -d $current_dir/data ] && cp -r $current_dir/data/ ~/.oma/
+mkdir -p $data_dir
+[ -d $current_dir/data ] && cp -r $current_dir/data/ $data_dir
 if [ "$USER" == "root" ] ; then
-    chown -R $SUDO_USER ~/.oma
+    chown -R $SUDO_USER $data_dir
 fi
-sed -i.se "s|datadirname := .*|datadirname := '$HOME/.oma/':|" $omadir/darwinlib/darwinit && rm $omadir/darwinlib/darwinit.se
+sed -i.se "s|datadirname := .*|datadirname := '$data_dir':|" $omadir/darwinlib/darwinit && rm $omadir/darwinlib/darwinit.se
 
 echo "Creating symlinks to current version..."
 [ -L $linkdir/OMA ] && unlink $linkdir/OMA
