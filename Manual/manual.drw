@@ -118,26 +118,29 @@ intro := [  Anchor(TextBlock('a', name='introduction',
                 SectionHeader(1, 'Introduction')
             )),
 
-            Paragraph(0, 'The OMA (Orthologous MAtrix) database is a leading
-            resource for identifying orthologs, that are homologous genes 
-            started diverging through a speciation event, among publicly 
-            available complete genomes. Orthologs are essential for many 
-            applications in molecular biology, including gene function 
-            prediction or species tree reconstruction.'),
+            Paragraph(0, 'The OMA (Orthologous MAtrix) database is a 
+            well-established resource for identifying orthologs among publicly 
+            available complete genomes. Orthologs are genes that are related 
+            through speciation events, and are essential for many analyses, 
+            including gene function prediction and species tree 
+            reconstruction.'),
 
-            Paragraph(0, 'OMA standalone is a standalone package that can infer 
-            orthologs with the OMA algorithm for custom genomes. It is possible 
-            to export genomes and their homology relations directly from the 
-            OMA web-browser and combine them with custom genomes or proteomes.'),
+            Paragraph(0, 'OMA standalone is a standalone package that can 
+            infer orthologs using the OMA algorithm on custom genomes. It is 
+            also possible to export genomes and their homology relations 
+            directly from the OMA web-browser and combine them with custom 
+            genomes or proteomes.'),
 
-            Paragraph(0, 'OMA standalone computes pairwise orthologs and constructs
-            from those two different types of groupings, the OMA Groups and 
-            Hierarchical Orthologous Groups (HOGs). Furthermore, OMA standalone 
-            can predict gene function annotations using Gene Ontology terms 
-            based on existing annotations from exported genomes, and produces 
-            phyletic profiles for OMA Groups and HOGs. See section ', 
-            Anchor(TextBlock('a', href='applications', 'Possible applications')),
-            ' for some further explanations how to use the output of OMA standalone.'),
+            Paragraph(0, 'OMA standalone computes pairwise orthologs and 
+            constructs from those two different types of groupings, the OMA 
+            Groups and Hierarchical Orthologous Groups (HOGs). Furthermore, 
+            OMA standalone can predict gene function annotations using Gene 
+            Ontology terms based on existing annotations from exported 
+            genomes, and produces phyletic profiles for OMA Groups and HOGs.  
+            See section ', Anchor(TextBlock('a', href='applications', 
+            'Possible applications')),
+            ' for some further explanations how to use the output of OMA 
+            standalone.'),
 
             Paragraph(0, Anchor(TextBlock('a', href='fig1', 'Figure 1')), ' provides
             an overview of the OMA standalone pipeline together with user input 
