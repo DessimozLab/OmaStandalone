@@ -44,9 +44,9 @@ PngFigure_HTMLC := proc(png: PngFigure) option internal;
        r := append(r, sprintf('<a name="%s">', png[4,2]));
     fi:
     if png[2,2] <> '' then
-       r := append(r, sprintf('<img src="%s" alt="%s"><p>%s</p>\n', basename, png[2,2], png[2,2]));
+       r := append(r, sprintf('<img style="width: %.0f%%" src="%s" alt="%s"><p>%s</p>\n', 100*png[3,2], basename, png[2,2], png[2,2]));
     else 
-       r := append(r, sprintf('<img src="%s">\n', basename));
+       r := append(r, sprintf('<img style="width: %.0f%%" src="%s">\n', 100*png[3,2], basename));
     fi:
     return(ConcatStrings(r));
 end:
@@ -890,12 +890,12 @@ applications := [Anchor(TextBlock('a', name='applications',
           it is of outmost importance to avoid paralogous relations within each
           loci. OMA Groups (or simply Orthologous Groups) is the most suitable 
           type of output. Each group forms a maximum clique in the graph of 
-          pairwise orthologs. OMA standalone builds provides also a directory 
-          called ', IT('OrthologousGroupsFasta'), ', that contains for each group
+          pairwise orthologs. OMA standalone builds a directory called ', 
+          IT('OrthologousGroupsFasta'), ', that contains for each group
           a fasta formatted file with their unaligned sequences.'),
 
           Paragraph(0, 'A standard approach would therefore be to build a MSA 
-          for each of the marker gene groups, concatenate it and infer a tree 
+          for each of the marker gene groups, concatenate them and infer an tree 
           from the superalignment.'),
 
           Anchor(TextBlock('a', name='functionpredict', 
@@ -911,7 +911,7 @@ applications := [Anchor(TextBlock('a', name='applications',
           formatted annotations file named ', IT('gene_function.gaf'), '.'),
           Paragraph(0, 'As not all annotation terms make sense in all domains
           of life, the parameter ',TT('CladeDefinition'), ' can be used to limit 
-          the propagation to the certain parts of the tree of life.', 
+          the propagation to the certain parts of the tree of life.'), 
 
           Anchor(TextBlock('a', name='evolanalysis',
                            SectionHeader(2, 'Dynamics of Genome Evolution'))),
