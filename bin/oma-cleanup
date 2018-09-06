@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+import re
+from distutils.util import strtobool
+import sys
+import logging
+
+import os
+
+logger = logging.getLogger(__name__)
+PY3 = sys.version_info[0] == 3
+
+
+def user_yes_no_query(question):
+    sys.stdout.write('{} [y/n]\n'.format(question))
+    inp = input if PY3 else raw_input
+    while True:
+        try:
+            return strtobool(inp().lower())
+        except ValueError:
+            print("Please respond with 'y' or 'n'.")
+
+
+def cleanup(root, force=False):
+    if not force:
+        if not user_yes_no_query("\n{} should only be executed if no OMA standalone job \nis currently running. \nPlease confirm that no OMA standalone processes are running?"
+                                 .format(os.path.basename(__file__))):
+            return False
+
+    logger.info('Cleaning '+root)
+    allall_dir = os.path.join(root, 'Cache', 'AllAll')
+    if not os.path.isdir(allall_dir):
+        logger.warning('AllAll directory "{}" does not exist. Wrong path or not yet started'
+                       .format(allall_dir))
+        return False
+    files_to_remove = _find_conversion_lock(root)
+    files_to_remove.extend(_find_unfinished_part_files(allall_dir))
+    _remove_files(files_to_remove, force=force)
+
+
+def _find_conversion_lock(root):
+    lock = os.path.join(root, 'Cache', 'conversion.running')
+    to_remove = []
+    if os.path.exists(lock):
+        to_remove.append(lock)
+    return to_remove
+
+
+def _find_unfinished_part_files(allall_dir):
+    to_remove = []
+    pattern = re.compile(b'(.gz|.ckpt)$')
+    for directory, subdir, files in os.walk(allall_dir):
+        if directory in ('.DS_Store',):
+            continue
+        to_remove.extend([os.path.join(directory, fname) for fname in files if not pattern.search(fname)])
+    return to_remove
+
+
+def _remove_files(to_remove, force=False):
+    if len(to_remove) > 0:
+        if not force:
+            if not user_yes_no_query("found {} files which will be removed:\n {}\n\n Continue?"
+                                     .format(len(to_remove), "\n ".join(to_remove))):
+                return False
+        for file in to_remove:
+            os.remove(file)
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Cleaning up OMA standalone run")
+    parser.add_argument('root', nargs="?", default="./",
+                        help="Path to the project root of the analysis, i.e. the directory"
+                             "that contains the input genomes DB/ directory (default: %(default)s).")
+    parser.add_argument('--noinput', default=False, action='store_true',
+                        help="Do not ask for confirmation by user")
+    parser.add_argument('-d', '--debug', default=False, action='store_true')
+
+    conf = parser.parse_args()
+    logging.basicConfig(level=logging.DEBUG if conf.debug else logging.INFO,
+                        format="%(asctime)-15s %(levelname)8s: %(message)s")
+    cleanup(conf.root, conf.noinput)

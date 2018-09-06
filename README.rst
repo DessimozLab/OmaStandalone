@@ -7,10 +7,10 @@ through a speciation event, among publicly available complete genomes. Orthologs
 are essential for many applications in molecular biology, including gene function
 prediction or species tree reconstruction.
 
-OMA standalone is a standalone package that can infer orthologs with the OMA for
-custom genomes. It is possible to `export genomes <https://omabrowser.org/export>`_ 
-and their homology relations directly from the OMA web-browser and combine them
-with custom genomes or proteomes. 
+OMA standalone is a standalone package that can infer orthologs with the OMA
+algorithm for custom genomes. It is possible to `export genomes
+<https://omabrowser.org/export>`_ and their homology relations directly from
+the OMA web-browser and combine them with custom genomes or proteomes. 
 
 
 Documentation

@@ -77,6 +77,11 @@ CleanupSequences := proc(seqs_ids_tuple, gname, minLen)
     # check that IDs are uniq
     if length(ids) <> length({op(ids)}) then
         warning('not all IDs are uniq. This may cause problems with interpreting the results');
+        dups := []: ids_sorted := sort(ids):
+        for k to length(ids_sorted)-1 do
+            if ids_sorted[k]=ids_sorted[k+1] then dups := append(dups, ids_sorted[k]) fi:
+        od:
+        warning(sprintf(' found %d duplicated ids: %A\n', length(dups), dups));
     fi:
     return([seqs, ids, rem]);
 end:

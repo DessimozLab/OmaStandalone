@@ -95,13 +95,12 @@ rm -rf darwin
 # clone hog_bottom_up python repo
 git clone --depth 1 ssh://gitolite@lab.dessimoz.org:2222/hog_bottom_up
 cd hog_bottom_up; git log -n 1 --format=%H > bottom_up.version; cd ..
-rm -rf hog_bottom_up/.git
+rm -rf hog_bottom_up/.git hog_bottom_up/.gitignore
 mv hog_bottom_up $instpath/
 
 # copy darwin binaries to $shortname/bin/${shortname}darwin
 scp $darwinhome/linux/darwin $instpath/bin/omadarwin.linux32
 scp $darwinhome/linux64_2.6.9/darwin $instpath/bin/omadarwin.linux64
-scp $darwinhome/macintel/darwin $instpath/bin/omadarwin.mac32
 scp $darwinhome/macintel64/darwin $instpath/bin/omadarwin.mac64
 
 # copy oma library to $1/OMA$versionnr/lib
@@ -109,7 +108,7 @@ cp -r lib $instpath/
 
 # copy OMA files to $1/OMA$versionnr
 cp OMA.drw parameters.drw install.sh README.oma LICENSE release_notes.txt $instpath/
-cp bin/oma bin/omadarwin bin/warthog $instpath/bin/
+cp bin/oma bin/omadarwin bin/warthog bin/oma-* $instpath/bin/
 
 # create file with previous releases that exist for download
 prev_rels="Manual/previous_releases.html"
@@ -146,6 +145,7 @@ mkdir $instpath/Manual
 cp Manual/manual.pdf $instpath/Manual/
 cp Manual/manual.css $instpath/Manual/
 cp Manual/manual.html $instpath/Manual/
+cp Manual/*png $instpath/Manual/
 cp release_notes.txt $instpath/Manual/
 cp $prev_rels $instpath/Manual/
 
@@ -175,6 +175,7 @@ if [ "$deploy" == "yes" ] ; then
     scp $(dirname $instpath)/$(basename $instpath).tgz ${webhost}:${webpath}
     scp $(dirname $0)/Manual/manual.css ${webhost}:${webpath}
     scp $(dirname $0)/Manual/manual.html ${webhost}:${webpath}/index.html
+    scp $(dirname $0)/Manual/*png ${webhost}:${webpath}
     scp $(dirname $0)/Manual/previous_releases.html ${webhost}:${webpath}
     scp $(dirname $0)/release_notes.txt ${webhost}:${webpath}
 fi

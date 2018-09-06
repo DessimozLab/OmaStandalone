@@ -9,3 +9,5 @@ Manual/manual.tex
 Manual/manual.pdf
 Manual/manual.toc
 Manual/browser.css
+.idea/
+.DS_Store

@@ -27,7 +27,8 @@ then
     then
         DARWIN_BINARY="$DARWIN_PATH/omadarwin.mac64"
     else
-        DARWIN_BINARY="$DARWIN_PATH/omadarwin.mac32"
+        echo "The last version of OMA standalone that supported 32bit OSX (10.6) is OMA 2.2.0"
+        exit 1
     fi
 else
     echo "Operating system not supported!"
