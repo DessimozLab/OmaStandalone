@@ -175,6 +175,7 @@ if [ "$deploy" == "yes" ] ; then
     scp $(dirname $instpath)/$(basename $instpath).tgz ${webhost}:${webpath}
     scp $(dirname $0)/Manual/manual.css ${webhost}:${webpath}
     scp $(dirname $0)/Manual/manual.html ${webhost}:${webpath}/index.html
+    scp $(dirname $0)/Manual/*png ${webhost}:${webpath}
     scp $(dirname $0)/Manual/previous_releases.html ${webhost}:${webpath}
     scp $(dirname $0)/release_notes.txt ${webhost}:${webpath}
 fi
