@@ -65,6 +65,10 @@ ParalogTol := -2.5*StablePairTol;
 # (for details, see Dessimoz et al, Nucl Acids Res 2006)
 VerifiedPairTol := 1.53;
 
+# SkipVerification is a flag to disable the Verification step entirely. 
+# Uncomment to activate.
+# SkipVerification := true;
+
 # Any sequence which is less than MinSeqLen amino acids long in regular 
 # genomes is not considered.
 MinSeqLen := 50;

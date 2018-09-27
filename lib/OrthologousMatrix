@@ -322,7 +322,7 @@ VPairs := CreateArray(1..NG,1..NG):
 idone := 0;  st := time();
 for X to NG do for Y from X+1 to NG do
     idone := idone+1;
-if VerifyClass(genomes[X]) = VerifyClass(genomes[Y]) then
+if not SkipVerification=true and VerifyClass(genomes[X]) = VerifyClass(genomes[Y]) then
     if printlevel >= 3 then printf('%s/%s in same verfication class: %A\n', genomes[X], genomes[Y], VerifyClass(genomes[X])) fi:
     VPairs[X,Y] := CreateArray(1..ns[X],[]);
     VPairs[Y,X] := CreateArray(1..ns[Y],[]);
@@ -442,7 +442,8 @@ if VerifyClass(genomes[X]) = VerifyClass(genomes[Y]) then
         sum(length(decompress(z)),z=StablePairs[X,Y]),
         200*idone/(NG*(NG-1)), (NG*(NG-1)/2-idone)*(time()-st)/idone/3600 );
 else  # not same verify class
-    printf( '%s/%s are not verified (different classes specified)\n', genomes[X], genomes[Y]);
+    printf( '%s/%s are not verified (%s)\n', genomes[X], genomes[Y], 
+        If(SkipVerification=true, 'SkipVerification set to true', 'different classes specified'));
     VPairs[X,Y] := StablePairs[X,Y];
     VPairs[Y,X] := StablePairs[Y,X];
 fi:
