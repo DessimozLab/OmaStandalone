@@ -323,6 +323,7 @@ idone := 0;  st := time();
 for X to NG do for Y from X+1 to NG do
     idone := idone+1;
 if VerifyClass(genomes[X]) = VerifyClass(genomes[Y]) then
+    if printlevel >= 3 then printf('%s/%s in same verfication class: %A\n', genomes[X], genomes[Y], VerifyClass(genomes[X])) fi:
     VPairs[X,Y] := CreateArray(1..ns[X],[]);
     VPairs[Y,X] := CreateArray(1..ns[Y],[]);
     for x1 to ns[X] do 
@@ -337,6 +338,7 @@ if VerifyClass(genomes[X]) = VerifyClass(genomes[Y]) then
             for Z to NG while not bad 
               or (UseSeveralWitnesses=true and GetStats=true) do
               if Z <> X and Z <> Y and VerifyClass(genomes[X]) = VerifyClass(genomes[Z]) then
+                if printlevel >= 3 then printf('  %s in same verfication class: %A\n', genomes[Z], VerifyClass(genomes[Z])) fi:
                 for a3 in decompress(BestMatch[X,Z,x1]) while not bad 
                   or (UseSeveralWitnesses=true and GetStats=true) do
                   z3 := a3[Entry];
@@ -435,14 +437,15 @@ if VerifyClass(genomes[X]) = VerifyClass(genomes[Y]) then
     od od;
     for x1 to ns[X] do VPairs[X,Y,x1] := compress({op(VPairs[X,Y,x1])}) od;
     for y2 to ns[Y] do VPairs[Y,X,y2] := compress({op(VPairs[Y,X,y2])}) od;
-else  # not same verify class
-    VPairs[X,Y] := StablePairs[X,Y];
-    VPairs[Y,X] := StablePairs[Y,X];
-fi:
     printf( '%s-%s, %d verified of %d stable pairs, %.3f%% done, %.2f hrs left\n',
         genomes[X], genomes[Y], sum(length(decompress(z)),z=VPairs[X,Y]),
         sum(length(decompress(z)),z=StablePairs[X,Y]),
         200*idone/(NG*(NG-1)), (NG*(NG-1)/2-idone)*(time()-st)/idone/3600 );
+else  # not same verify class
+    printf( '%s/%s are not verified (different classes specified)\n', genomes[X], genomes[Y]);
+    VPairs[X,Y] := StablePairs[X,Y];
+    VPairs[Y,X] := StablePairs[Y,X];
+fi:
 od od:
 
 BreakingStatsG:=[NumAllBreak,NumAllGenom];
