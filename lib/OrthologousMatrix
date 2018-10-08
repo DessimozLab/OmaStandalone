@@ -209,22 +209,6 @@ if printlevel >= 3 then
         inparalogpairs);
 fi;
 
-###########################
-# Optionally, set a ceiling on number of SP per sequence
-###########################
-if type(MaxSPperEntry,posint) then
-    for X to NG do for Y to NG do
-        if X <> Y then
-            for x1 to ns[X] do
-                tmp := decompress(StablePairs[X,Y,x1]);
-                if length(tmp) > MaxSPperEntry then
-                    StablePairs[X,Y,x1] := compress(Shuffle(tmp)[1..MaxSPperEntry]);
-                fi;
-            od;
-        fi;
-    od; od;
-fi;
-
 
 
 ###########################
@@ -246,6 +230,36 @@ if printlevel >= 3 then printf(
     'OrthologousMatrix: %d entries thinned out of %d StablePairs\n',
     thnr, thnt )
 fi;
+
+###########################
+# Optionally, set a ceiling on number of SP per sequence
+###########################
+if type(MaxSPperEntry,posint) then
+    for X to NG do for Y to NG do
+        if X <> Y then
+            for x1 to ns[X] do
+                tmp := decompress(StablePairs[X,Y,x1]);
+                if length(tmp) > MaxSPperEntry then
+                    # Shuffling enables us to pick a random subset but
+                    # keep in mind that the function returns an array
+                    tmp2 := Shuffle(tmp);
+                    # we sample MaxSPperEntry SP from the shuffled array
+                    StablePairs[X,Y,x1] := compress({op(tmp2[1..MaxSPperEntry])});
+                fi;
+                #now fix the other direction as well
+                for y2 in tmp2[MaxSPperEntry..-1] do
+                    StablePairs[Y,X,y2] := compress(decompress(StablePairs[Y,X,y2] minus {x1}));
+                od;
+                if printlevel >= 3 then printf(
+                    'Orthologous Matrix: capped the number of SPs for %s%05d vs %s.\n', 
+                    genomes[X], x1, genomes[Y]);
+                fi;
+
+            od;
+        fi;
+    od; od;
+fi;
+
 
 
 #
