@@ -210,6 +210,24 @@ if printlevel >= 3 then
 fi;
 
 ###########################
+# Optionally, set a ceiling on number of SP per sequence
+###########################
+if type(MaxSPperEntry,posint) then
+    for X to NG do for Y to NG do
+        if X <> Y then
+            for x1 to ns[X] do
+                tmp := decompress(StablePairs[X,Y,x1]);
+                if length(tmp) > MaxSPperEntry then
+                    StablePairs[X,Y,x1] := compress(Shuffle(tmp)[1..MaxSPperEntry]);
+                fi;
+            od;
+        fi;
+    od; od;
+fi;
+
+
+
+###########################
 # Thinning of StablePairs #
 ###########################
 thnt := thnr := 0;
