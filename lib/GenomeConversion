@@ -131,7 +131,7 @@ LoadVerifyClasses := proc()
         t := ReadRawFile(fn):
         cls := 1;
         for line in SplitLines(t) do
-            for g in SearchDelim('\t', trim(line)) do
+            for g in SearchDelim(',', trim(line)) do
                 if member(g, genomes) then classes[g] := cls; fi:
             od:
             cls := cls + 1:

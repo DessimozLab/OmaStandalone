@@ -684,6 +684,7 @@ do
 	    edg := append(edg,{j1,j2}) fi
     od od;
 
+    edg := [op({op(edg)})];
     if length(edg) <> length(cli)*(length(cli)-1)/2 then
         # printf( '|n|=%d, |e|=%d, max wei=%.2f\n', length(cli), length(edg),
         #    z[1]/100 );
