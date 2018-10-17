@@ -688,9 +688,10 @@ do
     if length(edg) <> length(cli)*(length(cli)-1)/2 then
         # printf( '|n|=%d, |e|=%d, max wei=%.2f\n', length(cli), length(edg),
         #    z[1]/100 );
+        G :=  Graph( Edges( seq( Edge(EdgeCost(z),z[1],z[2]), z=edg )));
+        OpenWriting('lastgraph.drw'): printf('G := %A:\n', G); OpenWriting(previous);
         CliqueIterFactor := 2;
-        cli1 := MaxEdgeWeightClique(
-            Graph( Edges( seq( Edge(EdgeCost(z),z[1],z[2]), z=edg ))) );
+        cli1 := MaxEdgeWeightClique( G );
         cli := [seq( cli[i], i=cli1)]
     fi;
 
