@@ -690,7 +690,7 @@ do
         #    z[1]/100 );
         G :=  Graph( Edges( seq( Edge(EdgeCost(z),z[1],z[2]), z=edg )));
         OpenWriting('lastgraph.drw'): printf('G := %A:\n', G); OpenWriting(previous);
-        CliqueIterFactor := 2;
+        CliqueIterFactor := min( 1, (140/length(G[Nodes]))^2.5 );
         cli1 := MaxEdgeWeightClique( G );
         cli := [seq( cli[i], i=cli1)]
     fi;
