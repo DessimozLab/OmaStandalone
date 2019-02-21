@@ -120,7 +120,11 @@ DownloadGeneOntologyIfNeeded := proc()
     lnk := datadirname.'/GOdata.drw.gz':
     src := TimedCallSystem('readlink '.lnk);
     if src[1]<>0 or (not FileExists(trim(src[2])) and not FileExists(datadirname.'/'.trim(src[2]))) then 
-        GOdownload():
+        err := traperror(GOdownload()):
+        if err=lasterror then
+            printf('Could not download Gene Ontology definitions: %s\n', err);
+            exit(1);
+        fi:
     fi:
 end:
 
