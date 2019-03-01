@@ -14,6 +14,8 @@ Bug Fixes
 ---------
 - fixes url to retrieve GeneOntology definition
 
+- improve performance in reading input fasta files
+
 - improve error handling
 
 - fixes documentation typos
