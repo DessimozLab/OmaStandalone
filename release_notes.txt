@@ -6,6 +6,23 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.3.0 to 2.3.1
+======================================
+This is a bugfix release only.
+
+Bug Fixes
+---------
+- bottom-up HOG output file contains species name in species tag
+
+- fixes url to retrieve GeneOntology definition
+
+- improve performance in reading input fasta files
+
+- improve error handling
+
+- fixes documentation typos
+
+
 Summary of Changes from 2.2.0 to 2.3.0
 ======================================
 

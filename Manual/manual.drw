@@ -118,26 +118,29 @@ intro := [  Anchor(TextBlock('a', name='introduction',
                 SectionHeader(1, 'Introduction')
             )),
 
-            Paragraph(0, 'The OMA (Orthologous MAtrix) database is a leading
-            resource for identifying orthologs, that are homologous genes 
-            started diverging through a speciation event, among publicly 
-            available complete genomes. Orthologs are essential for many 
-            applications in molecular biology, including gene function 
-            prediction or species tree reconstruction.'),
+            Paragraph(0, 'The OMA (Orthologous MAtrix) database is a 
+            well-established resource for identifying orthologs among publicly 
+            available complete genomes. Orthologs are genes that are related 
+            through speciation events, and are essential for many analyses, 
+            including gene function prediction and species tree 
+            reconstruction.'),
 
-            Paragraph(0, 'OMA standalone is a standalone package that can infer 
-            orthologs with the OMA algorithm for custom genomes. It is possible 
-            to export genomes and their homology relations directly from the 
-            OMA web-browser and combine them with custom genomes or proteomes.'),
+            Paragraph(0, 'OMA standalone is a standalone package that can 
+            infer orthologs using the OMA algorithm on custom genomes. It is 
+            also possible to export genomes and their homology relations 
+            directly from the OMA web-browser and combine them with custom 
+            genomes or proteomes.'),
 
-            Paragraph(0, 'OMA standalone computes pairwise orthologs and constructs
-            from those two different types of groupings, the OMA Groups and 
-            Hierarchical Orthologous Groups (HOGs). Furthermore, OMA standalone 
-            can predict gene function annotations using Gene Ontology terms 
-            based on existing annotations from exported genomes, and produces 
-            phyletic profiles for OMA Groups and HOGs. See section ', 
-            Anchor(TextBlock('a', href='applications', 'Possible applications')),
-            ' for some further explanations how to use the output of OMA standalone.'),
+            Paragraph(0, 'OMA standalone computes pairwise orthologs and 
+            constructs from those two different types of groupings, the OMA 
+            Groups and Hierarchical Orthologous Groups (HOGs). Furthermore, 
+            OMA standalone can predict gene function annotations using Gene 
+            Ontology terms based on existing annotations from exported 
+            genomes, and produces phyletic profiles for OMA Groups and HOGs.  
+            See section ', Anchor(TextBlock('a', href='applications', 
+            'Possible applications')),
+            ' for some further explanations how to use the output of OMA 
+            standalone.'),
 
             Paragraph(0, Anchor(TextBlock('a', href='fig1', 'Figure 1')), ' provides
             an overview of the OMA standalone pipeline together with user input 
@@ -702,7 +705,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         TT('Output')),
                     Row(TT('ReuseCachedResults'), 
                         Paragraph(0, 'If you want to recompute everything from
-                        scratch everytime the script is run, set this to ',
+                        scratch every time the script is run, set this to ',
                         TT('false'), '.'),
                         TT('true')),
                     Row(TT('AlignBatchSize'),
@@ -746,11 +749,11 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         is not considered.'),
                         TT('50')),
                     Row(TT('UseOnlyOneSplicingVariant'),
-                        Paragraph(0, 'Enables/disables the filtering on a single represetative 
+                        Paragraph(0, 'Enables/disables the filtering on a single representative 
                         splicing variant. If enabled, OMA selects the variant that has the most 
                         homologous matches with all other genomes. Orthology inference is then 
                         only based on this variant. If disabled, alternative splicing variants 
-                        will usually be infered as paralogs.'),
+                        will usually be inferred as paralogs.'),
                         TT('true')),
                     Row(TT('StableIdsForGroups'),
                         Paragraph(0, 'Enables/disables the generation of stable identifiers for OMA groups 
@@ -763,7 +766,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                     Row(TT('GuessIdType'),
                        Paragraph(0, 'Enable/disable guessing of the id types while generating the orthoxml
                        file. In this context we refer to ID type guessing as the task to
-                       gussing whether an ID should be stored in the geneId, protId or
+                       guessing whether an ID should be stored in the geneId, protId or
                        transcriptId tag. If the flag is set to false, the whole fasta header
                        is used and stored as is in the protId tag.'),
                        TT('false')),
@@ -779,8 +782,8 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        Paragraph(0, 'Define maximum amount of time (in sec) spent by 
                        the program for breaking every connected component of the 
                        orthology graph at its weakest link on a given taxonomic level. 
-                       If set to a negative value, no timelimit is enforced. Once the 
-                       timelimit is reached, OMA will treat the remaining connected 
+                       If set to a negative value, no time limit is enforced. Once the 
+                       time limit is reached, OMA will treat the remaining connected 
                        component at the lower level (groups won''t span over the deeper 
                        node).'),
                        TT('1200')),
@@ -798,7 +801,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        into sub-clusters. Details on this parameter are explained in ',
                        Link(TextBlock('a', href='http://doi.org/10.1371/journal.pone.0053786', 
                             'http://doi.org/10.1371/journal.pone.0053786')), '. 
-                       This paramter applies only to the top-down HOG inference 
+                       This parameter applies only to the top-down HOG inference 
                        approach. See parameter ',TT('DoHierarchicalGroups'),' for 
                        additional information.'), 
                        TT('0.65')),
@@ -813,7 +816,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        based on the OMA Groups assignments. The predictions are
                        then stored in a gaf file. Computing these predictions 
                        can take a substantial amount of time. ', 
-                       Bold('Note: '), 'Predictions are based on transfering 
+                       Bold('Note: '), 'Predictions are based on transferring 
                        existing annotations from genomes. Only genomes exported
                        through the ', 
                        Link(TextBlock('a',href='https://omabrowser.org/export', 'OMA Browser export')),
@@ -829,11 +832,11 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        genomes to be exported from the OMA Browser.'),
                        TT('0.5')),
                     Row(TT('CladeDefinition'),
-                       Paragraph(0, 'Path to tab-seperated file that provides a mapping
+                       Paragraph(0, 'Path to tab-separated file that provides a mapping
                        from the species names to the clade/group to which annotations
                        should at most be propagated. If set to ', TT('default'), ', the
                        algorithm infers a species tree an propages GO annotations to 
-                       user genomes only within some predefined clades. These predifined
+                       user genomes only within some predefined clades. These predefined
                        clades are ''Amphibia'', ''Archaea'', ''Arthropoda'', ''Bacteria'', 
                        ''Clupeocephala'', ''Dictyostelium'', ''Fungi'', ''Mammalia'', 
                        ''Nematoda'', ''Sauria'' and ''Viridiplantae''. If the parameter 
