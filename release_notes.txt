@@ -12,6 +12,8 @@ This is a bugfix release only.
 
 Bug Fixes
 ---------
+- bottom-up HOG output file contains species name in species tag
+
 - fixes url to retrieve GeneOntology definition
 
 - improve performance in reading input fasta files
