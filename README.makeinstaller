@@ -10,14 +10,7 @@ that includes:
 - an installer script to install OMA on some client machine
 
 
-As an alternative, one can place a oma.tgz tarball on some webserver,
-change the script 'webinstall' accordingly (check for filename and URL in
-script) and copy it to some webserver as well; users can then just fire up
-their terminal and copy this line (change URL... )
 
-curl -s -o webinstall http://localhost/webinstall && bash webinstall && rm webinstall
-
-to install the whole package on their machine. 'webinstall' will download the
-tarball, untar it, run the included installer script (with asking the
-user for the installation path) and deletes the tarball and the unpacked folder
-after installation.
+after running makeinstaller, you should also update the homebrew/linuxbrew 
+formula: This is done in the following way:
+brew bump-formula-pr --strict --url=https://omabrowser.org/standalone/OMA.2.3.1.tgz  --sha256=ad7e4e131de444f426576b1f4a0b276c8bcebc281e0fa1e7fb4172614b71da19 oma
