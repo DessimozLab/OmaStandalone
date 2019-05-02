@@ -1,0 +1,41 @@
+# This helper script extracts the OP.drw file from an ALF run and extracts
+# the Map-SeqNum-ID and PairwiseOrthologs information suitable for GETHOGs 
+# analysis. Written by Adrian for a project from Victor.
+#
+#                                 Adrian Altenhoff, May 2019
+
+fastas := [seq(trim(f), f=SplitLines(TimedCallSystem('ls DB/*_aa.fa')[2]))]:
+fastas := sort(fastas):
+genomes := [seq(g[4..8], g=fastas)]:
+
+ReadProgram('VP/OP.drw');
+assert(length(OP) = length(fastas));
+NG := length(fastas):
+
+ids := []:
+OpenWriting('Map-SeqNum-ID.txt'):
+Goff := CreateArray(1..NG+1):
+for i to NG do 
+    fasta := ReadFastaWithNames(fastas[i]);
+    ns := length(fasta[1]):
+    assert(ns = length(OP[i,i]));
+    Goff[i+1] := Goff[i] + ns;
+    for k to ns do 
+        printf('%s\t%d\t%s\n', genomes[i], k, fasta[2,k]);
+    od:
+    ids := append(ids, fasta[2]):
+od:
+OpenWriting(previous):
+
+CallSystem('mkdir -p PairwiseOrthologs');
+for X to NG do for Y from X+1 to NG do 
+    OpenWriting('PairwiseOrthologs/'.genomes[X].'-'.genomes[Y].'.txt');
+    printf('#Format: genome<tab>sequence number<tab>id');
+    for x1 to length(OP[X,Y]) do for y2 in OP[X,Y,x1] do
+        typ := If(length(OP[X,Y,x1])>1, 'n', '1') . ':' . If(length(OP[Y,X,y2])>1,'m','1');
+        printf('%d\t%d\t%s\t%s\t%s\t\n', x1, y2, ids[X, x1], ids[Y, y2], typ);
+    od od:
+    OpenWriting(previous);
+od od:
+
+
