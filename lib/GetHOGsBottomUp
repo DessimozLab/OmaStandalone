@@ -37,23 +37,24 @@ GetHOGsBottomUp := proc()
         string(round(100*MinEdgeCompletenessFraction)));
     if SpeciesTree='estimate' then
         # tree has already been computed and safed to EstimatedSpeciesTree.nwk
-        cmd := append(cmd, '-s', OutputFolder.'/EstimatedSpeciesTree.nwk');
-        dir := '':
+        treeFile := OutputFolder.'/EstimatedSpeciesTree.nwk';
     else
         if SpeciesTree='lineage' then
             speciesTree := LineageSpeciesTree():
-        else speciesTree := SpeciesTree fi:
-        dir := trim(TimedCallSystem('mktemp -d "${TMPDIR:-/tmp}/warthog.XXXXXXX"')[2]);
-        treeFile := dir.'/speciestree.nwk':
+            treeFile := OutputFolder.'/LineageSpeciesTree.nwk';
+        else
+            # there is a manually specified species tree. store it in output folder as well
+            speciesTree := speciesTree:
+            treeFile := OutputFolder.'/ManualSpeciesTree.nwk';
+        fi:
         OpenWriting(treeFile): prints(speciesTree); OpenWriting(previous);
-        cmd := append(cmd, '-s', treeFile);
     fi:
+    cmd := append(cmd, '-s', treeFile);
     cmd := ConcatStrings(cmd, ' '):
     if printlevel>1 then 
         printf('Command used to compute bottom-up HOGs:\n %s\n\n', cmd);
     fi:
     res := TimedCallSystem(cmd);
-    if dir<>'' then CallSystem('rm -rf '.dir) fi:
     if res[1]<>0 then 
         lprint(CreateString(80,'*'));
         lprint('An error occured in bottom-up HOG computations:');
