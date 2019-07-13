@@ -22,8 +22,8 @@
       Please cite:
 
       Altenhoff et al., "OMA standalone: orthology inference among public 
-      and custom genomes and transcriptomes", Genome Research, 2019, 
-      http://doi.org/10.1101/gr.243212.118
+      and custom genomes and transcriptomes". Genome Research, 2019, 
+      9: 1152-1163;  http://doi.org/10.1101/gr.243212.118
 
 
       If you use ESPRIT, please cite:
