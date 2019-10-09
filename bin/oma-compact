@@ -78,7 +78,7 @@ if __name__ == "__main__":
             OMA standalone can produce a very large number of files in the Cache
             directory. This script compacts the Cache as much as possible by
             combining files from the same genome pair computations. You can
-            savely run it even while OMA standalone is running.""")
+            safely run it even while OMA standalone processes are running.""")
     parser.add_argument('root', nargs="?", default="./",
                         help="Path to the root directory of the analysis containing "
                              "the Cache directory that should be " +
