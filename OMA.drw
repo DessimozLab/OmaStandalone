@@ -306,6 +306,11 @@ for g1 to NG do
                     CallSystem('rm -f '.fn.'.ckpt');
                 fi:
             else
+                if FileExists(fn.'.ckpt') then
+                    Logger(sprintf('Failed to load checkpoint file for %s/%s part %d of %d. No raw output. Redo chunk\n',
+                        name1, name2, part, nrChunks), mem=true);
+                    CallSystem('rm -f '.fn.'.ckpt');
+                fi:
                 res := []; skip_until := 0:
             fi:
 
