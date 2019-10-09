@@ -47,11 +47,26 @@ def _find_conversion_lock(root):
 
 def _find_unfinished_part_files(allall_dir):
     to_remove = []
-    pattern = re.compile(b'(.gz|.ckpt)$')
+    retain = {'gz', 'ckpt'}
     for directory, subdir, files in os.walk(allall_dir):
         if directory in ('.DS_Store',):
             continue
-        to_remove.extend([os.path.join(directory, fname) for fname in files if not pattern.search(fname)])
+        # Note: ensure that we retain files with a ckpt already!
+        files = set(files)
+        x = list(map(lambda x: os.path.join(directory, x),
+                     filter(lambda x: (x + '.ckpt') not in files,
+                            filter(lambda x: x.split('.')[-1] not in retain,
+                                   files))))
+        to_remove += x
+
+        # check for ckpt with no raw output
+        problem_files = list(map(lambda x: os.path.join(directory, x),
+                                 filter(lambda x: '.'.join(x.split('.')[:-1]) not in files,
+                                        filter(lambda x: x.endswith('ckpt'), files))))
+        to_remove += problem_files
+        if len(problem_files) > 0:
+            logger.warning('Unusual state - checkpoint files ({}) exist without output files!'.format(len(problem_files)))
+
     return to_remove
 
 
