@@ -6,6 +6,26 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.3.1 to 2.4.0
+======================================
+This release contains a few new features and bug fixes.
+
+New Features:
+-------------
+- Bottom-up algorithm is now the default algorithm for infering HOGs.
+  This variant is better and more scaleable as the original top-down
+  variant. The top-down can still be used by setting the
+  DoHierarchicalGroups parameter is set to 'top-down' in the parameters
+  file.
+
+
+Bug Fixes
+---------
+- fixes a problem in oma-cleanup that removes left ckpt files.
+
+- fixes various typos, improvements in documentation
+
+
 Summary of Changes from 2.3.0 to 2.3.1
 ======================================
 This is a bugfix release only.

@@ -69,7 +69,7 @@ _check_HOG_params := proc() global DoHierarchicalGroups;
     if type(DoHierarchicalGroups, boolean) then
         if DoHierarchicalGroups then 
             warning('(DEPRECATION) DoHierarchicalGroups should now be set to either ''top-down'' or ''bottom-up''.');
-            DoHierarchicalGroups := 'top-down';
+            DoHierarchicalGroups := 'bottom-up';
         fi:
     elif type(DoHierarchicalGroups, string) then
         DoHierarchicalGroups := lowercase(DoHierarchicalGroups);
