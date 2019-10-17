@@ -132,4 +132,37 @@ _check_group_function_params := proc()
     fi:
 end:
 
+
+_check_outgroups := proc()
+    global OutgroupSpecies;
+
+    # we don't care if species tree will not be estimated
+    if lowercase(SpeciesTree) <> 'estimate' then return() fi:
+
+    gset := {op(genomes)};
+    if OutgroupSpecies = 'none' then
+        if DoHierarchicalGroups <> false then
+            warning('Not specifying an outgroup species is strongly discouraged.' .
+                    'The HOG inference strongly depends on a correctly rooted '.
+                    'species tree. Please verify that the rooting of the estimated '.
+                    'species tree does makes sense.');
+        fi:
+    elif not type(OutgroupSpecies, {set, list}) then
+        error('invalid type of parameter ''OutgroupSpecies''. Should be a list of species names');
+    else
+        OutgroupSpecies := {op(OutgroupSpecies)};
+        if length(OutgroupSpecies) = 0 and not DoHierarchicalGroups = false then
+            error('You must specify a set of out-group species or explicitly deactivate it.');
+        fi:
+        wrong := minus(OutgroupSpecies, gset);
+        if length(wrong) > 0 then
+            error(sprintf('OutgroupSpecies contains species that are not in the '.
+                         'dataset:\n %A\n You need to fix this.', wrong));
+        fi:
+        if OutgroupSpecies = gset then
+            error('The out-group species set cannot contain all species of the dataset');
+        fi:
+    fi:
+end:
+
 end: # module

@@ -37,7 +37,7 @@
 #                         based on TreeMaker by Gaston H. Gonnet 
 #
 
-module external BuildSpeciesTree;
+module external BuildSpeciesTree, RerootWithOutgroups;
 local Averaging, N, ns, Als;
 
 AlignSum := proc( Entry1:posint, Entry2:posint,
@@ -248,5 +248,21 @@ printlevel := curPrintLevel;
 return( besttree ):
 end:
 
+
+RerootWithOutgroups := proc(t:Tree, outgroups:set(string))
+    if len(outgroups)=0 then return(t); fi:
+    correct_rooted := 0;
+    for cand in AllRootedTrees(t) do
+        if indets(cand[Left], string) = outgroups or
+           indets(cand[Right], string) = outgroups then
+            correct_rooted := cand;
+            break;
+        fi:
+    od:
+    if correct_rooted = 0 then
+        error('defined outgroup set does not form a monophyletic clade');
+    fi:
+    return(correct_rooted);
+end:
 
 end: #module

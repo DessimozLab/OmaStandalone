@@ -88,6 +88,7 @@ WriteProfileFromOGs := noeval(ReadLibrary(OrthologsLib.'WriteMatrix',WriteProfil
 WriteFastaGroups := noeval(ReadLibrary(OrthologsLib.'WriteFastaGroups', WriteFastaGroups));
 HierarchicalGroups := noeval(ReadLibrary(OrthologsLib.'HierarchicalGroups', HierarchicalGroups));
 BuildSpeciesTree := noeval(ReadLibrary(OrthologsLib.'TreeBuilding', BuildSpeciesTree));
+RerootWithOutgroups := noeval(ReadLibrary(OrthologsLib.'TreeBuilding', RerootWithOutgroups));
 
 GenerateStableIDs := noeval(ReadLibrary(OrthologsLib.'StableIdentifiers', GenerateStableIDs)):
 ParallelInfo := noeval(ReadLibrary(OrthologsLib.'Platforms', ParallelInfo));
