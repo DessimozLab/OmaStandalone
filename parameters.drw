@@ -151,7 +151,7 @@ SpeciesTree := 'estimate';
 OutgroupSpecies := [];
 # OutgroupSpecies := ['dog'];  # example with one out-group species
 # OutgroupSpecies := ['DROME', 'DROSA'];  # example with more than one species
-# OutgroupSpecies := 'none';  # use a midpoint rooting (strongly discouraged)
+# OutgroupSpecies := 'none';  # use midpoint rooting (strongly discouraged)
 
 
 # The cutoff in GETHOGs bottom-up algorithm to make an edge trusted in the 

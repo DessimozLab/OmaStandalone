@@ -13,7 +13,7 @@
 #
 # The Original Code is OMA standalone.
 #
-# The Initial Developer of the Original Code is CBRG Research Group; 
+# The Initial Developer of the Original Code is CBRG Research Group;
 # ETH Zurich; Switzerland.
 # Portions created by the Initial Developer are Copyright (C) 2005-2013
 # the Initial Developer. All Rights Reserved.
@@ -36,12 +36,13 @@ ValidateParameters := proc()
     _check_quasi_clique_cutoff();
     _check_HOG_params();
     _check_group_function_params();
+    _check_outgroups();
 end:
 
 _check_species_tree_param := proc()
     if lowercase(SpeciesTree)='estimate' then return();
     elif lowercase(SpeciesTree)='lineage' then
-        for g in genomes do if GS[g,Lineage]=['Unknown'] then 
+        for g in genomes do if GS[g,Lineage]=['Unknown'] then
             error('SpeciesTree cannot be "lineage" if lineage is not known for '.g);
         fi od:
     else
@@ -51,9 +52,9 @@ _check_species_tree_param := proc()
         fi:
         leaves := {seq(z['Label'], z=indets(t, Leaf))}:
         gset := {op(genomes)}:
-        if leaves<>gset then 
+        if leaves<>gset then
            error(sprintf('SpeciesTree does not contain the same leaves as species:\n'.
-                         'Differences: %A <--> %A', minus(leaves, gset), 
+                         'Differences: %A <--> %A', minus(leaves, gset),
                          minus(gset, leaves)));
         fi:
     fi:
@@ -67,7 +68,7 @@ end:
 
 _check_HOG_params := proc() global DoHierarchicalGroups;
     if type(DoHierarchicalGroups, boolean) then
-        if DoHierarchicalGroups then 
+        if DoHierarchicalGroups then
             warning('(DEPRECATION) DoHierarchicalGroups should now be set to either ''top-down'' or ''bottom-up''.');
             DoHierarchicalGroups := 'bottom-up';
         fi:
@@ -76,7 +77,7 @@ _check_HOG_params := proc() global DoHierarchicalGroups;
         if DoHierarchicalGroups = 'false' then
             warning('You should use "DoHierarchicalGroups := false;" (without quotes around false).');
             DoHierarchicalGroups := false;
-        elif not member(DoHierarchicalGroups, {'top-down','bottom-up'}) then 
+        elif not member(DoHierarchicalGroups, {'top-down','bottom-up'}) then
             error(sprintf('DoHierarchicalGroups should be ''top-down'' or ''bottom-up'', not ''%s''.', DoHierarchicalGroups)):
         fi:
     else
@@ -94,7 +95,7 @@ _check_HOG_params := proc() global DoHierarchicalGroups;
         OpenWriting(previous):
         res := TimedCallSystem('python '.fn);
         CallSystem('rm -rf '.tmp):
-        if res[1]<>0 then 
+        if res[1]<>0 then
            printf('\n\n%s\n', CreateString(80,'*'));
            prints(res[2]);
            error(SplitLines(res[2])[1]);
@@ -104,10 +105,10 @@ end:
 
 _check_group_function_params := proc()
     global GroupFunctionCutoff, CladeDefinition;
-    
+
     if not assigned(GroupFunctionCutoff) then
         # check that it is not under the old name
-        if type(GroupFunctionPredictionCutOff, numeric) then 
+        if type(GroupFunctionPredictionCutOff, numeric) then
             warning('Parameter ''GroupFunctionPredictionCutOff'' has been renamed to ''GroupFunctionCutoff''. Please update parameter file accordingly');
             error('invalid parameter name');
         else

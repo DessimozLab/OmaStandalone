@@ -8,7 +8,7 @@ for dir in $INSTPATH ~ ~/Repositories; do
 done
 
 if [ ! -f "$dir/$WARTHOG" ] ; then 
-    (>2& echo "cannot fine GETHOGs Bottom-Up")
+    (>2& echo "cannot find GETHOGs Bottom-Up")
     exit 1
 fi
 
