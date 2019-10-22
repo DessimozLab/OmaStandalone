@@ -61,6 +61,11 @@ cp -rf $current_dir/lib $omadir/
 cp -rf $current_dir/darwinlib $omadir/
 cp -rf $current_dir/hog_bottom_up $omadir/
 
+echo "creating virtualenv for hog_bottom_up"
+if ! $current_dir/bin/create_warthog_venv.sh $omadir/.venv $omadir/hog_bottom_up/requirements.txt ; then
+   exit 1
+fi
+
 echo "installing package data..."
 mkdir -p $data_dir
 [ -d $current_dir/data ] && cp -r $current_dir/data/ $data_dir

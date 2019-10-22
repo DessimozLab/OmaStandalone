@@ -8,12 +8,17 @@ for dir in $INSTPATH ~ ~/Repositories; do
 done
 
 if [ ! -f "$dir/$WARTHOG" ] ; then 
-    (>2& echo "cannot find GETHOGs Bottom-Up")
+    (>&2 echo "cannot find GETHOGs Bottom-Up")
     exit 1
 fi
 
 if [ "$dir" != "$INSTPATH" ] ; then 
     (>&2 echo "using GETHOGs Bottom-up from dev location \"$dir\". ")
+else
+    if [ ! -d "$INSTPATH/.venv" ] ; then
+        "$INSTPATH/bin/create_warthog_venv.sh" "$INSTPATH/.venv" "$INSTPATH/hog_bootom_up/requirements.txt"
+    fi
+    source "$INSTPATH/.venv/bin/activate"
 fi
 exec python $dir/$WARTHOG $@
 
