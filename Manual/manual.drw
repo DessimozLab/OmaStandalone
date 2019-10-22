@@ -775,18 +775,10 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        Paragraph(0, 'Enables/disables and selects the algorithm to compute the 
                        hierarchical orthologous groups (HOGs). Valid parameters are ',TT('false'),', ', 
                        TT('''top-down'''),' and ', TT('''bottom-up'''), '. The top-down approach was the 
-                       only algorithm until OMA standalone 2.0. The bottom-up approach is as of now still
-                       an experimental feature, but will become the default choice in the future.'), 
-                       TT('''top-down''')),
-                    Row(TT('MaxTimePerLevel'),
-                       Paragraph(0, 'Define maximum amount of time (in sec) spent by 
-                       the program for breaking every connected component of the 
-                       orthology graph at its weakest link on a given taxonomic level. 
-                       If set to a negative value, no time limit is enforced. Once the 
-                       time limit is reached, OMA will treat the remaining connected 
-                       component at the lower level (groups won''t span over the deeper 
-                       node).'),
-                       TT('1200')),
+                       only algorithm until OMA standalone 2.0. ', Bold('Note: '), 'Since version 2.4.0, 
+                       the default approach to infer is now the bottom-up approach. But existing parameter 
+                       files will not be changed automatically.'),
+                       TT('''bottom-up''')),
                     Row(TT('SpeciesTree'),
                        Paragraph(0, 'The hierarchical groups require a (partially)
                        resolved species phylogeny. With the parameter ',
@@ -795,6 +787,21 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        to "estimate", compute a species tree based on the OMA 
                        Groups and use this one.'), 
                        TT('estimate')),
+                    Row(TT('OutgroupSpecies'),
+                       Paragraph(0, 'A list of species names that are out-group species. The out-group
+                       species are used to properly root the estimated species tree. Since HOG inference
+                       highly depends on a correctly rooted species tree, we do not provide working 
+                       default value. You ', Bold('must set this parameter explicitly'), ' either to 
+                       the set of out-group species names, or alternatively, to ''none'', in which case 
+                       a mid-point root will be selected. Note that this rooting is likely to be wrong,
+                       so we strongly discourage this setting.'),
+                       TT('[]')),
+                    Row(TT('MinEdgeCompletenessFraction'),
+                       Paragraph(0,'The cutoff in GETHOGs bottom-up algorithm to make an 
+                       edge trusted in the orthology graph among HOGs. This parameter applies 
+                       only to the bottom-up approach. See parameter ',TT('DoHierarchicalGroups'),
+                       ' for additional information.'), 
+                       TT('0.80')),
                     Row(TT('ReachabilityCutoff'),
                        Paragraph(0,'The cutoff of "average reachability within 
                        two steps" defines up to what point a cluster is split 
@@ -805,12 +812,17 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        approach. See parameter ',TT('DoHierarchicalGroups'),' for 
                        additional information.'), 
                        TT('0.65')),
-                    Row(TT('MinEdgeCompletenessFraction'),
-                       Paragraph(0,'The cutoff in GETHOGs bottom-up algorithm to make an 
-                       edge trusted in the orthology graph among HOGs. This parameter applies 
-                       only to the bottom-up approach. See parameter ',TT('DoHierarchicalGroups'),
-                       ' for additional information.'), 
-                       TT('0.80')),
+                    Row(TT('MaxTimePerLevel'),
+                       Paragraph(0, 'Define maximum amount of time (in sec) spent by 
+                       the program for breaking every connected component of the 
+                       orthology graph at its weakest link on a given taxonomic level. 
+                       If set to a negative value, no time limit is enforced. Once the 
+                       time limit is reached, OMA will treat the remaining connected 
+                       component at the lower level (groups won''t span over the deeper 
+                       node). This paraaameter applies only to the top-down HOG inference 
+                       approach. See parameter ',TT('DoHierarchcialGroups'), ' for 
+                       additional information.'),
+                       TT('1200')),
                     Row(TT('DoGroupFunctionPrediction'),
                        Paragraph(0, 'Compute Gene Ontology function predictions 
                        based on the OMA Groups assignments. The predictions are
