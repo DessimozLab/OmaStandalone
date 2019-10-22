@@ -435,14 +435,6 @@ for i to NG do
     ns[i] := length(t);
     Lengths[i] := t
 od:
-
-best_match_milestone := 'Cache/bestmatches_milestone.drw':
-if FileExists(best_match_milestone) then
-    Logger('loading best matches from cache...');
-    ReadProgram(best_match_milestone):
-    Logger('... done');
-else
-
 t1 := Counter('RefinedMatches structures read'):
 t2 := Counter('Matches read'):
 t3 := Counter('files read'):
@@ -501,10 +493,6 @@ for i to NG do for j from i to NG do
     printf( '# %s vs %s done, (%d/%d)\n', genomes[g1],genomes[g2],
         sij, sji );
 od od:
-    OpenWriting(best_match_milestone):
-    printf('BestMatch := %A:\n', BestMatch);
-    OpenWriting(previous):
-fi:
 printf('# Matches loaded. Mem: %.3fGB\n', Set(BytesAlloc)/2^30);
 
 

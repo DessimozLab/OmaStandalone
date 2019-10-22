@@ -67,7 +67,7 @@ VerifiedPairTol := 1.53;
 
 # SkipVerification is a flag to disable the Verification step entirely. 
 # Uncomment to activate.
-# SkipVerification := true;
+SkipVerification := true;
 
 # Any sequence which is less than MinSeqLen amino acids long in regular 
 # genomes is not considered.

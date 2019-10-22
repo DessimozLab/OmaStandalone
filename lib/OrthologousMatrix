@@ -629,11 +629,12 @@ VPairs := ConsistentPairs: ConsistentPairs := 0;
  end:
 
 # find the cliques of Verified Pairs which become the Orthologous groups
-Orthologous := []:
+Orthologous := timings := []:
 Used := CreateArray(1..NG):
 for i to NG do Used[i] := CreateArray(1..ns[i],false) od:
 
 do
+  tt00 := time():
   VerifiedPairs := [];
   ls := 0;
   for X to NG do for Y from X+1 to NG do
@@ -642,8 +643,8 @@ do
             y2 := a1[Entry];
             if not Used[Y,y2] and member(y2,decompress(VPairs[X,Y,x1])) then
                 VerifiedPairs := append( VerifiedPairs, [a1[Score100],X,x1,Y,y2] );
-                if length(VerifiedPairs) > 15000 then
-                    VerifiedPairs := sort(VerifiedPairs)[-10000..-1];
+                if length(VerifiedPairs) > 35000 then
+                    VerifiedPairs := sort(VerifiedPairs)[-30000..-1];
                     ls := VerifiedPairs[1,1];
                     lprint('shrinking VerifiedPairs',X,Y,ls);
                     fi
@@ -651,13 +652,15 @@ do
             fi od
         fi od
     od od:
+printf('Selecting maximum weight edges took %.2fs\n', time()-tt00);
   if length(VerifiedPairs)=0 then break fi;
   printf( 'Iteration with %d Verified pairs, %d in Orthologous\n',
         length(VerifiedPairs), length(Orthologous) );
 
   VerifiedPairs := sort(VerifiedPairs):
+Set(profile=true):
   for iz from length(VerifiedPairs) by -1 to 1 do
-
+tt0 := time():
     z := VerifiedPairs[iz];
     g1 := z[2];  i1 := z[3];  g2 := z[4];  i2 := z[5];
     if Used[g1,i1] or Used[g2,i2] then next fi;
@@ -665,6 +668,8 @@ do
        not member(i1,decompress(VPairs[g2,g1,i2])) then
         error(z,decompress(VPairs[g1,g2,i1]),decompress(VPairs[g2,g1,i2]),
 	    'should not happen') fi;
+tt1 := time();
+if tt1-tt0 > 1e-3 then printf(' get seed took: %.4f\n', tt1-tt0); fi:
 
     # the nodes of the graph are pairs of [genome,entry]
     cli := [ [g1,i1], [g2,i2] ];
@@ -673,28 +678,66 @@ do
                 w = decompress(VPairs[g1,g3,i1]) intersect
 		    decompress(VPairs[g2,g3,i2]) ) )
         fi od;
+tt2 := time();
+if tt2-tt1 > 1e-3 then printf(' vpairs-cli-tot: %.4f\n', tt2-tt1); fi:
 
+reduced_graph_size := false;
+do 
     # Make graph to find cliques
     edg := []:
-    for j1 to length(cli) do for j2 from j1+1 to length(cli) do
+    for j1 to length(cli) do for j2 from j1+1 to length(cli) do 
         g1 := cli[j1,1];  i1 := cli[j1,2];
         g2 := cli[j2,1];  i2 := cli[j2,2];
         if g1=g2 then next fi;
         if member(i2,decompress(VPairs[g1,g2,i1])) then
 	    edg := append(edg,{j1,j2}) fi
     od od;
+tt4 := time();
+if tt4-tt2 > 1e-2 then printf(' edg-cli-tot: %.4fs for %d nodes, %d edges\n', tt4- tt2, length(cli), length(edg)); fi;
 
     edg := [op({op(edg)})];
+if length(edg) < 1e6 or reduced_graph_size then break;
+else
+# compute scores per of cli nodes with seed nodes and keep only top 10
+MAX_NEIGH_PER_GENOME := 10;
+EnterProfile('extract_subgraph_nodes');
+per_g := CreateArray(1..NG, []);
+for c from 3 to length(cli) do 
+    s := EdgeCost({1,c}) + EdgeCost({2,c});
+    per_g[cli[c,1]] := append(per_g[cli[c,1]], [s,c]);
+od:
+ExitProfile('extract_subgraph_nodes');
+EnterProfile('extract_subgraph');
+keep := []:
+for g to NG do
+    s_neigh := sort(per_g[g], x->-x[1]):
+    s_neigh := s_neigh[1..min(length(s_neigh), MAX_NEIGH_PER_GENOME)];
+    keep := append(keep, seq(z[2], z=s_neigh));
+od:
+cli := [cli[1], cli[2], seq(cli[z], z=keep)];
+ExitProfile('extract_subgraph');
+reduced_graph_size := true:
+fi:
+
+od:
+
+
     if length(edg) <> length(cli)*(length(cli)-1)/2 then
         # printf( '|n|=%d, |e|=%d, max wei=%.2f\n', length(cli), length(edg),
         #    z[1]/100 );
+        EnterProfile('graph_for_clique');
         G :=  Graph( Edges( seq( Edge(EdgeCost(z),z[1],z[2]), z=edg )));
+        ExitProfile('graph_for_clique');
+
         OpenWriting('lastgraph.drw'): printf('G := %A:\n', G); OpenWriting(previous);
+        EnterProfile('compute_clique');
         CliqueIterFactor := min( 1, (140/length(G[Nodes]))^2.5 );
         cli1 := MaxEdgeWeightClique( G );
-        cli := [seq( cli[i], i=cli1)]
+        cli := [seq( cli[i], i=cli1)];
+        ExitProfile('compute_clique');
     fi;
-
+tt5 := time():
+if tt5-tt4 > 10 then printf(' cli took: %.4f for G(|%d|,|%d|)\n', tt5-tt4, length(G['Nodes']), length(edg)); fi:
     if length(cli) < 2 then next fi;
 
     row := CreateArray(1..NG);
@@ -703,7 +746,11 @@ do
         Used[z[1],z[2]] := true;
         od;
     Orthologous := append(Orthologous,row):
-    od
+tt6 := time():
+if tt6-tt0 > 10 then printf('whole iter took: %.4f\n', tt6-tt0); fi:
+    timings := append(timings, tt6-tt0);
+    od:
+Set(profile=false):
   od:
 
 # Triangle analysis has been removed be the Adrians while
