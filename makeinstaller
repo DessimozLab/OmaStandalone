@@ -87,7 +87,7 @@ mkdir -p $instpath/DB
 mkdir -p $instpath/data
 
 # clone darwin repo, stripe .git folder and copy lib to $instpath
-git clone --depth 1 git@cbrg-git.ethz.ch:darwin
+git clone --depth 1 ssh://gitolite@lab.dessimoz.org:2222/darwin
 rm -rf darwin/lib/.git
 mv darwin/lib $instpath/darwinlib
 rm -rf darwin
