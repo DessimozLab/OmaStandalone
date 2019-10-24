@@ -28,7 +28,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
-module external GetHOGsBottomUp;
+module external GetHOGsBottomUp, FindWarthogs;
 
 GetHOGsBottomUp := proc()
     cmd := [FindWarthogs()]:

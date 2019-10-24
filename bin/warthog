@@ -16,7 +16,7 @@ if [ "$dir" != "$INSTPATH" ] ; then
     (>&2 echo "using GETHOGs Bottom-up from dev location \"$dir\". ")
 else
     if [ ! -d "$INSTPATH/.venv" ] ; then
-        "$INSTPATH/bin/create_warthog_venv.sh" "$INSTPATH/.venv" "$INSTPATH/hog_bootom_up/requirements.txt"
+        "$INSTPATH/bin/create_warthog_venv.sh" "$INSTPATH/.venv" "$INSTPATH/hog_bottom_up/requirements.txt"
     fi
     source "$INSTPATH/.venv/bin/activate"
 fi

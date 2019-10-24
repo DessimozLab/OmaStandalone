@@ -85,20 +85,21 @@ _check_HOG_params := proc() global DoHierarchicalGroups;
     fi:
     if DoHierarchicalGroups='bottom-up' then
         # check that the necessary python packages are installed
-        tmp := trim(TimedCallSystem('mktemp -d "${TMPDIR:-/tmp}/warthog.XXXXXXX"')[2]):
-        fn := tmp.'/check_packages.py':
-        OpenWriting(fn);
-        printf('import sys\ntry:\n import Bio.Phylo\n import lxml.etree\n import numpy\n');
-        printf('except ImportError:\n print("Bottom-up HOGs require lxml, numpy and Biopython to be installed.")\n');
-        printf(' print("Use e.g. \\"pip install biopython numpy lxml\\" or activate an appropriate")\n');
-        printf(' print("virtualenv before starting OMA standalone.")\n sys.exit(1)');
-        OpenWriting(previous):
-        res := TimedCallSystem('python '.fn);
-        CallSystem('rm -rf '.tmp):
-        if res[1]<>0 then
-           printf('\n\n%s\n', CreateString(80,'*'));
-           prints(res[2]);
-           error(SplitLines(res[2])[1]);
+        msg := '':
+        warthog := traperror(FindWarthogs());
+        if warthog = lasterror then
+            msg := lasterror;
+        else
+            cmd := [warthog, '-h', '2>&1'];
+            res := TimedCallSystem(ConcatStrings(cmd, ' '));
+            if res[1] <> 0 then
+                msg := sprintf('Cannot load GETHOG bottom-up library properly:\n%s', res[2]);
+            fi:
+        fi:
+        if msg<>'' then
+            printf('\n\n%s\n', CreateString(80, '*'));
+            prints(msg);
+            error(SplitLines(msg)[1]);
         fi:
     fi:
 end:

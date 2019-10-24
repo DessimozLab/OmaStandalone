@@ -94,3 +94,4 @@ GenerateStableIDs := noeval(ReadLibrary(OrthologsLib.'StableIdentifiers', Genera
 ParallelInfo := noeval(ReadLibrary(OrthologsLib.'Platforms', ParallelInfo));
 DetectParallelInfo := noeval(ReadLibrary(OrthologsLib.'Platforms', DetectParallelInfo));
 GetHOGsBottomUp := noeval(ReadLibrary(OrthologsLib.'GetHOGsBottomUp', GetHOGsBottomUp));
+FindWarthogs := noeval(ReadLibrary(OrthologsLib.'GetHOGsBottomUp', FindWarthogs));
