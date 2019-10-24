@@ -642,8 +642,8 @@ do
             y2 := a1[Entry];
             if not Used[Y,y2] and member(y2,decompress(VPairs[X,Y,x1])) then
                 VerifiedPairs := append( VerifiedPairs, [a1[Score100],X,x1,Y,y2] );
-                if length(VerifiedPairs) > 15000 then
-                    VerifiedPairs := sort(VerifiedPairs)[-10000..-1];
+                if length(VerifiedPairs) > 35000 then
+                    VerifiedPairs := sort(VerifiedPairs)[-30000..-1];
                     ls := VerifiedPairs[1,1];
                     lprint('shrinking VerifiedPairs',X,Y,ls);
                     fi
@@ -657,7 +657,6 @@ do
 
   VerifiedPairs := sort(VerifiedPairs):
   for iz from length(VerifiedPairs) by -1 to 1 do
-
     z := VerifiedPairs[iz];
     g1 := z[2];  i1 := z[3];  g2 := z[4];  i2 := z[5];
     if Used[g1,i1] or Used[g2,i2] then next fi;
@@ -674,42 +673,69 @@ do
 		    decompress(VPairs[g2,g3,i2]) ) )
         fi od;
 
-    # Make graph to find cliques
-    edg := []:
-    for j1 to length(cli) do for j2 from j1+1 to length(cli) do
-        g1 := cli[j1,1];  i1 := cli[j1,2];
-        g2 := cli[j2,1];  i2 := cli[j2,2];
-        if g1=g2 then next fi;
-        if member(i2,decompress(VPairs[g1,g2,i1])) then
-	    edg := append(edg,{j1,j2}) fi
-    od od;
+    # cli contains the nodes of the subgraph induced by the highest scoring 
+    # edge with unused nodes and all the nodes that have a VP to both start nodes.
+    # This graph can become quite big, so if we exceed a certain number of edges
+    # we limit the number of potential nodes per genome. 
+    reduced_graph_size := false;
+    do 
+        # Make graph to find cliques
+        edg := []:
+        for j1 to length(cli) do for j2 from j1+1 to length(cli) do 
+            g1 := cli[j1,1];  i1 := cli[j1,2];
+            g2 := cli[j2,1];  i2 := cli[j2,2];
+            if g1=g2 then next fi;
+            if member(i2,decompress(VPairs[g1,g2,i1])) then
+    	    edg := append(edg,{j1,j2}) fi
+        od od;
+    
+        edg := [op({op(edg)})];
+        if length(edg) < 1e6 or reduced_graph_size then break;
+        else
+            # compute scores per of cli nodes with seed nodes and keep only top 10
+            MAX_NEIGH_PER_GENOME := 10;
+            per_g := CreateArray(1..NG, []);
+            for c from 3 to length(cli) do 
+                s := EdgeCost({1,c}) + EdgeCost({2,c});
+                per_g[cli[c,1]] := append(per_g[cli[c,1]], [s,c]);
+            od:
+            keep := []:
+            for g to NG do
+                s_neigh := sort(per_g[g], x->-x[1]):
+                s_neigh := s_neigh[1..min(length(s_neigh), MAX_NEIGH_PER_GENOME)];
+                keep := append(keep, seq(z[2], z=s_neigh));
+            od:
+            cli := [cli[1], cli[2], seq(cli[z], z=keep)];
+            reduced_graph_size := true:
+        fi:
+    od:
 
-    edg := [op({op(edg)})];
+
     if length(edg) <> length(cli)*(length(cli)-1)/2 then
         # printf( '|n|=%d, |e|=%d, max wei=%.2f\n', length(cli), length(edg),
         #    z[1]/100 );
+        tt1 := time():
         G :=  Graph( Edges( seq( Edge(EdgeCost(z),z[1],z[2]), z=edg )));
-        OpenWriting('lastgraph.drw'): printf('G := %A:\n', G); OpenWriting(previous);
+
         CliqueIterFactor := min( 1, (140/length(G[Nodes]))^2.5 );
         cli1 := MaxEdgeWeightClique( G );
-        cli := [seq( cli[i], i=cli1)]
+        cli := [seq( cli[i], i=cli1)];
+        tt2 := time():
+        if printlevel > 2 and tt2-tt1 > 5 then 
+            printf(' *heavy computation - extracting clique of size %d from G(|%d|,|%d|) took %.2f sec\n',
+                   length(cli), length(G['Nodes']), length(edg), tt2-tt1);
+        fi:
     fi;
-
     if length(cli) < 2 then next fi;
 
     row := CreateArray(1..NG);
     for z in cli do
         row[z[1]] := z[2];
         Used[z[1],z[2]] := true;
-        od;
+    od;
     Orthologous := append(Orthologous,row):
-    od
   od:
-
-# Triangle analysis has been removed be the Adrians while
-# updating Pairs data structure. 
-# If still needed, it has to be recovered from p4 and
-# adjusted to the new factors in the Pair structure.
+od:
 
 histog := CreateArray(1..NG);
 for z in Orthologous do
