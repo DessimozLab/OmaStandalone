@@ -18,6 +18,8 @@ New Features:
   DoHierarchicalGroups parameter is set to 'top-down' in the parameters
   file.
 
+- Various performance improvements
+
 
 Bug Fixes
 ---------
