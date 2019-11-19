@@ -632,6 +632,7 @@ VPairs := ConsistentPairs: ConsistentPairs := 0;
 Orthologous := []:
 Used := CreateArray(1..NG):
 for i to NG do Used[i] := CreateArray(1..ns[i],false) od:
+MAX_NEIGH_PER_GENOME := 10;
 
 do
   VerifiedPairs := [];
@@ -668,48 +669,38 @@ do
     # the nodes of the graph are pairs of [genome,entry]
     cli := [ [g1,i1], [g2,i2] ];
     for g3 to NG do if g3 <> g1 and g3 <> g2 then
+        len0 := length(cli):
         cli := append( cli, seq( If(Used[g3,w],NULL,[g3,w]),
                 w = decompress(VPairs[g1,g3,i1]) intersect
-		    decompress(VPairs[g2,g3,i2]) ) )
-        fi od;
-
-    # cli contains the nodes of the subgraph induced by the highest scoring 
-    # edge with unused nodes and all the nodes that have a VP to both start nodes.
-    # This graph can become quite big, so if we exceed a certain number of edges
-    # we limit the number of potential nodes per genome. 
-    reduced_graph_size := false;
-    do 
-        # Make graph to find cliques
-        edg := []:
-        for j1 to length(cli) do for j2 from j1+1 to length(cli) do 
-            g1 := cli[j1,1];  i1 := cli[j1,2];
-            g2 := cli[j2,1];  i2 := cli[j2,2];
-            if g1=g2 then next fi;
-            if member(i2,decompress(VPairs[g1,g2,i1])) then
-    	    edg := append(edg,{j1,j2}) fi
-        od od;
-    
-        edg := [op({op(edg)})];
-        if length(edg) < 1e6 or reduced_graph_size then break;
-        else
-            # compute scores per of cli nodes with seed nodes and keep only top 10
-            MAX_NEIGH_PER_GENOME := 10;
-            per_g := CreateArray(1..NG, []);
-            for c from 3 to length(cli) do 
-                s := EdgeCost({1,c}) + EdgeCost({2,c});
-                per_g[cli[c,1]] := append(per_g[cli[c,1]], [s,c]);
-            od:
-            keep := []:
-            for g to NG do
-                s_neigh := sort(per_g[g], x->-x[1]):
-                s_neigh := s_neigh[1..min(length(s_neigh), MAX_NEIGH_PER_GENOME)];
-                keep := append(keep, seq(z[2], z=s_neigh));
-            od:
-            cli := [cli[1], cli[2], seq(cli[z], z=keep)];
-            reduced_graph_size := true:
+		    decompress(VPairs[g2,g3,i2]) ) );
+        if length(cli) - len0 > MAX_NEIGH_PER_GENOME then
+            rng := len0+1 .. length(cli);
+            costs := [seq(EdgeCost({1,c}) + EdgeCost({2,c}), c=rng)];
+            sorted := sort( [seq(k, k=1..length(costs))], x->-costs[x] );
+            keep := sorted[1..MAX_NEIGH_PER_GENOME] + CreateArray(1..MAX_NEIGH_PER_GENOME, rng[1]-1);
+            if printlevel >= 3 then 
+                printf('  many vps to genome %s induced by %s%d/%s%d: max score: %.2f; cutoff: %.2f; min: %.2f [total %d]\n',
+                       genomes[g3], genomes[g1],i1, genomes[g2], i2, costs[sorted[1]], costs[sorted[MAX_NEIGH_PER_GENOME]], costs[sorted[-1]], length(costs))
+            fi:
+            cli := [op(cli[1..len0]), seq(cli[k], k=keep)]
         fi:
-    od:
+    fi od;
 
+    # Make graph to find cliques
+    edg := []: tt1 := time():
+    for j1 to length(cli) do for j2 from j1+1 to length(cli) do 
+        g1 := cli[j1,1];  i1 := cli[j1,2];
+        g2 := cli[j2,1];  i2 := cli[j2,2];
+        if g1=g2 then next fi;
+        if member(i2,decompress(VPairs[g1,g2,i1])) then
+           edg := append(edg,{j1,j2}) fi
+    od od;
+    tt2 := time():
+    if printlevel>2 and tt2-tt1 > 5 then
+        printf(' *heavy computation - extracting edges took very long for G(|%d|,|%d|): %.2f sec\n',
+               length(cli), length(edg), tt2 - tt1);
+    fi:
+    edg := [op({op(edg)})];
 
     if length(edg) <> length(cli)*(length(cli)-1)/2 then
         # printf( '|n|=%d, |e|=%d, max wei=%.2f\n', length(cli), length(edg),
