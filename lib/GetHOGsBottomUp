@@ -44,7 +44,7 @@ GetHOGsBottomUp := proc()
             treeFile := OutputFolder.'/LineageSpeciesTree.nwk';
         else
             # there is a manually specified species tree. store it in output folder as well
-            speciesTree := speciesTree:
+            speciesTree := SpeciesTree:
             treeFile := OutputFolder.'/ManualSpeciesTree.nwk';
         fi:
         OpenWriting(treeFile): prints(speciesTree); OpenWriting(previous);
