@@ -271,7 +271,8 @@ mkdir DB
 cp /home/you/fasta/yourFirstGenomeFile.fa DB/
 cp /home/you/fasta/yourSecondGenomeFile.fa DB/
 cp /home/you/fasta/yourContigFile.contig.fa DB/
-cp /your/install/prefix/OMA/'.folderName.'/parameters.drw ./
+# generate default parameter file
+OMA -p
 # adjust parameters
 vim parameters.drw
 # run OMA
@@ -280,7 +281,16 @@ OMA')),
         Paragraph(0, 'To get a first impression of ', TT('OMA'), ' you 
         could ', TT('cd'), ' into the ', TT('ToyExample'), ' directory, 
         have a look at ', TT('parameters.drw'), ' and run ', TT('OMA'),
-        ' to process our example files.'),
+        ' to process our tiny example files.'),
+
+        Paragraph(0, 'Most default parameters have sensible default values. One 
+        important exception is the ', TT('OutgroupSpecies'), ' parameter (added 
+        in OMA standalone release 2.4.0), which needs to be set by the user if 
+        you do want to infer Hierarchical Orthologous Groups (HOGs) and also 
+        the species tree (parameter ', TT('SpeciesTree'), ' set to ', 
+        TT('estimate'), '). Analyses of HOGs are very sensitive to 
+        errors in the species tree rooting, which motivated us to deliberately 
+        not provide a default value for this parameter.'),
 
         Anchor(TextBlock('a', name='commandlineoptions', 
             SectionHeader(2, 'Command-line options'))),
@@ -433,8 +443,8 @@ EOF')
         Link(TextBlock('a', href='https://omabrowser.org/export', 'https://omabrowser.org/export')), 
         ' and select the genomes you
         wish to include in your omastandalone run. The resulting compressed tar file
-        but be uncompressed in the root directory of your analysis. Then simply run
-        omastandalone as normal.'),
+        should be downloaded and uncompressed in the root directory of your analysis. 
+        Then simply run omastandalone as normal.'),
  
         Anchor(TextBlock('a', name='advanced optimisations', 
             SectionHeader(2, 'Advanced usages of OMA standalone'))
@@ -738,10 +748,10 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                         Paragraph(0, 'Tolerance parameter for the detection of 
                         differential gene losses using a third genome. The larger 
                         the tolerance, the liberaler the algorithm assigns 
-                        orthologous relations. A detailed description is provided ',
+                        orthologous relations. A detailed description is provided in ',
                         Link(TextBlock('a', 
-                           href='http://nar.oxfordjournals.org/content/34/11/3309.full', 
-                           'here.'))),
+                           href='https://doi.org/10.1093/nar/gkl433', 
+                           'https://doi.org/10.1093/nar/gkl433')), '.'),
                         TT('1.53')),
                     Row(TT('MinSeqLen'),
                         Paragraph(0, 'Any sequence which is less than ',
@@ -857,7 +867,7 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        TT('default'))
                     ),
 
-                Table( hastitlerow, ColAlign('l', 'p{9cm}', 'p{2cm}'),
+                Table( hastitlerow, ColAlign('l', 'p{8cm}', 'p{2cm}'),
                     title = 'Table 4: Output file parameters',
                     Row(Bold('Parameter'), Bold('Meaning'), Bold('Default')),
                     Rule,
@@ -1164,6 +1174,7 @@ OpenWriting('Manual/manual.tex'):
     prints( LaTeXC(DocEl('usepackage', 'hyperref') ) ):
     prints( LaTeXC(DocEl('usepackage', 'longtable') ) ):
     prints( LaTeXC(DocEl('usepackage', 'graphicx') ) ):
+    prints( LaTeXC(DocEl('usepackage', 'afterpage') ) ):
     prints( LaTeXC(DocEl('hypersetup', 'colorlinks,
 citecolor=blue,
 filecolor=blue,
@@ -1188,6 +1199,7 @@ urlcolor=blue') ) ):
         op(applications),
         op(formats),
         op(parameters),
+        DocEl('afterpage', 'clearpage'),
         op(esprit),
         op(gettinghelp),
         op(license)
