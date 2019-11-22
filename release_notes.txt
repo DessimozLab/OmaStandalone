@@ -27,6 +27,9 @@ Bug Fixes
 
 - fixes various typos, improvements in documentation
 
+- bottom_up procedure for HOGs keep the file of the exact used species tree
+  for all possible parameters for `SpeciesTree` parameter.
+
 
 Summary of Changes from 2.3.0 to 2.3.1
 ======================================
