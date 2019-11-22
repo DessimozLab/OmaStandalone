@@ -19,7 +19,7 @@ InputDataType := 'AA';
 # Output folder
 OutputFolder := 'Output';
 
-# if you want to recompute everything from scratch everytime the script
+# if you want to recompute everything from scratch every time the script
 # is run, set the following parameter to false.
 ReuseCachedResults := true;
 
@@ -33,7 +33,7 @@ AlignBatchSize := 1e6;
 # The scores are in Gonnet PAM matrices units.
 MinScore := 181;
 
-# Length tolerance ratio.  If the length of the effective alignement is less 
+# Length tolerance ratio.  If the length of the effective alignment is less 
 # than LengthTol*min(length(s1),length(s2)) then the alignment is not 
 # considered.
 LengthTol := 0.61;
@@ -64,6 +64,12 @@ ParalogTol := -2.5*StablePairTol;
 # For the verification of stable pairs, there is also a tolerance parameter 
 # (for details, see Dessimoz et al, Nucl Acids Res 2006)
 VerifiedPairTol := 1.53;
+
+# SkipVerification is a flag to disable the Verification step entirely.
+# This can be useful for dataset where little differential gene loss is
+# expected and where the verification step takes a long time otherwise.
+# Uncomment to activate.
+# SkipVerification := true;
 
 # Any sequence which is less than MinSeqLen amino acids long in regular 
 # genomes is not considered.
@@ -125,17 +131,11 @@ GuessIdType := false;
 # Infer the Hierarchical Orthologous Groups (HOGs)? 
 # In OMA standalone prior to 2.0 you can activate the inference of HOGs 
 # through the Top-Down algorithm by setting 'DoHierarchicalGroup' to 'true'. 
-# Since 2.0, you should set it to 'top-down' or 'bottom-up'. The later is 
-# as of now still an experimental feature, where as 'top-down' uses the 
-# algorithm of before. You can disable the HOG computation by setting it to  
-# 'false'. 
-DoHierarchicalGroups := 'top-down';
-
-# Define maximum umount of time (in sec) spent by the program for  breaking 
-# every connected component of the orthology graph at its weakest link on a 
-# given taxonomic level. If set to a negative value, no timelimit is enforced.
-# This variable applies only to the top-down approach.
-MaxTimePerLevel := 1200;  # 20min
+# Since 2.0, you should set it to 'top-down' or 'bottom-up'. The 'top-down' 
+# is the original approach, where as 'bottom-up' is the much more scaleable 
+# algorithm introduced in version 2.0.0 for the first time. You can disable
+# the HOG computation by setting it to 'false'.
+DoHierarchicalGroups := 'bottom-up';
 
 # The hierarchical groups need a hierarchy of the involved species in from of 
 # a tree. This tree can either be estimated from the OMA Groups by setting the 
@@ -145,16 +145,38 @@ MaxTimePerLevel := 1200;  # 20min
 SpeciesTree := 'estimate';
 #SpeciesTree := '((mouse,mouse2),human,dog);';
 
+# Out-group species. If the species tree should be estimated, you should provide
+# a set of out-group species to properly root the species tree. The set of
+# out-group species must form a monophyletic clade that branches off from the
+# root.
+# If you do not want to specify an out-group set, you can set the parameter to
+# 'none', in which case OmaStandalone will use a mid-point rooting. However,
+# this root is most likely wrong and inferred hierarchical orthologous groups 
+# (HOGs) will be strongly affected from this. Therefore this setting is 
+# strongly discouraged
+OutgroupSpecies := [];
+# OutgroupSpecies := ['dog'];  # example with one out-group species
+# OutgroupSpecies := ['DROME', 'DROSA'];  # example with more than one species
+# OutgroupSpecies := 'none';  # use midpoint rooting (strongly discouraged)
+
+
+# The cutoff in GETHOGs bottom-up algorithm to make an edge trusted in the 
+# orthology graph among HOGs. This parameter applies only to the bottom-up 
+# approach. Use 'ReachabilityCutoff' for the top-down approach. 
+MinEdgeCompletenessFraction := 0.65;
+
+
 # The cutoff of 'average reachability within two steps' defines up to what 
 # point a cluster is split into sub-clusters. This parameter applies only to the
 # top-down approach. For the bottom-up approach, use the parameter 
 # 'MinEdgeCompletenessFraction' instead.
 ReachabilityCutoff := 0.65;
 
-# The cutoff in GETHOGs bottom-up algorithm to make an edge trusted in the 
-# orthology graph among HOGs. This parameter applies only to the bottom-up 
-# approach. Use 'ReachabilityCutoff' for the top-down approach. 
-MinEdgeCompletenessFraction := 0.65;
+# Define maximum amount of time (in sec) spent by the program for breaking
+# every connected component of the orthology graph at its weakest link on a
+# given taxonomic level. If set to a negative value, no timelimit is enforced.
+# This variable applies only to the top-down approach.
+MaxTimePerLevel := 1200;  # 20min
 
 
 
@@ -174,10 +196,10 @@ GroupFunctionCutoff := 0.5;
 # Specify how to limit function propagation on clades. Parameter can be
 # one of (i) default (ii) none or (iii) <file-path>.
 # default infers species tree and limits propagation at predefined clade 
-# levels. 'none' disables the limits entierly and the last option allows to 
-# point ot an tsv file with the following format: <SPECIES NAME>\t<CLADE>,
-# that provides a mapping from genome name to a clade. only annotations that 
-# are supported within the same clade are transfered to a genome.
+# levels. 'none' disables the limits entirely and the last option allows to 
+# point to a tsv file with the following format: <SPECIES NAME>\t<CLADE>,
+# that provides a mapping from genome name to a clade. Only annotations that 
+# are supported within the same clade are transferred to a genome.
 CladeDefinition := 'default';
 
 

@@ -209,6 +209,8 @@ if printlevel >= 3 then
         inparalogpairs);
 fi;
 
+
+
 ###########################
 # Thinning of StablePairs #
 ###########################
@@ -228,6 +230,36 @@ if printlevel >= 3 then printf(
     'OrthologousMatrix: %d entries thinned out of %d StablePairs\n',
     thnr, thnt )
 fi;
+
+###########################
+# Optionally, set a ceiling on number of SP per sequence
+###########################
+if type(MaxSPperEntry,posint) then
+    for X to NG do for Y to NG do
+        if X <> Y then
+            for x1 to ns[X] do
+                tmp := decompress(StablePairs[X,Y,x1]);
+                if length(tmp) > MaxSPperEntry then
+                    # Shuffling enables us to pick a random subset but
+                    # keep in mind that the function returns an array
+                    tmp2 := Shuffle(tmp);
+                    # we sample MaxSPperEntry SP from the shuffled array
+                    StablePairs[X,Y,x1] := compress({op(tmp2[1..MaxSPperEntry])});
+                fi;
+                #now fix the other direction as well
+                for y2 in tmp2[MaxSPperEntry..-1] do
+                    StablePairs[Y,X,y2] := compress(decompress(StablePairs[Y,X,y2] minus {x1}));
+                od;
+                if printlevel >= 3 then printf(
+                    'Orthologous Matrix: capped the number of SPs for %s%05d vs %s.\n', 
+                    genomes[X], x1, genomes[Y]);
+                fi;
+
+            od;
+        fi;
+    od; od;
+fi;
+
 
 
 #
@@ -310,6 +342,10 @@ fi;
 
 # witness must exit in at least 10% of 5 different genomes
 WitnessCrit:=min(ceil((NG-2)*0.1),5);
+# Function to determine if verification among two genomes should be done
+if not assigned(VerifyClass) or not type(VerifyClass, procedure) then
+    VerifyClass := proc(x) return(verify_classes[x]) end:
+fi:
 # SP will not be broken if length of alignment is not sufficient
 SumLengthsTol := 0.9;
 NumAllBreak:=CreateArray(1..NG^2);
@@ -318,6 +354,8 @@ VPairs := CreateArray(1..NG,1..NG):
 idone := 0;  st := time();
 for X to NG do for Y from X+1 to NG do
     idone := idone+1;
+if not SkipVerification=true and VerifyClass(genomes[X]) = VerifyClass(genomes[Y]) then
+    if printlevel >= 3 then printf('%s/%s in same verfication class: %A\n', genomes[X], genomes[Y], VerifyClass(genomes[X])) fi:
     VPairs[X,Y] := CreateArray(1..ns[X],[]);
     VPairs[Y,X] := CreateArray(1..ns[Y],[]);
     for x1 to ns[X] do 
@@ -331,7 +369,8 @@ for X to NG do for Y from X+1 to NG do
             totalbreakings:=genomesbreaking:=0;
             for Z to NG while not bad 
               or (UseSeveralWitnesses=true and GetStats=true) do
-              if Z <> X and Z <> Y then
+              if Z <> X and Z <> Y and VerifyClass(genomes[X]) = VerifyClass(genomes[Z]) then
+                if printlevel >= 3 then printf('  %s in same verfication class: %A\n', genomes[Z], VerifyClass(genomes[Z])) fi:
                 for a3 in decompress(BestMatch[X,Z,x1]) while not bad 
                   or (UseSeveralWitnesses=true and GetStats=true) do
                   z3 := a3[Entry];
@@ -434,6 +473,12 @@ for X to NG do for Y from X+1 to NG do
         genomes[X], genomes[Y], sum(length(decompress(z)),z=VPairs[X,Y]),
         sum(length(decompress(z)),z=StablePairs[X,Y]),
         200*idone/(NG*(NG-1)), (NG*(NG-1)/2-idone)*(time()-st)/idone/3600 );
+else  # not same verify class
+    printf( '%s/%s are not verified (%s)\n', genomes[X], genomes[Y], 
+        If(SkipVerification=true, 'SkipVerification set to true', 'different classes specified'));
+    VPairs[X,Y] := StablePairs[X,Y];
+    VPairs[Y,X] := StablePairs[Y,X];
+fi:
 od od:
 
 BreakingStatsG:=[NumAllBreak,NumAllGenom];
@@ -587,6 +632,7 @@ VPairs := ConsistentPairs: ConsistentPairs := 0;
 Orthologous := []:
 Used := CreateArray(1..NG):
 for i to NG do Used[i] := CreateArray(1..ns[i],false) od:
+MAX_NEIGH_PER_GENOME := 10;
 
 do
   VerifiedPairs := [];
@@ -597,8 +643,8 @@ do
             y2 := a1[Entry];
             if not Used[Y,y2] and member(y2,decompress(VPairs[X,Y,x1])) then
                 VerifiedPairs := append( VerifiedPairs, [a1[Score100],X,x1,Y,y2] );
-                if length(VerifiedPairs) > 15000 then
-                    VerifiedPairs := sort(VerifiedPairs)[-10000..-1];
+                if length(VerifiedPairs) > 35000 then
+                    VerifiedPairs := sort(VerifiedPairs)[-30000..-1];
                     ls := VerifiedPairs[1,1];
                     lprint('shrinking VerifiedPairs',X,Y,ls);
                     fi
@@ -612,7 +658,6 @@ do
 
   VerifiedPairs := sort(VerifiedPairs):
   for iz from length(VerifiedPairs) by -1 to 1 do
-
     z := VerifiedPairs[iz];
     g1 := z[2];  i1 := z[3];  g2 := z[4];  i2 := z[5];
     if Used[g1,i1] or Used[g2,i2] then next fi;
@@ -624,45 +669,64 @@ do
     # the nodes of the graph are pairs of [genome,entry]
     cli := [ [g1,i1], [g2,i2] ];
     for g3 to NG do if g3 <> g1 and g3 <> g2 then
+        len0 := length(cli):
         cli := append( cli, seq( If(Used[g3,w],NULL,[g3,w]),
                 w = decompress(VPairs[g1,g3,i1]) intersect
-		    decompress(VPairs[g2,g3,i2]) ) )
-        fi od;
+		    decompress(VPairs[g2,g3,i2]) ) );
+        if length(cli) - len0 > MAX_NEIGH_PER_GENOME then
+            rng := len0+1 .. length(cli);
+            costs := [seq(EdgeCost({1,c}) + EdgeCost({2,c}), c=rng)];
+            sorted := sort( [seq(k, k=1..length(costs))], x->-costs[x] );
+            keep := sorted[1..MAX_NEIGH_PER_GENOME] + CreateArray(1..MAX_NEIGH_PER_GENOME, rng[1]-1);
+            if printlevel >= 3 then 
+                printf('  many vps to genome %s induced by %s%d/%s%d: max score: %.2f; cutoff: %.2f; min: %.2f [total %d]\n',
+                       genomes[g3], genomes[g1],i1, genomes[g2], i2, costs[sorted[1]], costs[sorted[MAX_NEIGH_PER_GENOME]], costs[sorted[-1]], length(costs))
+            fi:
+            cli := [op(cli[1..len0]), seq(cli[k], k=keep)]
+        fi:
+    fi od;
 
     # Make graph to find cliques
-    edg := []:
-    for j1 to length(cli) do for j2 from j1+1 to length(cli) do
+    edg := []: tt1 := time():
+    for j1 to length(cli) do for j2 from j1+1 to length(cli) do 
         g1 := cli[j1,1];  i1 := cli[j1,2];
         g2 := cli[j2,1];  i2 := cli[j2,2];
         if g1=g2 then next fi;
         if member(i2,decompress(VPairs[g1,g2,i1])) then
-	    edg := append(edg,{j1,j2}) fi
+           edg := append(edg,{j1,j2}) fi
     od od;
+    tt2 := time():
+    if printlevel>2 and tt2-tt1 > 5 then
+        printf(' *heavy computation - extracting edges took very long for G(|%d|,|%d|): %.2f sec\n',
+               length(cli), length(edg), tt2 - tt1);
+    fi:
+    edg := [op({op(edg)})];
 
     if length(edg) <> length(cli)*(length(cli)-1)/2 then
         # printf( '|n|=%d, |e|=%d, max wei=%.2f\n', length(cli), length(edg),
         #    z[1]/100 );
-        CliqueIterFactor := 2;
-        cli1 := MaxEdgeWeightClique(
-            Graph( Edges( seq( Edge(EdgeCost(z),z[1],z[2]), z=edg ))) );
-        cli := [seq( cli[i], i=cli1)]
-    fi;
+        tt1 := time():
+        G :=  Graph( Edges( seq( Edge(EdgeCost(z),z[1],z[2]), z=edg )));
 
+        CliqueIterFactor := min( 1, (140/length(G[Nodes]))^2.5 );
+        cli1 := MaxEdgeWeightClique( G );
+        cli := [seq( cli[i], i=cli1)];
+        tt2 := time():
+        if printlevel > 2 and tt2-tt1 > 5 then 
+            printf(' *heavy computation - extracting clique of size %d from G(|%d|,|%d|) took %.2f sec\n',
+                   length(cli), length(G['Nodes']), length(edg), tt2-tt1);
+        fi:
+    fi;
     if length(cli) < 2 then next fi;
 
     row := CreateArray(1..NG);
     for z in cli do
         row[z[1]] := z[2];
         Used[z[1],z[2]] := true;
-        od;
+    od;
     Orthologous := append(Orthologous,row):
-    od
   od:
-
-# Triangle analysis has been removed be the Adrians while
-# updating Pairs data structure. 
-# If still needed, it has to be recovered from p4 and
-# adjusted to the new factors in the Pair structure.
+od:
 
 histog := CreateArray(1..NG);
 for z in Orthologous do

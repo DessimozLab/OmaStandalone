@@ -536,6 +536,9 @@ else
            DoGroupFunctionPrediction=true and CladeDefinition='default') then
         if SpeciesTree='estimate' then;
             speciesTree := BuildSpeciesTree( Ort );
+            if OutgroupSpecies <> 'none' then
+                speciesTree := RerootWithOutgroups(speciesTree, OutgroupSpecies);
+            fi:
         elif SpeciesTree='lineage' then
             speciesTree := NULL:
         elif type(SpeciesTree,string) then
@@ -757,7 +760,8 @@ else
     ###
     # Final comments to user
     printf('\n\n%s\n', CreateString(80, '*'));
-    if SpeciesTree='estimate' and member(DoHierarchicalGroups, {'top-down','bottom-up'}) then
+    if SpeciesTree='estimate' and member(DoHierarchicalGroups, {'top-down','bottom-up'})
+            and OutgroupSpecies='none' then
         printf('NOTE: The HOGs OMA computed depend strongly on the correct species tree.\n');
         printf('      OMA estimated a species tree based on some marker genes, and stored\n');
         printf('      it in %s.\n', OutputFolder.'/EstimatedSpeciesTree.nwk');

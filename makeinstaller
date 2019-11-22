@@ -87,7 +87,7 @@ mkdir -p $instpath/DB
 mkdir -p $instpath/data
 
 # clone darwin repo, stripe .git folder and copy lib to $instpath
-git clone --depth 1 git@cbrg-git.ethz.ch:darwin
+git clone --depth 1 ssh://gitolite@lab.dessimoz.org:2222/darwin
 rm -rf darwin/lib/.git
 mv darwin/lib $instpath/darwinlib
 rm -rf darwin
@@ -108,7 +108,7 @@ cp -r lib $instpath/
 
 # copy OMA files to $1/OMA$versionnr
 cp OMA.drw parameters.drw install.sh README.oma LICENSE release_notes.txt $instpath/
-cp bin/oma bin/omadarwin bin/warthog bin/oma-* $instpath/bin/
+cp bin/oma bin/omadarwin bin/warthog bin/oma-* bin/create_warthog_venv.sh $instpath/bin/
 
 # create file with previous releases that exist for download
 prev_rels="Manual/previous_releases.html"

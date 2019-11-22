@@ -14,22 +14,16 @@
       Christophe Dessimoz, Adrian Schneider, Adrian Altenhoff,
       Alexander Roth, Stefan Zoller, Gaston Gonnet.
 
-      (c) CBRG, ETH Zurich, 2004-2015
-      (c) Dessimoz lab, UCL and UNIL, 2013-2015
+      (c) CBRG, ETH Zurich, 2004-2019
+      (c) Dessimoz lab, UCL and UNIL, 2013-2019
 
       Version [VERSIONNR]
 
       Please cite:
 
-      Altenhoff et al., "The OMA orthology database in 2015: function 
-      predictions, better plant support, synteny view and other improvements",
-      Nucl Acids Res 2015, 43:D240-249
-
-
-      If you use perform HOG analyses, please cite:
-
-      Altenhoff et al., "Inferring hierarchical orthologous groups from 
-      orthologous gene pairs", PLoS One 2013 8 (1), e53786
+      Altenhoff et al., "OMA standalone: orthology inference among public 
+      and custom genomes and transcriptomes". Genome Research, 2019, 
+      9: 1152-1163;  http://doi.org/10.1101/gr.243212.118
 
 
       If you use ESPRIT, please cite:
