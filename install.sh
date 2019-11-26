@@ -41,10 +41,12 @@ then
     then
         DARWIN_BINARY="omadarwin.mac64"
     else
-        DARWIN_BINARY="omadarwin.mac32"
+        (>&2 echo "32-bit mac systems are not supported anymore")
+        exit 1
     fi
 else
-    echo "Operating system not supported!"
+    (>&2 echo "Operating system not supported!")
+    exit 1
 fi
 
 echo "Installing darwin binary..."
