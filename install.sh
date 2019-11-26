@@ -6,6 +6,7 @@ os=$(uname -s)
 DARWIN_BINARY="omadarwin.linux32"
 install_prefix="${1:-/usr/local}"
 data_dir="${2:-${HOME}/.oma}"
+venv_args="${3}"
 
 current_dir=`dirname $0`
 versionnr="[VERSIONNR]"
@@ -62,7 +63,7 @@ cp -rf $current_dir/darwinlib $omadir/
 cp -rf $current_dir/hog_bottom_up $omadir/
 
 echo "creating virtualenv for hog_bottom_up"
-if ! $current_dir/bin/create_warthog_venv.sh $omadir/.venv $omadir/hog_bottom_up/requirements.txt ; then
+if ! $current_dir/bin/create_warthog_venv.sh $omadir/.venv $omadir/hog_bottom_up/requirements.txt $venv_args; then
    exit 1
 fi
 
