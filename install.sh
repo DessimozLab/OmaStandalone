@@ -66,7 +66,7 @@ cp -rf $current_dir/hog_bottom_up $omadir/
 
 if [ -z "$not_create_venv" ] ; then 
     echo "creating virtualenv for hog_bottom_up"
-    if ! $current_dir/bin/create_warthog_venv.sh $omadir/.venv $omadir/hog_bottom_up then
+    if ! $current_dir/bin/create_warthog_venv.sh $omadir/.venv $omadir/hog_bottom_up ; then
         (>&2 echo "cannot create virtual environment for hog_bottom_up")
         exit 1
     fi
