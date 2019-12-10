@@ -155,6 +155,15 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             plus ESPRIT - a tool based on OMA to detect split genes.
             The software can be run on Linux (x86, both 64bit and 32bit) and 
             MacOSX (x86, 64bit).'),
+
+            Paragraph(0, 'A good introduction into OMA standalone is provided in
+            the following article:'),
+            Paragraph(0, Link(TextBlock('a', 
+               href='https://doi.org/10.1101/gr.243212.118',
+               'Altenhoff et al. OMA standalone: orthology inference among public 
+                and custom genomes and transcriptomes. Genome Research, 2019, 29:1152-1163')),
+            ' Please cite this article if you are using OMA standalone for your 
+            analysis'),
             
             Paragraph(0, 'For a short summary and pointers to detailed algorithmic 
             publications of OMA, please refer to the OMA browser page:'), 
@@ -1107,8 +1116,11 @@ free for commercial and non-commercial use.'),
             Paragraph(0, 'Software distributed under the License is 
 distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either 
 express or implied. See the License for the specific language governing 
-rights and limitations under the License.')
+rights and limitations under the License.'), 
 
+            Paragraph(0, 'If you use OMA standalone, please cite ', Link(
+               TextBlock('a', href='https://doi.org/10.1101/gr.243212.118',
+               'Altenhoff et al, OMA standalone: orthology inference among public and custom genomes and transcriptomes, Genome Research, 2019, 29:1152-1163')))
 
             ]:
 
@@ -1199,7 +1211,7 @@ urlcolor=blue') ) ):
         op(applications),
         op(formats),
         op(parameters),
-        DocEl('afterpage', 'clearpage'),
+        DocEl('afterpage', '\\clearpage'),
         op(esprit),
         op(gettinghelp),
         op(license)

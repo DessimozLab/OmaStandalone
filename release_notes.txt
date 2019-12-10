@@ -6,6 +6,20 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.4.0 to 2.4.1
+======================================
+This is a bugfix release only.
+
+Bug Fixes
+---------
+- fixes issue that prevents installation via homebrew/linuxbrew
+
+- additional checks during installation
+
+- minor improvements in the documentation
+
+
+
 Summary of Changes from 2.3.1 to 2.4.0
 ======================================
 This release contains a few new features and bug fixes.

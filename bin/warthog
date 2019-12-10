@@ -1,24 +1,28 @@
 #!/bin/bash
 
 INSTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../"
-WARTHOG="hog_bottom_up/warthogs.py"
+WARTHOG="warthogs.py"
 
-for dir in $INSTPATH ~ ~/Repositories; do 
-    if [ -f "$dir/$WARTHOG" ] ;then break; fi
+fnd=0
+for dir in $INSTPATH/.venv/bin ${PATH//:/$'\n'} ; do 
+    # if file found, check whether it is not a shim by checking version
+    if [ -x $dir/$WARTHOG ] &&  $dir/$WARTHOG --version 1>/dev/null 2>&1; then 
+        fnd=1
+        break; 
+    fi
 done
+
+if [ $fnd == 0 ] ; then
+    # not installed, we need to install a virtualenv
+    if [ -e "$INSTPATH/.venv" ] ; then rm -rf "$INSTPATH/.venv"; fi
+    "$INSTPATH/bin/create_warthog_venv.sh" "$INSTPATH/.venv" "$INSTPATH/hog_bottom_up"
+    dir="$INSTPATH/.venv/bin"
+fi
 
 if [ ! -f "$dir/$WARTHOG" ] ; then 
     (>&2 echo "cannot find GETHOGs Bottom-Up")
     exit 1
 fi
 
-if [ "$dir" != "$INSTPATH" ] ; then 
-    (>&2 echo "using GETHOGs Bottom-up from dev location \"$dir\". ")
-else
-    if [ ! -d "$INSTPATH/.venv" ] ; then
-        "$INSTPATH/bin/create_warthog_venv.sh" "$INSTPATH/.venv" "$INSTPATH/hog_bottom_up/requirements.txt"
-    fi
-    source "$INSTPATH/.venv/bin/activate"
-fi
-exec python $dir/$WARTHOG $@
+exec $dir/$WARTHOG $@
 
