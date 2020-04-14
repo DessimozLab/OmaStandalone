@@ -180,4 +180,5 @@ if [ "$deploy" == "yes" ] ; then
     scp $(dirname $0)/Manual/*png ${webhost}:${webpath}
     scp $(dirname $0)/Manual/previous_releases.html ${webhost}:${webpath}
     scp $(dirname $0)/release_notes.txt ${webhost}:${webpath}
+    ssh ${webhost} "cd ${webpath}; rm -f OMA.latest.tgz; ln -s $(basename $instpath).tgz OMA.latest.tgz"
 fi
