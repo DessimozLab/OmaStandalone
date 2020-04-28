@@ -556,7 +556,7 @@ iformat := [
             ignore the ', 
             Anchor(TextBlock('a', href='parameters', TT('LengthTol'))),
             'condition, such that orthology will also be established for 
-            none-full-length homologous pairs, i.e. the condition that the 
+            non-full-length homologous pairs, i.e. the condition that the 
             fraction of the length of the effective pairwise alignment 
             divided by the length of the shorter sequences must be at least ', 
             TT('LengthTol'),' is ignored. For ESPRIT, genomes labeled 
