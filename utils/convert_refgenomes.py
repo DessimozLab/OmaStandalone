@@ -75,7 +75,7 @@ class ProteomeSeqxmlConverter(object):
                     data[src] = val
 
             try:
-                cDNA = rec.annotations['DNAseq']
+                cDNA = rec.annotations['DNAseq'][0]
                 cDNA = Bio.Seq.Seq(cDNA)
             except KeyError:
                 cDNA = Bio.Seq.UnknownSeq(3*(len(rec)+1), character="N")
