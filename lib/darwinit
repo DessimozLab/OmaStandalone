@@ -66,6 +66,8 @@ EstablishSpliceMap := noeval(ReadLibrary(OrthologsLib.'InputGenomePreProcessing'
 FilterBestSplicingMatches := noeval(ReadLibrary(OrthologsLib.'AltSplicing', FilterBestSplicingMatches));
 
 ValidateParameters := noeval(ReadLibrary(OrthologsLib.'CheckParamCompability', ValidateParameters));
+SearchReferenceHog := noeval(ReadLibrary(OrthologsLib.'HogMap', SearchReferenceHog));
+LoadReferenceHogs := noeval(ReadLibrary(OrthologsLib.'HogMap', LoadReferenceHogs));
 
 Logger := noeval(ReadLibrary(OrthologsLib.'Logging',Logger));
 FileExists := noeval(ReadLibrary(OrthologsLib.'FileExists',FileExists));

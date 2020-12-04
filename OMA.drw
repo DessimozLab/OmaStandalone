@@ -128,6 +128,11 @@ if only_run_dbconv=true then
     done
 fi:
 
+if assigned(HogLevelGroupFile) and HogLevelGroupFile<>false then 
+    HogLevelGroups := LoadReferenceHogs(HogLevelGroupFile);
+    DoHogLevelGroupMap := true;
+    Logger('using HogLevelGroupMapping extension', 1);
+fi:
 
 ##############################################################################
 # All-against-all
@@ -257,13 +262,7 @@ for g1 to NG do
             next;
         fi;
 
-        Seqs1 := CreateArray(1..n1):
-        Seqs2 := CreateArray(1..n2):
-        DB := db1:
-        for i1 to n1 do Seqs1[i1] := SearchTag('SEQ',Entry(i1)) od:
-        DB := db2:
-        for i2 to n2 do Seqs2[i2] := SearchTag('SEQ',Entry(i2)) od:
-
+        Seqs1 := Seqs2 := 0:
         # from release 0.99z.3 on, we store files in subdirectories per genome *pair*
         dir := sprintf('Cache/AllAll/%s/%s', name1, name2);
         if not FileExists(dir) then
@@ -328,6 +327,16 @@ for g1 to NG do
                 name1, name2, part, nrChunks, getpid(), hostname() );
             OpenWriting(previous);
 
+            # load seq and hog ids if needed
+            if Seqs1 = 0 then
+                Seqs1 := CreateArray(1..n1): HogIds1 := CreateArray(1..n1):
+                Seqs2 := CreateArray(1..n2): HogIds2 := CreateArray(1..n2):
+                DB := db1:
+                for i1 to n1 do e := Entry(i1): Seqs1[i1] := SearchTag('SEQ',e): HogIds1[i1] := SearchTag('HOGID', e) od:
+                DB := db2:
+                for i2 to n2 do e := Entry(i2): Seqs2[i2] := SearchTag('SEQ',e): HogIds2[i2] := SearchTag('HOGID', e) od:
+            fi:
+
             t0 := UTCTime():
             dat0 := time():
             c2 := 0;
@@ -350,10 +359,21 @@ for g1 to NG do
                       else next fi:
                 fi:
 
+                if DoHogLevelGroupMap = true then
+                    h1 := SearchReferenceHog(HogIds1[i1], HogLevelGroups):
+                    h2 := SearchReferenceHog(HogIds2[i2], HogLevelGroups):
+                    if h1<>h2 then 
+                        Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> hogmap)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 3);
+                        next;
+                    elif h1=-1 and h2=-1 and not DoAllAllOfUnmapped then
+                        Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> unmapped)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 3);
+                    fi:
+                fi:
+
                 len1 := length(Seqs1[i1]);
                 len2 := length(Seqs2[i2]);
-                Logger(sprintf('aligning %s/%d vs %s/%d (seq lens: %d/%d)', 
-                               name1, i1, name2, i2, len1, len2), 3);
+                Logger(sprintf('aligning %s/%d vs %s/%d (seq lens: %d/%d) (hogids: %s vs %s)', 
+                               name1, i1, name2, i2, len1, len2, HogIds1[i1], HogIds2[i2]), 3);
                 if mod(c2,109)=0 then
                     CheckRemainingTimeAndQuitIfOver(fn, res, proteinPair);
                 fi:

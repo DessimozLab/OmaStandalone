@@ -1,0 +1,24 @@
+SearchReferenceHog := proc(query, references)
+    lq := length(query):
+    if lq = 0 then return(-1) fi:
+
+    k := SearchOrderedArray(query, references);
+    if k>0 then 
+        cand := references[k]; lc := length(cand);
+        if lq >= lc and cand=query[1..lc] then  
+            return(k);
+        fi:
+    fi:
+    return(-1);
+end:
+
+LoadReferenceHogs := proc(fn)
+    s := ReadRawFile(fn);
+    hogs := sort([seq(If(z<>'', trim(SearchDelim('\t', z)[1]), NULL), z=SplitLines(s))]);
+    if length(hogs[1]) < 5 or hogs[1,1..3] <> 'HOG' then 
+        error('Invalid reference hog found: "'.hogs[1].'"');
+    elif length(hogs[-1]) < 5 or hogs[-1,1..3] <> 'HOG' then 
+        error('Invalid reference hog found: "'.hogs[-1].'"');
+    fi:
+    return(hogs);
+end:
