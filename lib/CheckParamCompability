@@ -37,6 +37,7 @@ ValidateParameters := proc()
     _check_HOG_params();
     _check_group_function_params();
     _check_outgroups();
+    _check_hoglevel_mapping();
 end:
 
 _check_species_tree_param := proc()
@@ -56,6 +57,14 @@ _check_species_tree_param := proc()
            error(sprintf('SpeciesTree does not contain the same leaves as species:\n'.
                          'Differences: %A <--> %A', minus(leaves, gset),
                          minus(gset, leaves)));
+        fi:
+    fi:
+end:
+
+_check_hoglevel_mapping := proc()
+    if assigned(HogLevelGroupFile) and HogLevelGroupFile <> false then
+        if not FileExists(HogLevelGroupFile) then
+           error(sprintf('specified HogLevelGroupFile "%s" does not exist', HogLevelGroupFile));
         fi:
     fi:
 end:

@@ -29,6 +29,16 @@ ReuseCachedResults := true;
 # crash)
 AlignBatchSize := 1e6;
 
+# file containing LOFT HOG-IDs to partition proteins into groups.
+# If file is present, computation of all-vs-all is doen only within mapped HOGs. 
+# The file specified in this parameter needs to contain a list of HOG-levels 
+# that should be considered as groups. Only proteins with a (sub-)hog ID 
+# matching the same id in the file will be aligned to each other.
+# Can be a relative or absolute path. Set to false to not use prior knowledge 
+# on group membership.
+HogLevelGroupFile := false;
+# HogLevelGroupFile := 'DB/HogLevel.txt';
+
 # alignments which have a score lower than MinScore will not be considered.
 # The scores are in Gonnet PAM matrices units.
 MinScore := 181;
