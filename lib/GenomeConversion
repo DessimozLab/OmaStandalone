@@ -205,6 +205,7 @@ ConvertGenomes := proc(G, pinf)
         # compute sha2 of fasta file.
         checksum := sha2(ReadRawFile(g))[1..16]:
         spliceFn := g[1..-3].'splice';
+        hogmapFn := g[1..-3].'hogmap';
 
         # test if cached:
         if FileExists('Cache/DB/'.gname.'.db') then
@@ -237,6 +238,12 @@ ConvertGenomes := proc(G, pinf)
         if FileExists(spliceFn) then
             splicemap := EstablishSpliceMap(spliceFn, input[2], input[3]);
         fi:
+        if FileExists(hogmapFn) then
+            Logger('loading hogmap from '.hogmapFn, 2);
+            hogmap := LoadHogMap(hogmapFn, input[2]);
+        else
+            hogmap := table(''):
+        fi:
     
         OpenWriting('Cache/DB/'.gname.'.db');
         printf('<5LETTERNAME>%s</5LETTERNAME>\n',code);
@@ -252,7 +259,8 @@ ConvertGenomes := proc(G, pinf)
             od:
         fi:
         for i to length(input[1]) do
-            printf('<E><ID>%s</ID><SEQ>%s</SEQ></E>\n', input[2,i], input[1,i]);
+            hogid := If(hogmap[i]<>'', sprintf('<HOGID>%s</HOGID>', hogmap[i]), '');
+            printf('<E><ID>%s</ID>%s<SEQ>%s</SEQ></E>\n', input[2,i], hogid, input[1,i]);
         od:
         OpenWriting(previous);
         DB := ReadDb('Cache/DB/'.gname.'.db');
@@ -267,6 +275,25 @@ ConvertGenomes := proc(G, pinf)
     if pinf['ProcNr']=1 and not convDone(dataset_hash) then
         convDone(dataset_hash, true); # signal other processes to start.
     fi:
+end:
+
+LoadHogMap := proc(hogmap_filename, fasta_header_ids)
+    hogmap := ReadRawFile(hogmap_filename);
+    hogids := CreateArray(1..length(fasta_header_ids), ''):
+    headers := transpose(sort([seq([fasta_header_ids[i], i], i=1..length(fasta_header_ids))])):
+    for line in SplitLines(hogmap) do
+        token := SearchDelim('\t', trim(line));
+        prot_id := token[1]; hogid := token[2];
+        k := SearchOrderedArray(prot_id, headers[1]):
+        l_prot_id := length(prot_id):
+        Logger(sprintf('searching %s (%s), idx: %d, headers[idx]: %s\n', prot_id, hogid, k, If(k>0, headers[1,k], 'n/a')), 3);
+        if k > 0 and k <= length(headers[1]) and headers[1,k] = prot_id then 
+             hogids[headers[2,k]] := hogid;
+        elif k >=0 and k<length(headers[1]) and length(headers[1,k+1])>=l_prot_id and headers[1,k+1,1..l_prot_id] = prot_id then
+             hogids[headers[2,k+1]] := hogid;
+        fi:
+    od:
+    return(hogids);
 end:
 
 end: #module
