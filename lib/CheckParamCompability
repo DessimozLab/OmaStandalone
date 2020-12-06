@@ -54,9 +54,10 @@ _check_species_tree_param := proc()
         leaves := {seq(z['Label'], z=indets(t, Leaf))}:
         gset := {op(genomes)}:
         if leaves<>gset then
-           error(sprintf('SpeciesTree does not contain the same leaves as species:\n'.
+           warning(sprintf('SpeciesTree does not contain the same leaves as species:\n'.
                          'Differences: %A <--> %A', minus(leaves, gset),
                          minus(gset, leaves)));
+           error('SpeciesTree does not contain the same leaves as species');
         fi:
     fi:
 end:
