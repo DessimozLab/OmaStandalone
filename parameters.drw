@@ -27,7 +27,8 @@ ReuseCachedResults := true;
 # number, the longer each unit runs, and the fewer files get produced. This 
 # allows to adjust the frequency of milestone steps (e.g. in case of computer 
 # crash)
-AlignBatchSize := 1e6;
+AlignBatchSize := 1e8;
+AlignMode := 'fixDM';
 
 # file containing LOFT HOG-IDs to partition proteins into groups.
 # If file is present, computation of all-vs-all is doen only within mapped HOGs. 

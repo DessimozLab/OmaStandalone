@@ -392,7 +392,15 @@ for g1 to NG do
                 Logger(sprintf('fast sign check done. score: %.5g', dps[1]), 4);
                 c_fast := c_fast + 1:
                 if dps[1] >= .75*MinScore then
-                    a := Align(Seqs1[i1],Seqs2[i2],DMS);
+                    if AlignMode = 'fixDM' then
+                        a := Align(Seqs1[i1], Seqs2[i2], DM):
+                        dps := DynProgStrings(a):
+                        esp := EstimatePam(dps[2], dps[3], DMS):
+                        if |a['Score']-esp[1]| > 1e-4 then error('unexpected score difference between EstimatePam and Align') fi:
+                        a['PamDistance'] := esp[2]; a['PamVariance'] := esp[3];
+                    else    
+                        a := Align(Seqs1[i1],Seqs2[i2],DMS);
+                    fi:
                     c_full := c_full + 1:
                     Logger(sprintf('optimal alignment done. score: %f dist %f', a[Score], a[PamDistance]), 4);
                     if a[Score] < MinScore or min(a[Length1],a[Length2]) <
