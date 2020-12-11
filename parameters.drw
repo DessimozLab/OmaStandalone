@@ -17,7 +17,7 @@
 InputDataType := 'AA';
 
 # Output folder
-OutputFolder := 'Output';
+OutputFolder := 'Output-FixDM';
 
 # if you want to recompute everything from scratch every time the script
 # is run, set the following parameter to false.
