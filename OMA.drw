@@ -396,7 +396,7 @@ for g1 to NG do
                         a := Align(Seqs1[i1], Seqs2[i2], DM):
                         dps := DynProgStrings(a):
                         esp := EstimatePam(dps[2], dps[3], DMS):
-                        if |a['Score']-esp[1]| > 1e-4 then error('unexpected score difference between EstimatePam and Align') fi:
+                        a['Score'] := esp[1];
                         a['PamDistance'] := esp[2]; a['PamVariance'] := esp[3];
                     else    
                         a := Align(Seqs1[i1],Seqs2[i2],DMS);
