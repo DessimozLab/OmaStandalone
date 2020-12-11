@@ -6,6 +6,19 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.4.1 to 2.4.2
+======================================
+This is a bugfix release only.
+
+Bug Fixes
+---------
+- fixes problem in bottom-up HOG inference with long protein fasta headers
+  (see https://www.biostars.org/p/477881)
+
+- minor improvements in the documentation
+
+
+
 Summary of Changes from 2.4.0 to 2.4.1
 ======================================
 This is a bugfix release only.
