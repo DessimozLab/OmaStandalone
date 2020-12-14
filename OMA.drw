@@ -339,6 +339,7 @@ for g1 to NG do
 
             t0 := UTCTime():
             dat0 := time():
+            t_hogtst := 0:
             c2 := hog_skipped := c_full := c_fast := c_significant := 0;
             algnInRange := min(AlignBatchSize,NumberOfAlignments(name1,name2));
 
@@ -370,15 +371,19 @@ for g1 to NG do
                 fi:
  
                 if DoHogLevelGroupMap = true then
+                    th := time():
                     h1 := SearchReferenceHog(HogIds1[i1], HogLevelGroups):
                     h2 := SearchReferenceHog(HogIds2[i2], HogLevelGroups):
+                    t_hogtst := t_hogtst + (time()-th);
                     if h1<>h2 then 
-                        Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> hogmap)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 3);
+                        if printlevel >= 4 then 
+                            Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> hogmap)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
                         hog_skipped := hog_skipped + 1;
                         next;
                     elif h1=-1 and h2=-1 and not DoAllAllOfUnmapped then
+                        if printlevel >= 4 then 
+                            Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> unmapped)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
                         hog_skipped := hog_skipped + 1;
-                        Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> unmapped)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 3);
                         next;
                     fi:
                 fi:
@@ -398,6 +403,7 @@ for g1 to NG do
                         esp := EstimatePam(dps[2], dps[3], DMS):
                         a['Score'] := esp[1];
                         a['PamDistance'] := esp[2]; a['PamVariance'] := esp[3];
+                        Logger('computed optimal alignment with single matrix', 4);
                     else    
                         a := Align(Seqs1[i1],Seqs2[i2],DMS);
                     fi:
@@ -436,6 +442,7 @@ for g1 to NG do
                     100*chunk_cnt/sum(tot), tot_align_time/chunk_processed * (sum(tot[genomepair_cnt..-1])+nrChunks-part)/3600));
                 msg := append(msg, sprintf('  %d pairs in chunk, %d skipped (hog-group), %d fast alignment, %d full alignment, %d significant matches\n',
                     c2, hog_skipped, c_fast, c_full, c_significant));
+                msg := append(msg, sprintf('   %.3fsec (%.2f%% of chunk time) spent in hog prefix check\n', t_hogtst, 100*t_hogtst/dat));
             fi:
             Logger(msg, mem=false);
         od:
