@@ -339,8 +339,8 @@ for g1 to NG do
 
             t0 := UTCTime():
             dat0 := time():
-            t_hogtst := 0:
-            c2 := hog_skipped := c_full := c_fast := c_significant := 0;
+            t_hogtst := t_align := 0:
+            c2 := hog_skipped := hog_fast_skip := c_full := c_fast := c_significant := c_to_print := c_to_checktime := 0;
             algnInRange := min(AlignBatchSize,NumberOfAlignments(name1,name2));
 
             # iterate over all the protein pairs in this chunk and compute alignment
@@ -348,6 +348,7 @@ for g1 to NG do
                 i1 := proteinPair[1];
                 i2 := proteinPair[2];
                 c2 := c2+1;
+                c_to_print := c_to_print + 1: c_to_checktime := c_to_checktime + 1:
                 # if we continue from a checkpoint, we skip until we reach the
                 # proteinPair where we left off.
                 if skip_until<>0 then
@@ -360,30 +361,38 @@ for g1 to NG do
                       else next fi:
                 fi:
 
-                if mod(c2,109)=0 then
+                if c_to_checktime > 10009 then
                     CheckRemainingTimeAndQuitIfOver(fn, res, proteinPair);
+                    c_to_checktime := 0;
                 fi:
-                if mod(c2,50000)=0 then
+                if c_to_print > 50000 then
                     Logger(sprintf('  %.2f%% complete, time left for this '.
                         'part=%.2fh, %.1f%% of AllAll done.', 100*c2/algnInRange,
                         (algnInRange/c2-1)*(UTCTime()-t0)/3600,
                         100*( (chunk_cnt-1+c2/algnInRange)/sum(tot) )));
+                    c_to_print := 0:
                 fi:
  
                 if DoHogLevelGroupMap = true then
                     th := time():
-                    h1 := SearchReferenceHog(HogIds1[i1], HogLevelGroups):
-                    h2 := SearchReferenceHog(HogIds2[i2], HogLevelGroups):
-                    t_hogtst := t_hogtst + (time()-th);
-                    if h1<>h2 then 
-                        if printlevel >= 4 then 
-                            Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> hogmap)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
-                        hog_skipped := hog_skipped + 1;
-                        next;
-                    elif h1=-1 and h2=-1 and not DoAllAllOfUnmapped then
-                        if printlevel >= 4 then 
-                            Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> unmapped)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
-                        hog_skipped := hog_skipped + 1;
+                    if length(HogIds1[i1])>=11 and length(HogIds2[i2])>=11 and HogIds1[i1,1..11] = HogIds2[i2,1..11] then 
+                        h1 := SearchReferenceHog(HogIds1[i1], HogLevelGroups):
+                        h2 := SearchReferenceHog(HogIds2[i2], HogLevelGroups):
+                        t_hogtst := t_hogtst + (time()-th);
+                        if h1<>h2 then 
+                            if printlevel >= 4 then 
+                               Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> hogmap)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
+                            hog_skipped := hog_skipped + 1;
+                            next;
+                        elif h1=-1 and h2=-1 and not DoAllAllOfUnmapped then
+                            if printlevel >= 4 then 
+                                Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> unmapped)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
+                            hog_skipped := hog_skipped + 1;
+                            next;
+                        fi:
+                    elif not DoAllAllOfUnmapped then
+                        hog_fast_skip := hog_fast_skip + 1;
+                        t_hogtst := t_hogtst + (time()-th);
                         next;
                     fi:
                 fi:
@@ -393,10 +402,13 @@ for g1 to NG do
                 Logger(sprintf('aligning %s/%d vs %s/%d (seq lens: %d/%d) (hogids: %s vs %s)', 
                                name1, i1, name2, i2, len1, len2, HogIds1[i1], HogIds2[i2]), 3);
 
+                ta := time():
                 dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
+                t_align := t_align + (time()-ta):
                 Logger(sprintf('fast sign check done. score: %.5g', dps[1]), 4);
                 c_fast := c_fast + 1:
                 if dps[1] >= .75*MinScore then
+                    ta := time():
                     if AlignMode = 'fixDM' then
                         a := Align(Seqs1[i1], Seqs2[i2], DM):
                         dps := DynProgStrings(a):
@@ -418,6 +430,7 @@ for g1 to NG do
                     res := append(res,[i1,i2,a[Score],a[PamDistance],
                                 ran1,ran2,a[PamVariance]] );
                     c_significant := c_significant + 1:
+                    t_align := t_align + (time() - ta):
                 fi;
                 if length(res)>1e5 then
                     WriteMatches(fn, res);
@@ -440,9 +453,10 @@ for g1 to NG do
             if c2 > 0 then
                 msg := append(msg, sprintf('  %.1f%% of AllAll done, estimated remaining time: %.1fh\n', 
                     100*chunk_cnt/sum(tot), tot_align_time/chunk_processed * (sum(tot[genomepair_cnt..-1])+nrChunks-part)/3600));
-                msg := append(msg, sprintf('  %d pairs in chunk, %d skipped (hog-group), %d fast alignment, %d full alignment, %d significant matches\n',
-                    c2, hog_skipped, c_fast, c_full, c_significant));
+                msg := append(msg, sprintf('  %d pairs in chunk, %d fast skipped, %d skipped (hog-group), %d fast alignment, %d full alignment, %d significant matches\n',
+                    c2, hog_fast_skip, hog_skipped, c_fast, c_full, c_significant));
                 msg := append(msg, sprintf('   %.3fsec (%.2f%% of chunk time) spent in hog prefix check\n', t_hogtst, 100*t_hogtst/dat));
+                msg := append(msg, sprintf('   %.3fsec (%.2f%% of chunk time) spent on computing alignments\n', t_align, 100*t_align/dat));
             fi:
             Logger(msg, mem=false);
         od:
