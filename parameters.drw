@@ -27,7 +27,7 @@ ReuseCachedResults := true;
 # number, the longer each unit runs, and the fewer files get produced. This 
 # allows to adjust the frequency of milestone steps (e.g. in case of computer 
 # crash)
-AlignBatchSize := 1e8;
+AlignBatchSize := 1e7;
 AlignMode := 'fixDM';
 
 # file containing LOFT HOG-IDs to partition proteins into groups.
@@ -155,7 +155,7 @@ DoHierarchicalGroups := 'bottom-up';
 # given in Newick format. The estimation step needs again additional computing 
 # time.
 SpeciesTree := 'estimate';
-#SpeciesTree := '((mouse,mouse2),human,dog);';
+#SpeciesTree := '(((((MELGA:1,CHICK:1)Phasianidae:1,Alectura_lathami_81907:1)Galliformes:1,ANAPL:1)Galloanserae:1,((Corvus_moneduloides_1196302:1,Orthonyx_spaldingii_38397:1)Corvoidea:1,(SERCA:1,TAEGU:1)Passeroidea:1,(PARMJ:1,Pseudopodoces_humilis_181119:1)Paridae:1,JUNHY:1,Scytalopus_superciliaris_312124:1,Tyrannus_savana_137541:1,Bombycilla_garrulus_125297:1,FICAL:1,Brachypodius_atriceps_182895:1)Passeriformes:1,(Haliaeetus_leucocephalus_52644:1,Aquila_chrysaetos_chrysaetos_223781:1)Accipitrinae:1,Glaucidium_brasilianum_78217:1,Mesembrinibis_cayennensis_1118748:1,(Chordeiles_acutipennis_118183:1,Nyctiprogne_leucopyga_382315:1)Chordeilinae:1,Ardeotis_kori_89386:1,MELUD:1,Upupa_epops_57439:1,Indicator_maculatus_545262:1,Fulmarus_glacialis_30455:1,Buceros_rhinoceros_silvestris_175836:1)Neognathae:1,Nothoprocta_pentlandii_2585814:1);';
 
 # Out-group species. If the species tree should be estimated, you should provide
 # a set of out-group species to properly root the species tree. The set of
@@ -169,7 +169,7 @@ SpeciesTree := 'estimate';
 OutgroupSpecies := [];
 # OutgroupSpecies := ['dog'];  # example with one out-group species
 # OutgroupSpecies := ['DROME', 'DROSA'];  # example with more than one species
-# OutgroupSpecies := 'none';  # use midpoint rooting (strongly discouraged)
+ OutgroupSpecies := 'none';  # use midpoint rooting (strongly discouraged)
 
 
 # The cutoff in GETHOGs bottom-up algorithm to make an edge trusted in the 
