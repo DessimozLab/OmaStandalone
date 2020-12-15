@@ -150,7 +150,9 @@ NumberOfAlignments := proc(name1:string,name2:string)
 end:
 
 NumberOfChunks := proc(name1, name2)
-    return(ceil(NumberOfAlignments(name1, name2)/AlignBatchSize));
+    if not DoHogLevelGroupMap=true then 
+        return(ceil(NumberOfAlignments(name1, name2)/AlignBatchSize));
+    else return(1) fi:
 end:
 
 UpperTriangInd2Tuple := proc(first, last, N)
@@ -195,10 +197,43 @@ FullInd2Tuple := proc(first,last, N)
     return(out)
 end:
 
+TupleOfSameHogGroups := proc(n1, n2, is_same_genome)
+    lprint('is_same_genome', is_same_genome);
+    t0 := time():
+    i1s := sort([seq(i, i=1..n1)], x->HogIds1[x]):
+    j1s := sort([seq(i, i=1..n2)], x->HogIds2[x]):
+    pairs := []:
+
+    j1a := 1:
+    for i1 to n1 do
+        hog_i1 := HogIds1[i1s[i1]];
+        for i2 from i1+1 to n1 while hog_i1=HogIds1[i1s[i2]] do od: # i1..i2 range of sorted i1s that has same HogIds1
+        i2 := i2 - 1;
+        for j1 from j1a to n2 while HogIds2[j1s[j1]]<hog_i1 do od: # skip hogs that exist only in genome2
+        for j2 from j1+1 to n2 while HogIds2[j1s[j2]]=hog_i1 do od:  # j1..j2 range of sorted j1s that has same HogIds
+        j2 := j2 - 1;
+        if (DoAllAllOfUnmapped or hog_i1 > -1) and hog_i1 = HogIds2[j1s[j1]] then
+            Logger(sprintf('hog_idx: %d, (%d,%d)..(%d,%d) [hog_i2: %d]', hog_i1, i1, i2, j1, j2, HogIds2[j1s[j2]]), 4);
+            for x from i1 to i2 do for y from j1 to j2 do 
+                if not is_same_genome or i1s[x] < j1s[y] then 
+                    pairs := append(pairs, [i1s[x],j1s[y]]);
+                fi:
+            od od:
+        fi:
+        j1a := j2:
+        i1 := i2:
+    od:
+    Logger(sprintf('producing HogLevelGroupMap-pairs took %.3fsec (%d pairs)', time()-t0, length(pairs)), 2);
+    return(pairs);
+end:
+
 RangeOfChunk := proc(name1,name2,chunk)
     totChunks := NumberOfChunks(name1, name2);
     if not type(chunk,posint) or chunk>totChunks then
         error('invalid chunk number: '.chunk)
+    fi:
+    if DoHogLevelGroupMap=true then
+        return(TupleOfSameHogGroups(GS[name1,TotEntries], GS[name2,TotEntries], name1=name2));
     fi:
     all := NumberOfAlignments(name1, name2);
     first := floor((chunk-1)*all/totChunks)+1;
@@ -268,7 +303,6 @@ for g1 to NG do
         if not FileExists(dir) then
             CallSystem('mkdir -p '.dir);
         fi:
-
         # Phase 1
         nrChunks := NumberOfChunks(name1, name2);
         for part to nrChunks do
@@ -332,9 +366,9 @@ for g1 to NG do
                 Seqs1 := CreateArray(1..n1): HogIds1 := CreateArray(1..n1):
                 Seqs2 := CreateArray(1..n2): HogIds2 := CreateArray(1..n2):
                 DB := db1:
-                for i1 to n1 do e := Entry(i1): Seqs1[i1] := SearchTag('SEQ',e): HogIds1[i1] := SearchTag('HOGID', e) od:
+                for i1 to n1 do e := Entry(i1): Seqs1[i1] := SearchTag('SEQ',e): HogIds1[i1] := SearchReferenceHog(SearchTag('HOGID', e), HogLevelGroups) od:
                 DB := db2:
-                for i2 to n2 do e := Entry(i2): Seqs2[i2] := SearchTag('SEQ',e): HogIds2[i2] := SearchTag('HOGID', e) od:
+                for i2 to n2 do e := Entry(i2): Seqs2[i2] := SearchTag('SEQ',e): HogIds2[i2] := SearchReferenceHog(SearchTag('HOGID', e), HogLevelGroups) od:
             fi:
 
             t0 := UTCTime():
@@ -361,7 +395,7 @@ for g1 to NG do
                       else next fi:
                 fi:
 
-                if c_to_checktime > 10009 then
+                if c_to_checktime > 1009 then
                     CheckRemainingTimeAndQuitIfOver(fn, res, proteinPair);
                     c_to_checktime := 0;
                 fi:
@@ -375,32 +409,26 @@ for g1 to NG do
  
                 if DoHogLevelGroupMap = true then
                     th := time():
-                    if length(HogIds1[i1])>=11 and length(HogIds2[i2])>=11 and HogIds1[i1,1..11] = HogIds2[i2,1..11] then 
-                        h1 := SearchReferenceHog(HogIds1[i1], HogLevelGroups):
-                        h2 := SearchReferenceHog(HogIds2[i2], HogLevelGroups):
-                        t_hogtst := t_hogtst + (time()-th);
-                        if h1<>h2 then 
-                            if printlevel >= 4 then 
-                               Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> hogmap)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
-                            hog_skipped := hog_skipped + 1;
-                            next;
-                        elif h1=-1 and h2=-1 and not DoAllAllOfUnmapped then
-                            if printlevel >= 4 then 
-                                Logger(sprintf('skipping %s/%d (%s) vs %s/%d (%s) (-> unmapped)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
-                            hog_skipped := hog_skipped + 1;
-                            next;
-                        fi:
-                    elif not DoAllAllOfUnmapped then
-                        hog_fast_skip := hog_fast_skip + 1;
-                        t_hogtst := t_hogtst + (time()-th);
+                    h1 := HogIds1[i1]:
+                    h2 := HogIds2[i2]:
+                    t_hogtst := t_hogtst + (time()-th);
+                    if h1<>h2 then 
+                        if printlevel >= 4 then 
+                           Logger(sprintf('skipping %s/%d (%d) vs %s/%d (%d) (-> hogmap)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
+                        hog_skipped := hog_skipped + 1;
+                        next;
+                    elif h1=-1 and h2=-1 and not DoAllAllOfUnmapped then
+                        if printlevel >= 4 then 
+                            Logger(sprintf('skipping %s/%d (%d) vs %s/%d (%d) (-> unmapped)', name1, i1, HogIds1[i1], name2, i2, HogIds2[i2]), 5); fi:
+                        hog_skipped := hog_skipped + 1;
                         next;
                     fi:
                 fi:
 
                 len1 := length(Seqs1[i1]);
                 len2 := length(Seqs2[i2]);
-                Logger(sprintf('aligning %s/%d vs %s/%d (seq lens: %d/%d) (hogids: %s vs %s)', 
-                               name1, i1, name2, i2, len1, len2, HogIds1[i1], HogIds2[i2]), 3);
+                Logger(sprintf('aligning %s/%d vs %s/%d (seq lens: %d/%d) (hogids: %d vs %d)', 
+                               name1, i1, name2, i2, len1, len2, h1, h2), 3);
 
                 ta := time():
                 dps := DynProgScore(Seqs1[i1],Seqs2[i2],DM,JustScoreShort);
