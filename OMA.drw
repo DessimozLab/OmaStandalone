@@ -212,6 +212,7 @@ TupleOfSameHogGroups := proc(n1, n2, is_same_genome)
         for j1 from j1a to n2 while HogIds2[j1s[j1]]<hog_i1 do od: # skip hogs that exist only in genome2
         for j2 from j1+1 to n2 while HogIds2[j1s[j2]]=hog_i1 do od:  # j1..j2 range of sorted j1s that has same HogIds
         j2 := j2 - 1;
+        if j1 > n2 then break; fi;
         if (DoAllAllOfUnmapped or hog_i1 > -1) and hog_i1 = HogIds2[j1s[j1]] then
             Logger(sprintf('hog_idx: %d, (%d,%d)..(%d,%d) [hog_i2: %d]', hog_i1, i1, i2, j1, j2, HogIds2[j1s[j2]]), 4);
             for x from i1 to i2 do for y from j1 to j2 do 
