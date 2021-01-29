@@ -65,6 +65,15 @@ Set(gc=1e8):
 SetRandSeed():
 GetStats := true;
 
+if assigned(AuxDataPath) then 
+    datadirname := AuxDataPath;
+    if datadirname[1..2] = '~/' then 
+        datadirname := getenv('HOME').datadirname[2..-1]
+    fi:
+else
+    datadirname := getenv('HOME').'/.cache/oma';
+fi:
+
 # Read libraries
 if assigned(libdir) then
     if libdir[-1]<>'/' then libdir := libdir .'/' fi:
