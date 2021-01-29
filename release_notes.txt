@@ -6,6 +6,15 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.4.2 to 2.5.0
+======================================
+
+New features:
+-------------
+- introduces new variable AuxDataPath in parameters file that allows to
+  specify the path where auxillary datafiles are stored.
+
+
 Summary of Changes from 2.4.1 to 2.4.2
 ======================================
 This is a bugfix release only.
