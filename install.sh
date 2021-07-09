@@ -57,7 +57,7 @@ fi
 
 echo "Installing darwin binary..."
 
-if ! cp $current_dir/bin/omadarwin $current_dir/bin/$DARWIN_BINARY $current_dir/bin/oma current_dir/bin/oma-* $current_dir/bin/warthog $omadir/bin/ 2>/dev/null
+if ! cp $current_dir/bin/omadarwin $current_dir/bin/$DARWIN_BINARY $current_dir/bin/oma $current_dir/bin/oma-* $current_dir/bin/warthog $omadir/bin/ 2>/dev/null
 then
     echo "Could not write to $install_prefix. Please try again either with a different install prefix or with 'sudo ./install.sh [install_prefix]."
     exit
