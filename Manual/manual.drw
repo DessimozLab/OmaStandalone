@@ -210,6 +210,10 @@ install := [
             But we still encourage you to run the installer script, since it 
             makes working with OMA considerably more convenient.'),
 
+            Paragraph(0, 'Alternatively, we now also provide a docker container that
+            can be used directly. See the', Link(TextBlock('a', href='#docker', 'Docker section')), 
+            ' for additional information on this.'),
+
             Paragraph(0, 'To install OMA standalone on your system, download
             the installer, untar the package and run the included installer
             script:'),
@@ -237,13 +241,41 @@ cd '.folderName.'
 
             Paragraph(0, 'For other shells, choose the appropriate syntax. Of 
             course you can also just use absolute paths to run OMA standalone.'),
+            
             SectionHeader(2, 'Homebrew/Linuxbrew'),  
             Paragraph(0, 'Alternatively, OMA standalone is also available on ',
             IT('Homebrew'), ' and ', IT('Linuxbrew'),'. To install 
             OMA standalone with Homebrew or Linuxbrew make sure you have 
             installed the respective package and then run ', 
             Code('brew tap brewsci/bio
-brew install oma'))]:
+brew install oma')),
+
+            Anchor(TextBlock('a', name='docker', SectionHeader(2, 'Docker / Singularity'))),
+            Paragraph(0, 'Alternatively you can also use a docker / singularity container
+            to run OMA standalone in any environment that allows running containers. You 
+            need to bind mount the folder with your dataset into the docker''s ', TT('/oma'), 
+            ' path, i.e. assuming you want to run the ToyExample with the genomes in ',
+            TT('/tmp/OMA/ToyExample/DB/*fa'), ', you would need to execute the following
+            command to download and execute OMA standalone:'),
+            
+            Paragraph(0, 
+              Code('docker run --rm --name oma -v "/tmp/OMA/ToyExample:/oma" \\
+      dessimozlab/OMA_standalone:latest oma')
+            ),
+            
+            Paragraph(0, 'This would generate the output files as specified in 
+            the default parameters file in ', 
+            TT('/tmp/OMA/ToyExample/Output/'),
+            '. You can also pass the usual command line arguments as described 
+            below.'),
+
+            Paragraph(0, 'On HPC, usually you will need to convert the docker container to a singularity
+            container. The following command will convert the OMA standalone docker 
+            container from dockerhub to a local singularity image file:'),
+
+            Code('singularity build --fakeroot omastandalone.sif docker://dessimozlab/OMA_standalone'),
+            Paragraph(0, 'The container can then be run with a similar command as the docker instance:'),
+            Code('singularity run --bind /tmp/OMA/ToyExample:/oma omastandalone.sif oma')]:
 
 # USAGE
 usage := [ Anchor(TextBlock('a', name='usage', SectionHeader(1, 'Usage'))),
