@@ -52,8 +52,8 @@ if [ $os = "Linux" ]
 then
     ulimit -s unlimited
     if [ $machine = "x86_64" ] ; then
-        comp=vercomp "$kernel" "3"
-        if [ "$comp" = "2" ] ; then
+        vercomp "$kernel" "3"
+        if [ "$?" = "2" ] ; then
             echo "WARNING: using darwin binary for old kernel 2.6.9"
             DARWIN_BINARY="$DARWIN_PATH/omadarwin.linux64_2.6.9"
         else
