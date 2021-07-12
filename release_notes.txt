@@ -6,6 +6,18 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.5.0 to 2.X.Y
+======================================
+
+New features:
+-------------
+
+
+Bug Fixes:
+----------
+
+
+
 Summary of Changes from 2.4.2 to 2.5.0
 ======================================
 
