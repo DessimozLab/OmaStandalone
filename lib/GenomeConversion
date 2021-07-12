@@ -120,7 +120,10 @@ DownloadGeneOntologyIfNeeded := proc()
     lnk := datadirname.'/GOdata.drw.gz':
     src := TimedCallSystem('readlink '.lnk);
     if src[1]<>0 or (not FileExists(trim(src[2])) and not FileExists(datadirname.'/'.trim(src[2]))) then 
-        err := traperror(GOdownload()):
+        err := traperror(SetupDatadirnameDirectory());
+        if err<>lasterror then
+            err := traperror(GOdownload()):
+        fi:
         if err=lasterror then
             printf('Could not download Gene Ontology definitions: %s\n', err);
             exit(1);
@@ -147,6 +150,24 @@ LoadVerifyClasses := proc()
     return(classes);
 end:
 
+SetupDatadirnameDirectory := proc()
+    fs := FileStat(datadirname):
+    if length(fs) = 0 then
+        res := TimedCallSystem('mkdir -p '.datadirname);
+        if res[1] <> 0 then
+            msg := sprintf('Cannot create directory %s. You can specify an alternative directory in the parameter file as variable AuxDataPath', datadirname);
+            prints(msg);
+            error(msg);
+        fi:
+    else
+        if CallSystem('[ -w '.datadirname.' ]')<>0 then
+            msg := sprintf('directory "%s" is not writable. You can specify a different path in the parameter file (AuxDataPath)', datadirname);
+            prints(msg);
+            error(msg);
+        fi:
+    fi:
+end:
+
 DownloadUniprotTaxonomyIfNeeded := proc()
     if not member(DoHierarchicalGroups, {'top-down'}) or 
         lowercase(SpeciesTree)<>'lineage' then return() fi;
@@ -154,7 +175,10 @@ DownloadUniprotTaxonomyIfNeeded := proc()
     src := TimedCallSystem('readlink '.lnk);
     if src[1]<>0 or (not FileExists(trim(src[2])) and not FileExists(datadirname.'/'.trim(src[2]))) then
         Logger('start downloading UniProt Taxonomy...');
-        err := traperror(TaxonomyDownload());
+        err := traperror(SetupDatadirnameDirectory());
+        if err <> lasterror then
+            err := traperror(TaxonomyDownload());
+        fi:
         if err=lasterror then
             printf('Could not download UniProt Taxonomy definition: %A\n\n', err);
             printf('Cannot infer HOGs based on lineage tree.\n');

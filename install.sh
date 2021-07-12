@@ -5,11 +5,17 @@ os=$(uname -s)
 
 DARWIN_BINARY="omadarwin.linux32"
 install_prefix="${1:-/usr/local}"
-data_dir="${2:-${HOME}/.oma}"
+data_dir="${2:-DEFAULT}"
 not_create_venv="$3"
 
 current_dir=`dirname $0`
 versionnr="[VERSIONNR]"
+if [ "$data_dir" == "DEFAULT" ] ; then
+    data_dir="$HOME/.cache/oma"
+    data_dir_str="getenv('HOME').'/.cache/oma'"
+else
+    data_dir_str="'$data_dir'"
+fi
 
 if [ $# -ge 1 ]
 then
@@ -51,7 +57,7 @@ fi
 
 echo "Installing darwin binary..."
 
-if ! cp $current_dir/bin/omadarwin $current_dir/bin/$DARWIN_BINARY $current_dir/bin/oma $current_dir/bin/warthog $omadir/bin/ 2>/dev/null
+if ! cp $current_dir/bin/omadarwin $current_dir/bin/$DARWIN_BINARY $current_dir/bin/oma $current_dir/bin/oma-* $current_dir/bin/warthog $omadir/bin/ 2>/dev/null
 then
     echo "Could not write to $install_prefix. Please try again either with a different install prefix or with 'sudo ./install.sh [install_prefix]."
     exit
@@ -78,7 +84,7 @@ mkdir -p $data_dir
 if [ "$USER" == "root" ] ; then
     chown -R $SUDO_USER $data_dir
 fi
-sed -i.se "s|datadirname := .*|datadirname := '$data_dir':|" $omadir/darwinlib/darwinit && rm $omadir/darwinlib/darwinit.se
+sed -i.se "s|datadirname := .*|datadirname := $data_dir_str:|" $omadir/darwinlib/darwinit && rm $omadir/darwinlib/darwinit.se
 
 echo "Creating symlinks to current version..."
 [ -L $linkdir/OMA ] && unlink $linkdir/OMA
