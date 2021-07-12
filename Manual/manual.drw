@@ -853,6 +853,17 @@ parameters := [ Anchor(TextBlock('a', name='parameters',
                        Link(TextBlock('a',href='https://omabrowser.org/export', 'OMA Browser export')),
                        ' interface have usable input annotations.'),
                        TT('true')),
+                    Row(TT('AuxDataPath'),
+                       Paragraph(0, 'Path where auxillary data files will be stored. 
+                       If not specified, the data will be stored under ', 
+                       TT('~/.cache/oma'), '. This directory should be writeable 
+                       by the user running OMA standalone. OMA will store auxillary
+                       files, such as the Gene Ontology definitions in there. For 
+                       datasets with exported AllAll files, we directly ship the 
+                       necessary files from the OMA Browser and change the default 
+                       value of this parameter to ', TT('./data/'), '. We also recommend
+                       to do this if you run OMA standalone using docker/singularity.'),
+                       TT('~/.cache/oma')),
                     Row(TT('GroupFunctionCutoff'),
                        Paragraph(0, 'Parameter to specify the fraction of genes in a 
                        group that need to be annotated with a GO term in order to propagate
