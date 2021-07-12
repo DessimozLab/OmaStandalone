@@ -260,7 +260,7 @@ brew install oma')),
             
             Paragraph(0, 
               Code('docker run --rm --name oma -v "/tmp/OMA/ToyExample:/oma" \\
-      dessimozlab/OMA_standalone:latest oma')
+      dessimozlab/oma_standalone:latest oma')
             ),
             
             Paragraph(0, 'This would generate the output files as specified in 
@@ -273,7 +273,7 @@ brew install oma')),
             container. The following command will convert the OMA standalone docker 
             container from dockerhub to a local singularity image file:'),
 
-            Code('singularity build --fakeroot omastandalone.sif docker://dessimozlab/OMA_standalone'),
+            Code('singularity build --fakeroot omastandalone.sif docker://dessimozlab/oma_standalone'),
             Paragraph(0, 'The container can then be run with a similar command as the docker instance:'),
             Code('singularity run --bind /tmp/OMA/ToyExample:/oma omastandalone.sif oma')]:
 
