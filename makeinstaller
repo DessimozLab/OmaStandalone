@@ -69,7 +69,7 @@ if [ -z "$webpath" ]; then
         prd.vital-it.ch) 
             webpath="/scratch/ul/projects/cdessimo/oma-browser";;
         wally*)
-            webpath="/scratch/wally/FAC/FBM/DBC/cdessim2/oma/oma-browser";;
+            webpath="/nas/FAC/FBM/DBC/cdessim2/oma/D2c/oma-browser";;
         *)
             webpath=$(ssh $webhost "source ~/.bashrc && echo \$DARWIN_BROWSER_SHARE")
             if [ -z "$webpath" ] ; then 
