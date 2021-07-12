@@ -24,7 +24,7 @@ OutputFolder := 'Output';
 # or commented, the default will be ~/.cache/oma/
 # You can use environment variables (with getenv() function) or relative
 # paths which are relative to the current directory where you start the run
-# AuxDataPath := getenv('HOME').'/.cache/oma';
+AuxDataPath := 'data/';
 
 # if you want to recompute everything from scratch every time the script
 # is run, set the following parameter to false.
