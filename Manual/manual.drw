@@ -1139,7 +1139,7 @@ gettinghelp := [ Anchor(TextBlock('a', name='gettinghelp',
             )),
             
             Paragraph(0, 'The preferred way to get help about OMA is via the 
-            ', Link(TextBlock('a',href='https://www.biostars.org/t/oma/', 
+            ', Link(TextBlock('a',href='https://www.biostars.org/tag/oma/', 
             'Biostars')), ' community resource. Please consider asking your 
             question there, including the tags "OMA" and "orthologs".'),
             Paragraph(0, 'If your question requires privacy, we are also 
