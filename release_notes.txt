@@ -15,7 +15,10 @@ New features:
 
 Bug Fixes:
 ----------
+- fixes an issue with parsing splicing information for genomes with 
+  many splicing variants.
 
+- minor improvements in the documentation.
 
 
 Summary of Changes from 2.4.2 to 2.5.0
