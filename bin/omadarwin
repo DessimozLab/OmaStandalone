@@ -66,6 +66,9 @@ then
     if [ $machine = "x86_64" ]
     then
         DARWIN_BINARY="$DARWIN_PATH/omadarwin.mac64"
+    elif [ $machine = "arm64" ] ; then
+        # no special arm build of darwin yet
+        DARWIN_BINARY="$DARWIN_PATH/omadarwin.mac64"
     else
         echo "The last version of OMA standalone that supported 32bit OSX (10.6) is OMA 2.2.0"
         exit 1
