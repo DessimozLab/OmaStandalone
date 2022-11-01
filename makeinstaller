@@ -35,7 +35,8 @@ EOF
 webhost="linneus77.ethz.ch"
 deploy="yes"
 webpath=""
-while getopts "hlr:p:" opt ; do
+hog_branch=""
+while getopts "hlr:p:b:" opt ; do
     case $opt in 
     h) showUsage
          exit 0
@@ -45,6 +46,8 @@ while getopts "hlr:p:" opt ; do
     p)   webpath="$OPTARG"
          ;;
     l)   deploy="no"
+         ;;
+    b)   hog_branch="-b $OPTARG"
          ;;
     \?)  echo "invalid option" >&2
          showUsage
@@ -95,7 +98,7 @@ mv darwin/lib $instpath/darwinlib
 rm -rf darwin
 
 # clone hog_bottom_up python repo
-git clone --depth 1 ssh://gitolite@lab.dessimoz.org:2222/hog_bottom_up
+git clone $hog_branch --depth 1 ssh://gitolite@lab.dessimoz.org:2222/hog_bottom_up
 cd hog_bottom_up; git log -n 1 --format=%H > bottom_up.version; cd ..
 rm -rf hog_bottom_up/.git hog_bottom_up/.gitignore
 mv hog_bottom_up $instpath/
