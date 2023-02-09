@@ -33,7 +33,7 @@ module external GetHOGsBottomUp, FindWarthogs;
 GetHOGsBottomUp := proc()
     cmd := [FindWarthogs()]:
     cmd := append(cmd, '-m pair', '-o', OutputFolder.'/HierarchicalGroups.orthoxml',
-        '-i', OutputFolder.'/PairwiseOrthologs', '-t standalone', '-p', 
+        '-i', OutputFolder.'/PairwiseOrthologs', '-t standalone', '--loft', '-p', 
         string(round(100*MinEdgeCompletenessFraction)));
     if SpeciesTree='estimate' then
         # tree has already been computed and safed to EstimatedSpeciesTree.nwk
