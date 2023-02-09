@@ -775,27 +775,6 @@ else
         fi:
     fi:
 
-    # store used splicing variant
-    if UseOnlyOneSplicingVariant=true then
-        used_variants := []:
-        for i to NG do
-            g := genomes[i];
-            splicemap := LoadSpliceMap(g);
-            for alt in splicemap do
-                NM := [seq(sum(length(decompress(BestMatch[i,j,k])),j=1..NG),k=alt)];
-                best := SearchArray(max(NM), NM);
-                used_variants := append(used_variants, [g, IDtable[i,alt[best]]]);
-            od:
-        od:
-        if length(used_variants)>0 then
-            OpenWriting(OutputFolder.'/used_splicing_variants.txt');
-            for z in used_variants do
-                printf('%s\t%s\n', op(z));
-            od:
-            OpenWriting(previous);
-        fi:
-    fi:
-
     # Write out function predictions
     if DoGroupFunctionPrediction=true and can_do_function then
         WriteGAF(new_annots, OutputFolder.'/gene_function.gaf', GroupFunctionCutoff):
