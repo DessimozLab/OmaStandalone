@@ -1,4 +1,4 @@
-FROM python:3-slim
+FROM python:3.9-slim
 
 RUN apt-get -qq update \
     && DEBIAN_FRONTEND="noninteractive" TZ="Europe/Zurich" apt-get install -y --no-install-recommends \
