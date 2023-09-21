@@ -30,13 +30,19 @@
 
 LoadSpliceMap := proc(genome)
     smap := GS[genome, 'SPLICEMAP'];
-    if smap<>'' then return(parse(smap)): fi:
-    map := []:
-    for i do
-       smap := GS[genome, sprintf('SPLICEMAP%d',i)];
-       if smap='' then break fi:
-       map := append(map, op(parse(smap)))
-    od:
+    if smap<>'' and length(smap)<70000 then return(parse(smap)): 
+    elif smap<>'' then
+        x := SearchAllString('},', smap);
+        x := [0, op(x), length(smap)-1];
+        map := [seq(parse(smap[x[i]+2..x[i+1]]), i=1..length(x)-1)];
+    else
+        map := []:
+        for i do
+           smap := GS[genome, sprintf('SPLICEMAP%d',i)];
+           if smap='' then break fi:
+           map := append(map, op(parse(smap)))
+        od:
+    fi:
     return(map);
 end:
 

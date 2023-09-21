@@ -35,7 +35,8 @@ EOF
 webhost="linneus77.ethz.ch"
 deploy="yes"
 webpath=""
-while getopts "hlr:p:" opt ; do
+hog_branch=""
+while getopts "hlr:p:b:" opt ; do
     case $opt in 
     h) showUsage
          exit 0
@@ -45,6 +46,8 @@ while getopts "hlr:p:" opt ; do
     p)   webpath="$OPTARG"
          ;;
     l)   deploy="no"
+         ;;
+    b)   hog_branch="-b $OPTARG"
          ;;
     \?)  echo "invalid option" >&2
          showUsage
@@ -69,7 +72,7 @@ if [ -z "$webpath" ]; then
         prd.vital-it.ch) 
             webpath="/scratch/ul/projects/cdessimo/oma-browser";;
         wally*)
-            webpath="/scratch/wally/FAC/FBM/DBC/cdessim2/oma/oma-browser";;
+            webpath="/nas/FAC/FBM/DBC/cdessim2/oma/D2c/oma-browser";;
         *)
             webpath=$(ssh $webhost "source ~/.bashrc && echo \$DARWIN_BROWSER_SHARE")
             if [ -z "$webpath" ] ; then 
@@ -83,6 +86,7 @@ webpath="$webpath/standalone"
 versionnr=`git describe`
 instpath=$target_path/OMA.$versionnr
 darwinhome="darwin@linneus77.ethz.ch:v2/source/"
+jumphost="-J adriaal@linneus77.ethz.ch"
 
 mkdir -p $instpath/bin
 mkdir -p $instpath/DB
@@ -95,16 +99,16 @@ mv darwin/lib $instpath/darwinlib
 rm -rf darwin
 
 # clone hog_bottom_up python repo
-git clone --depth 1 ssh://gitolite@lab.dessimoz.org:2222/hog_bottom_up
+git clone $hog_branch --depth 1 ssh://gitolite@lab.dessimoz.org:2222/hog_bottom_up
 cd hog_bottom_up; git log -n 1 --format=%H > bottom_up.version; cd ..
 rm -rf hog_bottom_up/.git hog_bottom_up/.gitignore
 mv hog_bottom_up $instpath/
 
 # copy darwin binaries to $shortname/bin/${shortname}darwin
-scp $darwinhome/linux/darwin $instpath/bin/omadarwin.linux32
-scp $darwinhome/linux64_2.6.9/darwin $instpath/bin/omadarwin.linux64_2.6.9
-scp $darwinhome/linux64/darwin $instpath/bin/omadarwin.linux64
-scp $darwinhome/macintel64/darwin $instpath/bin/omadarwin.mac64
+scp $jumphost $darwinhome/linux/darwin $instpath/bin/omadarwin.linux32
+scp $jumphost $darwinhome/linux64_2.6.9/darwin $instpath/bin/omadarwin.linux64_2.6.9
+scp $jumphost $darwinhome/linux64/darwin $instpath/bin/omadarwin.linux64
+scp $jumphost $darwinhome/macintel64/darwin $instpath/bin/omadarwin.mac64
 
 # copy oma library to $1/OMA$versionnr/lib
 cp -r lib $instpath/

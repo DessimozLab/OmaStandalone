@@ -563,12 +563,11 @@ else
             warning('computation of HierarchicalGroups failed: '.string(lasterror));
         fi:
     fi:
-    # # Retrieve all IDs
-    # # Create File MapSeqNum-ID:
+
     CallSystem('rm -rf '.OutputFolder.'; mkdir -p '.OutputFolder);
+
+    # # Retrieve all IDs
     IDtable := CreateArray(1..NG);
-    OpenWriting(OutputFolder.'/Map-SeqNum-ID.txt');
-    print('\#Format: genome<tab>sequence number<tab>id');
     for i to NG do
         DB := DBs[i];
         tmp := CreateArray(1..ns[i]);
@@ -576,10 +575,46 @@ else
             e := Entry(j):
             tmp[j] := SearchTag('FASTAHEADER', e); 
             if tmp[j]='' then tmp[j] := SearchTag('ID', e); fi:
-            printf('%s\t%d\t%s\n',genomes[i],j,tmp[j]);
         od;
         IDtable[i] := tmp;
     od:
+
+    # store used splicing variant
+    main_isoform := CreateString(sum(ns), '1'):
+    Goff := CreateArray(1..NG+1): 
+    for i to NG do Goff[i+1] := Goff[i] + ns[i] od:
+    assert(length(main_isoform) = Goff[NG+1]);
+
+    if UseOnlyOneSplicingVariant=true then
+        used_variants := []:
+        for i to NG do
+            g := genomes[i];
+            splicemap := LoadSpliceMap(g);
+            for alt in splicemap do
+                NM := [seq(sum(length(decompress(BestMatch[i,j,k])),j=1..NG),k=alt)];
+                best := SearchArray(max(NM), NM);
+                used_variants := append(used_variants, [g, IDtable[i,alt[best]]]);
+                for j to length(alt) do if j<>best then 
+                    main_isoform[Goff[i]+alt[j]] := '0';
+                fi od:
+            od:
+        od:
+        if length(used_variants)>0 then
+            OpenWriting(OutputFolder.'/used_splicing_variants.txt');
+            for z in used_variants do
+                printf('%s\t%s\n', op(z));
+            od:
+            OpenWriting(previous);
+        fi:
+    fi:
+
+
+    # # Create File MapSeqNum-ID:
+    OpenWriting(OutputFolder.'/Map-SeqNum-ID.txt');
+    print('\#Format: genome<tab>sequence number<tab>id<tab>is_main_isoform');
+    for i to NG do for j to ns[i] do
+        printf('%s\t%d\t%s\t%s\n', genomes[i], j, IDtable[i,j], If(main_isoform[Goff[i]+j]='1', 'True', 'False'));
+    od od:
     OpenWriting(previous);
 
     if DoHomologyFunctionPrediction=true then
@@ -737,27 +772,6 @@ else
         fi:
         if not WriteOutput_PhyleticProfileHOG = false then
             WriteProfileFromHOGs(HOG, OutputFolder.'/PhyleticProfileHOGs.txt');
-        fi:
-    fi:
-
-    # store used splicing variant
-    if UseOnlyOneSplicingVariant=true then
-        used_variants := []:
-        for i to NG do
-            g := genomes[i];
-            splicemap := LoadSpliceMap(g);
-            for alt in splicemap do
-                NM := [seq(sum(length(decompress(BestMatch[i,j,k])),j=1..NG),k=alt)];
-                best := SearchArray(max(NM), NM);
-                used_variants := append(used_variants, [g, IDtable[i,alt[best]]]);
-            od:
-        od:
-        if length(used_variants)>0 then
-            OpenWriting(OutputFolder.'/used_splicing_variants.txt');
-            for z in used_variants do
-                printf('%s\t%s\n', op(z));
-            od:
-            OpenWriting(previous);
         fi:
     fi:
 

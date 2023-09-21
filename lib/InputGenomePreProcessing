@@ -109,8 +109,9 @@ EstablishSpliceMap := proc(spliceFn, ids, rem)
     for gene in splicedata do if length(gene)>1 then
         # iterate over all variantes of a gene
         geneMap := []:
-        for variant in gene do
-            variant := CleanID(variant); lV := length(variant);
+        geneSet := {seq(CleanID(z), z=gene)};
+        for variant in geneSet do
+            lV := length(variant);
             # check if variant is a uniq prefix of any id
             k := SearchOrderedArray(variant, sorted_ids_w_lookup[1]);
             if k>0 and sorted_ids_w_lookup[1,k]=variant then 
@@ -118,8 +119,12 @@ EstablishSpliceMap := proc(spliceFn, ids, rem)
                 geneMap := append(geneMap, sorted_ids_w_lookup[2,k]);
             elif k<lenIDs and sorted_ids_w_lookup[1,k+1,1..lV]=variant then
                 if k<lenIDs-1 and sorted_ids_w_lookup[1,k+2,1..lV]=variant then
-                    error('splicing variant prefix '''.variant.''' is not uniq in the proteome.'.
-                          ' There are at least two proteins with that ID prefix');
+                    for q from k+2 to lenIDs while (length(sorted_ids_w_lookup[1,q]) >= lV and sorted_ids_w_lookup[1,q,1..lV] = variant) do
+                        x := SearchString(' ', sorted_ids_w_lookup[1,q,lV+1..-1]);
+                        if member(sorted_ids_w_lookup[1,q,1..lV+x], geneSet) then next fi:
+                        error('splicing variant prefix '''.variant.''' is not uniq in the proteome.'.
+                              ' There are at least two proteins with that ID prefix');
+                    od:
                 fi:
                 geneMap := append(geneMap, sorted_ids_w_lookup[2,k+1]);
             else

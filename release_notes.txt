@@ -6,6 +6,29 @@
  :Contact: contact@omabrowser.org
 
 
+Summary of Changes from 2.5.0 to 2.6.0
+======================================
+
+New features:
+-------------
+- produce orthoxml files according to v0.5 of orthoxml 
+  (https://github.com/qfo/orthoxml/releases/tag/v0.5)
+
+- Map-SeqNum-ID.txt contains an additional column indicating 
+  which proteins were selected as main isoforms.
+
+
+Bug Fixes:
+----------
+- exclude all but main isoform variant from the HierarchicalGroups.orthoxml
+  output (https://github.com/DessimozLab/OmaStandalone/issues/8)
+
+- fixes an issue with parsing splicing information for genomes with 
+  many splicing variants.
+
+- minor improvements in the documentation.
+
+
 Summary of Changes from 2.4.2 to 2.5.0
 ======================================
 

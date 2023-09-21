@@ -15,7 +15,7 @@
       Alexander Roth, Stefan Zoller, Gaston Gonnet.
 
       (c) CBRG, ETH Zurich, 2004-2019
-      (c) Dessimoz lab, UCL and UNIL, 2013-2019
+      (c) Dessimoz lab, UCL and UNIL, 2013-2023
 
       Version [VERSIONNR]
 

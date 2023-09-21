@@ -33,7 +33,7 @@ module external GetHOGsBottomUp, FindWarthogs;
 GetHOGsBottomUp := proc()
     cmd := [FindWarthogs()]:
     cmd := append(cmd, '-m pair', '-o', OutputFolder.'/HierarchicalGroups.orthoxml',
-        '-i', OutputFolder.'/PairwiseOrthologs', '-t standalone', '-p', 
+        '-i', OutputFolder.'/PairwiseOrthologs', '-t standalone', '--loft', '-p', 
         string(round(100*MinEdgeCompletenessFraction)));
     if SpeciesTree='estimate' then
         # tree has already been computed and safed to EstimatedSpeciesTree.nwk
@@ -69,9 +69,28 @@ GetHOGsBottomUp := proc()
     return(HOGs);
 end:
 
+Get_Toplevel_Offsets := proc(file)
+    beg_grp := SearchAllString('<orthologGroup', file):
+    end_grp := SearchAllString('</orthologGroup>', file):
+    assert(length(beg_grp) = length(end_grp));
+    assert(beg_grp[-1] < end_grp[-1]);
+    top := []: depth := 0: b := e := 1:
+    while b <= length(beg_grp) do
+        if beg_grp[b] < end_grp[e] then 
+           depth := depth + 1;
+           if depth = 1 then top := append(top, beg_grp[b]) fi:
+           b := b + 1:
+        else
+           depth := depth - 1;
+           e := e + 1;
+        fi:
+    od:
+    return(top);
+end:
+
 ParseToplevelHOGs := proc(fn)
     file := ReadRawFile(fn):
-    grp_offsets := SearchAllString('<orthologGroup id="', file):
+    grp_offsets := Get_Toplevel_Offsets(file);
     NH := length(grp_offsets):
     HOGs := CreateArray(1..NH, []):
     geneRefs := SearchAllString('<geneRef id="', file):
