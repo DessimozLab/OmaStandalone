@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 os=$(uname -s)
 
@@ -105,7 +105,6 @@ rm -rf hog_bottom_up/.git hog_bottom_up/.gitignore
 mv hog_bottom_up $instpath/
 
 # copy darwin binaries to $shortname/bin/${shortname}darwin
-scp $jumphost $darwinhome/linux/darwin $instpath/bin/omadarwin.linux32
 scp $jumphost $darwinhome/linux64_2.6.9/darwin $instpath/bin/omadarwin.linux64_2.6.9
 scp $jumphost $darwinhome/linux64/darwin $instpath/bin/omadarwin.linux64
 scp $jumphost $darwinhome/macintel64/darwin $instpath/bin/omadarwin.mac64
@@ -159,17 +158,18 @@ cp $prev_rels $instpath/Manual/
 
 # copy toy example to $1/OMA$versionnr
 cp -r ToyExample $instpath/ToyExample
+(cd $instpath/ToyExample/data; rm GOdata.drw.gz; ln -s GOdata*gz GOdata.drw.gz)
 
 # adjust for version number, remove devolopping functions
 if [ $os = "Darwin" ]
 then
     sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
- $instpath/install.sh $instpath/README.oma $instpath/bin/oma $instpath/hog_bottom_up/file_manager.py
+ $instpath/install.sh $instpath/README.oma $instpath/bin/oma $instpath/hog_bottom_up/gethogs/file_manager.py
     sed -i '' "/utildir/d" $instpath/lib/darwinit
     sed -i '' "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
 else
     sed -i -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
- $instpath/install.sh $instpath/README.oma $instpath/bin/oma $instpath/hog_bottom_up/file_manager.py
+ $instpath/install.sh $instpath/README.oma $instpath/bin/oma $instpath/hog_bottom_up/gethogs/file_manager.py
     sed -i "/utildir/d" $instpath/lib/darwinit
     sed -i "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
 fi

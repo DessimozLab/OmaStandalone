@@ -43,7 +43,7 @@ then
     fi
 elif [ $os = "Darwin" ]
 then
-    if [ $machine = "x86_64" ]
+    if [[ "$machine" == "x86_64" || "$machine" == "arm64" ]]
     then
         DARWIN_BINARY="omadarwin.mac64"
     else
