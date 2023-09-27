@@ -33,5 +33,20 @@ You can also install OMA standalone via `Homebrew <https://brew.sh/>`_ or
     brew tap brewsci/bio
     brew install oma
 
+Docker
+++++++
+
+OMA standalone is also available from on Docker. You simply need to bind mount the folder with your dataset into the docker's /oma path.
+So the command to run the ToyExample dataset within this repository would be:
+
+.. code-block:: bash
+
+   docker run --rm --name oma -v "$(pwd)/ToyExample:/oma" \
+      dessimozlab/oma_standalone:latest oma
+
+
+Running from source
++++++++++++++++++++
+
 If you want to use OMA standalone from this repository, make sure you have 
 `Darwin <http://bio-recipes.com/darwin/>`_ installed on your system.
