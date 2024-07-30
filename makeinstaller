@@ -85,8 +85,8 @@ webpath="$webpath/standalone"
 
 versionnr=`git describe`
 instpath=$target_path/OMA.$versionnr
-darwinhome="darwin@linneus77.ethz.ch:v2/source/"
-jumphost="-J adriaal@linneus77.ethz.ch"
+darwinhome="adriaal@euler.ethz.ch:/cluster/work/gonnet/linneus-darwin/v2/source/"
+jumphost="-J adriaal@jumphost.inf.ethz.ch"
 
 mkdir -p $instpath/bin
 mkdir -p $instpath/DB
