@@ -233,7 +233,7 @@ elif Filtering='BestDimless' then
      RemoveOne := proc( i:posint )
 	TreeFromGroups( [op( {op(groups)} minus {i} )] )[2] end:
      groups := sort( groups, RemoveOne );
-     groups := groups[ round(length(groups)/5)..-1 ];
+     groups := groups[ ceil(length(groups)/5)..-1 ];
 else error(Filtering,'is an invalid mode');  fi:
 
 printf( '%d orthologous groups after Filtering=%s, %s, %s\n',
