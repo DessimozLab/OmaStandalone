@@ -43,6 +43,7 @@ LoadSpliceMap := proc(genome)
            map := append(map, op(parse(smap)))
         od:
     fi:
+    for k to length(map) do map[k] := {op(map[k])} od:
     return(map);
 end:
 
