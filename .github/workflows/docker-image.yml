@@ -14,39 +14,42 @@ on:
         required: true
 
 env:
+  REGISTRY_IMAGE: dessimozlab/oma_standalone
   TEST_TAG: dessimozlab/oma_standalone:test
+  # images are only pushed for releases
+  PUSH: ${{ github.event_name != 'push' && github.event_name != 'pull_request' }}
 
 jobs:
 
+  # Build and test each platform natively on its own runner. For releases,
+  # push the image by digest only; the merge job below assembles and tags the
+  # multi-platform image.
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
 
     steps:
       -
+        name: Prepare
+        run: |
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+      -
         name: Checkout
         uses: actions/checkout@v4
-
       -
         name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # list of Docker images to use as base name for tags
-          images: |
-            dessimozlab/oma_standalone
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-      -
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+          images: ${{ env.REGISTRY_IMAGE }}
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -55,6 +58,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: ${{ matrix.platform }}
           load: true
           tags: ${{ env.TEST_TAG }}
           build-args: |
@@ -66,20 +70,85 @@ jobs:
           if [ ! -f $PWD/ToyExample/Output/HierarchicalGroups.orthoxml ] ; then exit 1; fi
       -
         name: Login to DockerHub
-        if: github.event_name != 'pull_request' && github.event_name != 'push'
+        if: env.PUSH == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
       -
-        name: Build and push
+        name: Push by digest
+        id: build
+        if: env.PUSH == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64
-          push: ${{ github.event_name != 'push' && github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.REGISTRY_IMAGE }}
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
           build-args: |
             ${{ inputs.oma_tarball_url && format('OMA_TARBALL_URL={0}', inputs.oma_tarball_url) || '' }}
+      -
+        name: Export digest
+        if: env.PUSH == 'true'
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+      -
+        name: Upload digest
+        if: env.PUSH == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name != 'push' && github.event_name != 'pull_request'
+
+    steps:
+      -
+        name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+      -
+        name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      -
+        name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      -
+        name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+      -
+        name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
