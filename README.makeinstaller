@@ -3,7 +3,7 @@ Usage: ./makeinstaller PATH_TO_INSTALLER
 This script generates a folder at PATH_TO_INSTALLER (and a tarball of it) 
 that includes:
 - the darwin release bundle from https://github.com/cbrg-eth/darwin-releases
-  (binaries for Linux x86_64/arm64 and macOS Apple Silicon, a launcher that
+  (binaries for Linux x86_64/arm64 and macOS Intel/Apple Silicon, a launcher that
   starts the platform specific one, and the darwin library). Select the
   release with -d <tag>.
 - the OMA library and OMA.drw
