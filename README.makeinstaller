@@ -2,9 +2,10 @@ Usage: ./makeinstaller PATH_TO_INSTALLER
 
 This script generates a folder at PATH_TO_INSTALLER (and a tarball of it) 
 that includes:
-- a current version of the darwin library from the git repo
-- current versions of darwin binaries for linux32, linux64, mac32 and mac64
-- a wrapper for those binaries to start the platform specific one
+- the darwin release bundle from https://github.com/cbrg-eth/darwin-releases
+  (binaries for Linux x86_64/arm64 and macOS Apple Silicon, a launcher that
+  starts the platform specific one, and the darwin library). Select the
+  release with -d <tag>.
 - the OMA library and OMA.drw
 - the example parameters.drw
 - an installer script to install OMA on some client machine

@@ -10,6 +10,9 @@ if ! python3 -m venv $venv_path ; then
     fi
 fi
 source "$venv_path/bin/activate"
+# old pip versions (e.g. 23.0 on python 3.9) leave the "#!python" placeholder
+# in installed scripts, which makes warthogs.py unusable
+pip install --upgrade pip || (>&2 echo "Cannot upgrade pip, continuing with the installed version")
 if ! pip install -r $package/requirements.txt ; then
     (>&2 echo "Cannot install python dependencies for hog-bottom-up inference algorithm")
     exit 1

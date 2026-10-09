@@ -1,0 +1,62 @@
+name: Release
+
+# Publishing a GitHub release (tag X.Y.Z) builds the installer tarball and the
+# website files, attaches them to the release, and builds the Docker image
+# from that tarball. The omabrowser host picks the files up from the release
+# with deploy/sync-release.sh.
+
+on:
+  release:
+    types: [published]
+
+jobs:
+
+  installer:
+    name: Build installer tarball
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      OMA_VERSION: ${{ github.event.release.tag_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # makeinstaller lists the previous releases from the git tags
+          fetch-depth: 0
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base texlive-latex-recommended texlive-fonts-recommended
+
+      - name: Build installer
+        run: ./makeinstaller -l "$RUNNER_TEMP/dist"
+
+      - name: Package website files
+        run: |
+          mkdir website
+          cp Manual/manual.html website/index.html
+          cp Manual/manual.css Manual/*.png Manual/previous_releases.html release_notes.txt website/
+          tar -czf "$RUNNER_TEMP/dist/OMA.$OMA_VERSION-website.tar.gz" -C website .
+          cd "$RUNNER_TEMP/dist"
+          sha256sum "OMA.$OMA_VERSION.tgz" "OMA.$OMA_VERSION-website.tar.gz" > SHA256SUMS
+
+      # SHA256SUMS goes last: the sync script on omabrowser waits for it
+      - name: Attach to release
+        working-directory: ${{ runner.temp }}/dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload -R "$GITHUB_REPOSITORY" --clobber "$OMA_VERSION" \
+            "OMA.$OMA_VERSION.tgz" "OMA.$OMA_VERSION-website.tar.gz"
+          gh release upload -R "$GITHUB_REPOSITORY" --clobber "$OMA_VERSION" SHA256SUMS
+
+  docker:
+    needs: installer
+    uses: ./.github/workflows/docker-image.yml
+    with:
+      oma_tarball_url: https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/OMA.${{ github.event.release.tag_name }}.tgz
+    secrets: inherit

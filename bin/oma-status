@@ -22,7 +22,7 @@ def get_nr_protein(genome_db_path):
 
 
 def get_batch_size(paramfile):
-    pat = re.compile(b'AlignBatchSize\s*:=\s*(?P<size>[\d.e]+)[:;]')
+    pat = re.compile(rb'AlignBatchSize\s*:=\s*(?P<size>[\d.e]+)[:;]')
     with open(paramfile, 'rb') as fh:
         for line in fh:
             m = pat.search(line)
