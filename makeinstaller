@@ -41,7 +41,7 @@ EOF
 }
 
 webhost="linneus77.ethz.ch"
-darwin_version="v2026.10.08"
+darwin_version="v2026.10.09"
 deploy="yes"
 webpath=""
 hog_branch=""

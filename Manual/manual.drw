@@ -155,8 +155,10 @@ intro := [  Anchor(TextBlock('a', name='introduction',
             plus ESPRIT - a tool based on OMA to detect split genes.
             The software can be run on Linux (x86_64 and arm64, glibc 2.28 or
             newer, e.g. RHEL 8, Debian 10, Ubuntu 20.04) and macOS 11 or newer
-            on Apple Silicon. If you need support for an older platform or 
-            support for macOS on Intel architecture, please use OMA standalone 
+            (Intel and Apple Silicon). Versions newer than 2.7.0 run natively
+            on the arm64 architecture, i.e. on Apple Silicon Macs and on arm64
+            Linux machines. If you need support for an older platform
+            (e.g. CentOS 7 or macOS 10.15 and older), please use OMA standalone
             version <= 2.7.0.'),
 
             Paragraph(0, 'A good introduction into OMA standalone is provided in
