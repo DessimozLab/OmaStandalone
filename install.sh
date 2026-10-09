@@ -1,9 +1,5 @@
 #!/bin/bash
 
-machine=$(uname -m)
-os=$(uname -s)
-
-DARWIN_BINARY="omadarwin.linux32"
 install_prefix="${1:-/usr/local}"
 data_dir="${2:-DEFAULT}"
 not_create_venv="$3"
@@ -35,29 +31,18 @@ Please try again either with a different install prefix or with 'sudo ./install.
 fi
 mkdir -p $linkdir
 
-if [ $os = "Linux" ]
+# the darwin launcher fails on platforms without a darwin binary
+# (supported: Linux x86_64/arm64 with glibc >= 2.28, macOS 11+ on Apple Silicon)
+if ! out=$(printf '6*7;\ndone\n' | $current_dir/darwin/bin/darwin -q -E 2>&1) || [ "$out" != "42" ]
 then
-    if [ $machine = "x86_64" ]
-    then
-        DARWIN_BINARY="omadarwin.linux64"
-    fi
-elif [ $os = "Darwin" ]
-then
-    if [[ "$machine" == "x86_64" || "$machine" == "arm64" ]]
-    then
-        DARWIN_BINARY="omadarwin.mac64"
-    else
-        (>&2 echo "32-bit mac systems are not supported anymore")
-        exit 1
-    fi
-else
-    (>&2 echo "Operating system not supported!")
+    (>&2 echo "darwin does not run on this system:")
+    (>&2 echo "$out")
     exit 1
 fi
 
-echo "Installing darwin binary..."
+echo "Installing darwin..."
 
-if ! cp $current_dir/bin/omadarwin $current_dir/bin/$DARWIN_BINARY $current_dir/bin/oma $current_dir/bin/oma-* $current_dir/bin/warthog $omadir/bin/ 2>/dev/null
+if ! cp $current_dir/bin/omadarwin $current_dir/bin/oma $current_dir/bin/oma-* $current_dir/bin/warthog $omadir/bin/ 2>/dev/null
 then
     echo "Could not write to $install_prefix. Please try again either with a different install prefix or with 'sudo ./install.sh [install_prefix]."
     exit
@@ -67,7 +52,7 @@ echo "Installing oma..."
 cp $current_dir/OMA.drw $current_dir/README.oma $current_dir/parameters.drw $omadir/
 echo "Installing libraries..."
 cp -rf $current_dir/lib $omadir/
-cp -rf $current_dir/darwinlib $omadir/
+cp -rf $current_dir/darwin $omadir/
 cp -rf $current_dir/hog_bottom_up $omadir/
 
 if [ -z "$not_create_venv" ] ; then 
@@ -84,7 +69,8 @@ mkdir -p $data_dir
 if [ "$USER" == "root" ] ; then
     chown -R $SUDO_USER $data_dir
 fi
-sed -i.se "s|datadirname := .*|datadirname := $data_dir_str:|" $omadir/darwinlib/darwinit && rm $omadir/darwinlib/darwinit.se
+darwinit=$omadir/darwin/share/darwin/lib/darwinit
+sed -i.se "s|datadirname := .*|datadirname := $data_dir_str:|" $darwinit && rm $darwinit.se
 
 echo "Creating symlinks to current version..."
 [ -L $linkdir/OMA ] && unlink $linkdir/OMA

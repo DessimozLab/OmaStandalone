@@ -26,6 +26,13 @@ Options:
   -l          do not deploy to the remote host. Just create the tarball 
               locally in the 'target_path' (see below).
 
+  -b <branch> branch of https://github.com/DessimozLab/gethogs to bundle as
+              hog_bottom_up. By default, the default branch is used.
+
+  -d <tag>    darwin release to bundle, i.e. a release tag of
+              https://github.com/cbrg-eth/darwin-releases. By default,
+              $darwin_version is used.
+
 taget_path    path where the target is created. If not set, 
               ${TMPDIR:-/tmp} is used.
 
@@ -33,10 +40,11 @@ EOF
 }
 
 webhost="linneus77.ethz.ch"
+darwin_version="v2026.10.08"
 deploy="yes"
 webpath=""
 hog_branch=""
-while getopts "hlr:p:b:" opt ; do
+while getopts "hlr:p:b:d:" opt ; do
     case $opt in 
     h) showUsage
          exit 0
@@ -48,6 +56,8 @@ while getopts "hlr:p:b:" opt ; do
     l)   deploy="no"
          ;;
     b)   hog_branch="-b $OPTARG"
+         ;;
+    d)   darwin_version="$OPTARG"
          ;;
     \?)  echo "invalid option" >&2
          showUsage
@@ -85,29 +95,23 @@ webpath="$webpath/standalone"
 
 versionnr=`git describe`
 instpath=$target_path/OMA.$versionnr
-darwinhome="adriaal@euler.ethz.ch:/cluster/work/gonnet/linneus-darwin/v2/source/"
-jumphost="-J adriaal@jumphost.inf.ethz.ch"
 
 mkdir -p $instpath/bin
 mkdir -p $instpath/DB
 mkdir -p $instpath/data
 
-# clone darwin repo, stripe .git folder and copy lib to $instpath
-git clone --depth 1 ssh://gitolite@lab.dessimoz.org:2222/darwin
-rm -rf darwin/lib/.git
-mv darwin/lib $instpath/darwinlib
-rm -rf darwin
+# download the darwin release bundle (binaries for all platforms, launcher
+# and library) to $instpath/darwin
+darwin_url="https://github.com/cbrg-eth/darwin-releases/releases/download/$darwin_version/darwin-bundle.tar.gz"
+curl -fsSL "$darwin_url" | tar -xz -C $instpath
+echo "$darwin_version" > $instpath/darwin.version
+darwinit=$instpath/darwin/share/darwin/lib/darwinit
 
-# clone hog_bottom_up python repo
-git clone $hog_branch --depth 1 ssh://gitolite@lab.dessimoz.org:2222/hog_bottom_up
+# clone the GETHOGs python repo into hog_bottom_up
+git clone $hog_branch --depth 1 https://github.com/DessimozLab/gethogs.git hog_bottom_up
 cd hog_bottom_up; git log -n 1 --format=%H > bottom_up.version; cd ..
 rm -rf hog_bottom_up/.git hog_bottom_up/.gitignore
 mv hog_bottom_up $instpath/
-
-# copy darwin binaries to $shortname/bin/${shortname}darwin
-scp $jumphost $darwinhome/linux64_2.6.9/darwin $instpath/bin/omadarwin.linux64_2.6.9
-scp $jumphost $darwinhome/linux64/darwin $instpath/bin/omadarwin.linux64
-scp $jumphost $darwinhome/macintel64/darwin $instpath/bin/omadarwin.mac64
 
 # copy oma library to $1/OMA$versionnr/lib
 cp -r lib $instpath/
@@ -146,7 +150,7 @@ with open("$list_fn",'rt') as fin, open("$prev_rels", 'w') as fout:
 EOF
 
 # create manual and copy files to $instpath
-darwin < Manual/manual.drw
+$instpath/darwin/bin/darwin < Manual/manual.drw
 mkdir $instpath/Manual
 cp Manual/manual.pdf $instpath/Manual/
 cp Manual/manual.css $instpath/Manual/
@@ -166,12 +170,12 @@ then
     sed -i '' -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
  $instpath/install.sh $instpath/README.oma $instpath/bin/oma $instpath/hog_bottom_up/gethogs/file_manager.py
     sed -i '' "/utildir/d" $instpath/lib/darwinit
-    sed -i '' "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
+    sed -i '' "s|datadirname.*|datadirname := libname.'/../data':|" $darwinit
 else
     sed -i -e "s/\[VERSIONNR\]/$versionnr/g" $instpath/lib/splashscreen.txt \
  $instpath/install.sh $instpath/README.oma $instpath/bin/oma $instpath/hog_bottom_up/gethogs/file_manager.py
     sed -i "/utildir/d" $instpath/lib/darwinit
-    sed -i "s|datadirname.*|datadirname := libname.'/../data':|" $instpath/darwinlib/darwinit
+    sed -i "s|datadirname.*|datadirname := libname.'/../data':|" $darwinit
 fi
 
 # create tarball

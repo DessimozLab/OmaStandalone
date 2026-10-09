@@ -1,84 +1,13 @@
-#!/bin/bash
+#!/bin/sh
+# Runs darwin from the release bundle shipped with OMA. Its launcher picks the
+# binary for this platform, raises the stack limit and loads the bundled
+# darwin library.
 
-DARWIN_PATH=$(dirname $0)
-# convert relative to absolute path
-if [ ${DARWIN_PATH:0:1} != "/" ]
-then
-    DARWIN_PATH="$PWD/$DARWIN_PATH"
-fi
-DARWIN_LIB="$DARWIN_PATH/../darwinlib"
+DARWIN_LAUNCHER="$(dirname "$0")/../darwin/bin/darwin"
 
-machine=$(uname -m)
-os=$(uname -s)
-kernel=$(uname -r)
-
-DARWIN_BINARY="$DARWIN_PATH/omadarwin.linux32"
-
-# function to compare to version strings 
-# https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash
-vercomp () {
-    if [[ $1 == $2 ]]
-    then
-        return 0
-    fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    # fill empty fields in ver1 with zeros
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if [[ -z ${ver2[i]} ]]
-        then
-            # fill empty fields in ver2 with zeros
-            ver2[i]=0
-        fi
-        if ((10#${ver1[i]} > 10#${ver2[i]}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
-}
-
-
-if [ $os = "Linux" ]
-then
-    ulimit -s unlimited
-    if [ $machine = "x86_64" ] ; then
-        vercomp "$kernel" "3"
-        if [ "$?" = "2" ] ; then
-            echo "WARNING: using darwin binary for old kernel 2.6.9"
-            DARWIN_BINARY="$DARWIN_PATH/omadarwin.linux64_2.6.9"
-        else
-            DARWIN_BINARY="$DARWIN_PATH/omadarwin.linux64"
-        fi
-    fi
-elif [ $os = "Darwin" ]
-then
-    ulimit -s hard
-    if [ $machine = "x86_64" ]
-    then
-        DARWIN_BINARY="$DARWIN_PATH/omadarwin.mac64"
-    elif [ $machine = "arm64" ] ; then
-        # no special arm build of darwin yet
-        DARWIN_BINARY="$DARWIN_PATH/omadarwin.mac64"
-    else
-        echo "The last version of OMA standalone that supported 32bit OSX (10.6) is OMA 2.2.0"
-        exit 1
-    fi
+if [ -x "$DARWIN_LAUNCHER" ]; then
+    exec "$DARWIN_LAUNCHER" "$@"
 else
-    echo "Operating system not supported!"
+    # e.g. running from a git checkout: use the darwin found on the PATH
+    exec darwin "$@"
 fi
-if [ -f $DARWIN_BINARY ]; then
-    exec $DARWIN_BINARY -l $DARWIN_LIB $@
-else
-    exec darwin $@
-fi
-
