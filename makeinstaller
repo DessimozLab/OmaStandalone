@@ -10,7 +10,8 @@ $0 [options] [target_path]
 
 Run this script to create a new release of OMA standalone. The version will
 be named according to what 'git describe' returns, so you should generally
-create a new tag prior to creating a release.
+create a new tag prior to creating a release. Set OMA_VERSION to use another
+version name.
 
 Options:
   -r <host>   host where the releases are hosted. Need to be able to ssh to 
@@ -73,7 +74,7 @@ shift $((OPTIND-1))
 tmpdir=${TMPDIR:-/tmp}
 target_path=${1:-$tmpdir}
 
-if [ -z "$webpath" ]; then
+if [ "$deploy" == "yes" -a -z "$webpath" ]; then
     case "$webhost" in 
         linneus*) 
             webpath="/pub/projects/cbrg-oma-browser";;
@@ -93,7 +94,7 @@ if [ -z "$webpath" ]; then
 fi
 webpath="$webpath/standalone"
 
-versionnr=`git describe`
+versionnr=${OMA_VERSION:-$(git describe)}
 instpath=$target_path/OMA.$versionnr
 
 mkdir -p $instpath/bin
@@ -106,6 +107,14 @@ darwin_url="https://github.com/cbrg-eth/darwin-releases/releases/download/$darwi
 curl -fsSL "$darwin_url" | tar -xz -C $instpath
 echo "$darwin_version" > $instpath/darwin.version
 darwinit=$instpath/darwin/share/darwin/lib/darwinit
+
+# the toy example ships with GO data; download it if it is missing (e.g. in
+# a fresh checkout)
+if ! ls ToyExample/data/GOdata.drw-*.gz > /dev/null 2>&1 ; then
+    mkdir -p ToyExample/data
+    echo "GOdownload(); done" \
+        | DARWIN_DATA_DIRECTORY=$PWD/ToyExample/data $instpath/darwin/bin/darwin -q -E
+fi
 
 # clone the GETHOGs python repo into hog_bottom_up
 git clone $hog_branch --depth 1 https://github.com/DessimozLab/gethogs.git hog_bottom_up
@@ -120,17 +129,13 @@ cp -r lib $instpath/
 cp OMA.drw parameters.drw install.sh README.oma LICENSE release_notes.txt $instpath/
 cp bin/oma bin/omadarwin bin/warthog bin/oma-* bin/create_warthog_venv.sh $instpath/bin/
 
-# create file with previous releases that exist for download
+# create file with previous releases that exist for download. Every release
+# has a git tag of the form X.Y.Z; skip tags that were never published.
 prev_rels="Manual/previous_releases.html"
-list_fn="/tmp/standalone_list.txt"
-ssh $webhost "find $webpath -type f -name '*.tgz' -fprintf $list_fn '%p\t%TY%Tm%Td\t%TY %Tb %Td\n'"
-scp $webhost:$list_fn $list_fn
-python - << EOF
-import os
-with open("$list_fn",'rt') as fin, open("$prev_rels", 'w') as fout:
-    data = [line.split('\\t') for line in fin]
-    data.sort(key=lambda x:[x[1],x[0]], reverse=True)
-    fout.write("""<html><head>
+unpublished_tags="2.6.1"
+{
+cat << EOF
+<html><head>
 <title>OMA standalone - Previous releases</title>
 <link href="../browser.css" rel="stylesheet" type="text/css"></link>
 <link href="manual.css" rel="stylesheet" type="text/css"></link>
@@ -139,15 +144,15 @@ with open("$list_fn",'rt') as fin, open("$prev_rels", 'w') as fout:
 <h1>Previous Releases</h1>
 <table>
 <tr><th style="width:220px;">Release</th><th>Release Date</th></tr>
-""")
-
-    for row in data:
-        vers = os.path.basename(row[0])
-        fout.write('<tr><td><a href="http://omabrowser.org/standalone/{0}">{0}</a></td>'
-                   '<td>{1}</td></tr>\\n'
-                   .format(vers, row[2]))
-    fout.write('</table></body></html>\\n')
 EOF
+git for-each-ref --sort=-creatordate --format='%(refname:short) %(creatordate:format:%Y %b %d)' refs/tags \
+    | grep -E '^[0-9]+\.[0-9]+\.[0-9]+ ' \
+    | grep -vE "^($(echo $unpublished_tags | sed 's/\./\\./g; s/ /|/g')) " \
+    | while read -r vers date ; do
+        echo "<tr><td><a href=\"https://omabrowser.org/standalone/OMA.$vers.tgz\">OMA.$vers.tgz</a></td><td>$date</td></tr>"
+    done
+echo '</table></body></html>'
+} > $prev_rels
 
 # create manual and copy files to $instpath
 $instpath/darwin/bin/darwin < Manual/manual.drw
@@ -178,8 +183,8 @@ else
     sed -i "s|datadirname.*|datadirname := libname.'/../data':|" $darwinit
 fi
 
-# create tarball
-$(cd `dirname $instpath`; tar -cvzf `basename $instpath`.tgz `basename $instpath`)
+# create tarball (COPYFILE_DISABLE keeps macOS tar from adding ._* files)
+(cd `dirname $instpath`; COPYFILE_DISABLE=1 tar -czf `basename $instpath`.tgz `basename $instpath`)
 
 if [ "$deploy" == "yes" ] ; then
     # deploy webpage (html, css and tarball)

@@ -5,8 +5,13 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-  release:
-    type: [published]
+  # called by the release workflow once the release tarball is attached
+  workflow_call:
+    inputs:
+      oma_tarball_url:
+        description: URL of the OMA standalone tarball to build the image from
+        type: string
+        required: true
 
 env:
   TEST_TAG: dessimozlab/oma_standalone:test
@@ -52,6 +57,8 @@ jobs:
           context: .
           load: true
           tags: ${{ env.TEST_TAG }}
+          build-args: |
+            ${{ inputs.oma_tarball_url && format('OMA_TARBALL_URL={0}', inputs.oma_tarball_url) || '' }}
       -
         name: Test
         run: |
@@ -74,3 +81,5 @@ jobs:
           push: ${{ github.event_name != 'push' && github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ${{ inputs.oma_tarball_url && format('OMA_TARBALL_URL={0}', inputs.oma_tarball_url) || '' }}

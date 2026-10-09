@@ -42,7 +42,7 @@ fi
 
 echo "Installing darwin..."
 
-if ! cp $current_dir/bin/omadarwin $current_dir/bin/oma $current_dir/bin/oma-* $current_dir/bin/warthog $omadir/bin/ 2>/dev/null
+if ! cp $current_dir/bin/omadarwin $current_dir/bin/oma $current_dir/bin/oma-* $current_dir/bin/warthog $current_dir/bin/create_warthog_venv.sh $omadir/bin/ 2>/dev/null
 then
     echo "Could not write to $install_prefix. Please try again either with a different install prefix or with 'sudo ./install.sh [install_prefix]."
     exit
@@ -83,7 +83,7 @@ ln -s $omadir/bin/oma $linkdir/OMA.$versionnr
 ln -s $omadir/bin/oma $linkdir/OMA
 ln -s $omadir/bin/oma $linkdir/oma 2>/dev/null  #osx is caseinsensitive
 for util in $omadir/bin/oma-*; do 
-    [ -x $util ] && ln -s $util $linksir/$(basename $util)
+    [ -x $util ] && ln -s $util $linkdir/$(basename $util)
 done
 
 echo "Installation complete."
